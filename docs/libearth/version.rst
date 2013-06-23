@@ -1,0 +1,3 @@
+
+.. automodule:: libearth.version
+   :members:
