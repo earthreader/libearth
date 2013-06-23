@@ -1,5 +1,7 @@
 .tox
 docs/_build
+libearth.egg-info
 MANIFEST
 .*.swp
+*.egg
 *.pyc
