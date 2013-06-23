@@ -1,4 +1,5 @@
 .tox
 docs/_build
+MANIFEST
 .*.swp
 *.pyc

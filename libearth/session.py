@@ -1,6 +1,18 @@
 """:mod:`libearth.session` --- Sessions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The basic concept of Earth Reader eventually arrives at a problem: how can
+we merge simultaneous updates of the same feed without any conflicts?
+It's a sort of well known problems in computer science, and there are several
+solutions for it e.g. MVCC_ (multiversion concurrency control).
+
+::
+
+    repository = Repository('/path/to/save/files')
+    session = Session(repository)
+
+.. _MVCC: http://en.wikipedia.org/wiki/Multiversion_concurrency_control
+
 """
 import uuid
 
