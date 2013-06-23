@@ -1,3 +1,5 @@
+import os.path
+
 try:
     from setuptools import find_packages, setup
 except ImportError:
@@ -7,6 +9,14 @@ except ImportError:
 from setuptools.command.test import test
 
 from libearth.version import VERSION
+
+
+def readme():
+    try:
+        with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as f:
+            return f.read()
+    except (IOError, OSError):
+        return ''
 
 
 class pytest(test):
@@ -26,7 +36,7 @@ setup(
     name='libearth',
     version=VERSION,
     description='The core implementation of Earth Reader',
-    long_description=None,
+    long_description=readme(),
     url='http://dahlia.kr/',
     author='Hong Minhee',
     author_email='minhee' '@' 'dahlia.kr',
