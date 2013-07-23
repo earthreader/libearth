@@ -147,8 +147,6 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                 setattr(parent_element, name, child_element)
                 # FIXME: it should append instead if child.multiple
                 self.stack.append((name, child_element, []))
-            elif isinstance(child, Content):
-                raise NotImplementedError()
             else:
                 raise SyntaxError('unexpected element: ' + name)
 
