@@ -6,5 +6,6 @@
 
       libearth/compat
       libearth/repository
+      libearth/schema
       libearth/session
       libearth/version
