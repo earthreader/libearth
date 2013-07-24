@@ -1,12 +1,58 @@
 """:mod:`libearth.schema` --- Declarative schema for pulling DOM parser of XML
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+There are well-known two ways to parse XML:
+
+Document Object Model
+   It reads the whole XML and then makes a tree in memory.  You can easily
+   treverse the document as a tree, but the parsing can't be streamed.
+   Moreover it uses memory for data you don't use.
+
+Simple API for XML
+   It's an event-based sequential access parser.  It means you need to
+   listen events from it and then utilize its still unstructured data
+   by yourself.  In other words, you don't need to pay memory to data
+   you never use if you simply do nothing for them when you listen
+   the event.
+
+Pros and cons between these two ways are obvious, but there could be
+another way to parse XML: *mix them*.
+
+The basic idea of this pulling DOM parser (which this module implements)
+is that the parser can consume the stream just in time when you actually
+reach the child node.  There should be an assumption for that: parsed XML
+has a schema for it.  If the document is schema-free, this heuristic approach
+loses the most of its efficiency.
+
+So the parser should have the information about the schema of XML document
+it'd parser, and we can declare the schema by defining classes.  It's a thing
+like ORM for XML.  For example, suppose there is a small XML document:
+
+.. code-block:: xml
+
+   <?xml version="1.0"?>
+   <person>
+     <name>Hong Minhee</name>
+     <url>http://dahlia.kr/</url>
+     <url>https://github.com/dahlia</url>
+     <url>https://bitbucket.org/dahlia</url>
+     <dob>1988-08-04</dob>
+   </person>
+
+You can declare the schema for this like the following class definition::
+
+    class Person(DocumentElement):
+        __tag__ = 'person'
+        name = Child('name', Text)
+        url = Child('url', URL)
+        dob = Child('dob', Date)
+
 """
 import weakref
 import xml.sax
 import xml.sax.handler
 
-__all__ = 'Child', 'DocumeneElement', 'Element'
+__all__ = 'Child', 'Content', 'ContentHandler', 'DocumeneElement', 'Element'
 
 
 class Child(object):
@@ -121,6 +167,7 @@ class DocumentElement(Element):
 
 
 class ContentHandler(xml.sax.handler.ContentHandler):
+    """Event handler implementation for SAX parser."""
 
     def __init__(self, document):
         self.document = document
