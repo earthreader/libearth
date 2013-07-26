@@ -236,19 +236,6 @@ class ElementList(collections.Sequence):
         for data in self.consume_buffer():
             continue
         return len(data)
-        element = self.element()
-        root = element._root()
-        handler = root._handler
-        parser = root._parser
-        iterable = root._iterable
-        data = element._data
-        while not handler.stack or handler.stack[-1]:
-            try:
-                chunk = next(iterable)
-            except StopIteration:
-                break
-            parser.feed(chunk)
-        return len(data[self.tag])
 
     def __getitem__(self, index):
         for data in self.consume_buffer():
