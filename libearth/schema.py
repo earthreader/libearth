@@ -99,7 +99,7 @@ class Child(object):
             root = obj._root()
             handler = root._handler
             parser = root._parser
-            iterable = root._iterable
+            iterable = root._iterator
             stack = handler.stack
             while (obj._data.get(self.tag) is None and
                    (not stack or stack[-1])):
@@ -149,7 +149,7 @@ class Content(object):
             root = obj._root()
             handler = root._handler
             parser = root._parser
-            iterable = root._iterable
+            iterable = root._iterator
             while (obj._content is None and
                    (not handler.stack or handler.stack[-1])):
                 try:
@@ -178,7 +178,7 @@ class Element(object):
 
 class DocumentElement(Element):
 
-    __slots__ = '_parser', '_iterable', '_handler'
+    __slots__ = '_parser', '_iterator', '_handler'
 
     def __init__(self, *args, **kwargs):
         if kwargs and args:
@@ -193,7 +193,7 @@ class DocumentElement(Element):
             parser.setContentHandler(self._handler)
             self._parser = parser
             iterator = iter(args[0])
-            self._iterable = iterator
+            self._iterator = iterator
             stack = handler.stack
             while not stack:
                 try:
@@ -234,7 +234,7 @@ class ElementList(collections.Sequence):
         root = element._root()
         handler = root._handler
         parser = root._parser
-        iterable = root._iterable
+        iterable = root._iterator
         data = element._data
         stack = handler.stack
         top = element._stack_top
