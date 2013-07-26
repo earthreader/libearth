@@ -100,8 +100,9 @@ class Child(object):
             handler = root._handler
             parser = root._parser
             iterable = root._iterable
+            stack = handler.stack
             while (obj._data.get(self.tag) is None and
-                   (not handler.stack or handler.stack[-1])):
+                   (not stack or stack[-1])):
                 try:
                     chunk = next(iterable)
                 except StopIteration:
@@ -171,7 +172,8 @@ class Element(object):
         self._data = {}
         self._parent = weakref.ref(_parent)
         self._root = _parent._root
-        assert not kwargs, 'implement sqla-style initializer'
+        self._stack_top = len(self._root()._handler.stack)
+        assert not kwargs, 'implement sqla-style initializer'  # TODO
 
 
 class DocumentElement(Element):
@@ -184,13 +186,23 @@ class DocumentElement(Element):
         elif args and len(args) > 1:
             raise TypeError('takes only one iterable')
         self._root = weakref.ref(self)
-        super(DocumentElement, self).__init__(self, **kwargs)
         if args:
             parser = xml.sax.make_parser(['xml.sax.IncrementalParser'])
-            self._handler = ContentHandler(self)
+            handler = ContentHandler(self)
+            self._handler = handler
             parser.setContentHandler(self._handler)
             self._parser = parser
-            self._iterable = iter(args[0])
+            iterator = iter(args[0])
+            self._iterable = iterator
+            stack = handler.stack
+            while not stack:
+                try:
+                    chunk = next(iterator)
+                except StopIteration:
+                    break
+                parser.feed(chunk)
+                
+        super(DocumentElement, self).__init__(self, **kwargs)
 
 
 class ElementList(collections.Sequence):
@@ -218,12 +230,15 @@ class ElementList(collections.Sequence):
 
     def consume_buffer(self):
         element = self.element()
+        parent = element._parent()
         root = element._root()
         handler = root._handler
         parser = root._parser
         iterable = root._iterable
         data = element._data
-        while not handler.stack or handler.stack[-1]:
+        stack = handler.stack
+        top = element._stack_top
+        while len(stack) >= top and stack[top - 1][1] is parent:
             yield data
             try:
                 chunk = next(iterable)
