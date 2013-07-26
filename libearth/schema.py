@@ -164,6 +164,7 @@ class Content(object):
 
 
 class Element(object):
+    """Represent an element in XML document."""
 
     __slots__ = '_content', '_data', '_parent', '_root'
 
@@ -177,6 +178,7 @@ class Element(object):
 
 
 class DocumentElement(Element):
+    """The root element of the document."""
 
     __slots__ = '_parser', '_iterator', '_handler'
 
@@ -201,7 +203,6 @@ class DocumentElement(Element):
                 except StopIteration:
                     break
                 parser.feed(chunk)
-                
         super(DocumentElement, self).__init__(self, **kwargs)
 
 
@@ -229,6 +230,14 @@ class ElementList(collections.Sequence):
         self.element_type = descriptor.element_type
 
     def consume_buffer(self):
+        """Consume the buffer for the parser.  It returns a generator,
+        so can be stopped using :keyword:`break` statement by caller.
+
+        .. note::
+
+           Internal method.
+
+        """
         element = self.element()
         parent = element._parent()
         root = element._root()
