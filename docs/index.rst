@@ -1,6 +1,10 @@
 libearth
 ========
 
+.. image:: https://travis-ci.org/earthreader/libearth.png?branch=master
+   :alt: Build Status
+   :target: https://travis-ci.org/earthreader/libearth
+
 .. toctree::
    :maxdepth: 3
 
