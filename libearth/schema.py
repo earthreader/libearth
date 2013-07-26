@@ -48,11 +48,13 @@ You can declare the schema for this like the following class definition::
         dob = Child('dob', Date)
 
 """
+import collections
 import weakref
 import xml.sax
 import xml.sax.handler
 
-__all__ = 'Child', 'Content', 'ContentHandler', 'DocumeneElement', 'Element'
+__all__ = ('Child', 'Content', 'ContentHandler', 'DocumeneElement', 'Element',
+           'ElementList')
 
 
 class Child(object):
@@ -92,7 +94,8 @@ class Child(object):
 
     def __get__(self, obj, cls=None):
         if isinstance(obj, Element):
-            # FIXME: it should reach the end if self.multiple
+            if self.multiple:
+                return ElementList(obj, self)
             root = obj._root()
             handler = root._handler
             parser = root._parser
@@ -100,15 +103,39 @@ class Child(object):
             while (obj._data.get(self.tag) is None and
                    (not handler.stack or handler.stack[-1])):
                 try:
-                    parser.feed(next(iterable))
+                    chunk = next(iterable)
                 except StopIteration:
                     break
+                parser.feed(chunk)
             return obj._data.get(self.tag)
         return self
 
     def __set__(self, obj, value):
-        if isinstance(value, self.element_type):
-            obj._data[self.tag] = value
+        if isinstance(obj, Element):
+            if self.multiple:
+                if isinstance(value, collections.Sequence):
+                    if (len(value) < 1 or
+                        isinstance(value[0], self.element_type)):
+                        obj._data[self.tag] = value
+                    else:
+                        raise TypeError(
+                            'expected a sequence of {0.__module__}.'
+                            '{0.__name__}, not {1!r}'.format(
+                                self.element_type, value
+                            )
+                        )
+                else:
+                    raise TypeError('Child property of multiple=True option '
+                                    'only accepts a sequence, not ' +
+                                    repr(value))
+            else:
+                if isinstance(value, self.element_type):
+                    obj._data[self.tag] = value
+                else:
+                    raise TypeError(
+                        'expected an instance of {0.__module__}.{0.__name__}, '
+                        'not {1!r}'.format(self.element_type, value)
+                    )
         else:
             raise AttributeError('cannot change the class attribute')
 
@@ -166,6 +193,70 @@ class DocumentElement(Element):
             self._iterable = iter(args[0])
 
 
+class ElementList(collections.Sequence):
+    """List-like object to represent multiple chidren.  It makes the parser
+    to lazily consume the buffer when an element of a particular offset
+    is requested.
+
+    """
+
+    def __init__(self, element, descriptor):
+        if not isinstance(element, Element):
+            raise TypeError(
+                'element must be an instance of {0.__module__}.{0.__name__}, '
+                'not {1!r}'.format(Element, element)
+            )
+        elif not isinstance(descriptor, Child):
+            raise TypeError(
+                'descriptor must be an instance of {0.__module__}.{0.__name__}'
+                ', not {1!r}'.format(Child, descriptor)
+            )
+        self.element = weakref.ref(element)
+        self.descriptor = descriptor
+        self.tag = descriptor.tag
+        self.element_type = descriptor.element_type
+
+    def consume_buffer(self):
+        element = self.element()
+        root = element._root()
+        handler = root._handler
+        parser = root._parser
+        iterable = root._iterable
+        data = element._data
+        while not handler.stack or handler.stack[-1]:
+            yield data
+            try:
+                chunk = next(iterable)
+            except StopIteration:
+                break
+            parser.feed(chunk)
+        yield data
+
+    def __len__(self):
+        for data in self.consume_buffer():
+            continue
+        return len(data)
+        element = self.element()
+        root = element._root()
+        handler = root._handler
+        parser = root._parser
+        iterable = root._iterable
+        data = element._data
+        while not handler.stack or handler.stack[-1]:
+            try:
+                chunk = next(iterable)
+            except StopIteration:
+                break
+            parser.feed(chunk)
+        return len(data[self.tag])
+
+    def __getitem__(self, index):
+        for data in self.consume_buffer():
+            if self.tag in data and len(data[self.tag]) > index:
+                break
+        return data[self.tag][index]
+
+
 class ContentHandler(xml.sax.handler.ContentHandler):
     """Event handler implementation for SAX parser."""
 
@@ -191,8 +282,11 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                 raise SyntaxError('unexpected element: ' + name)
             if isinstance(child, Child):
                 child_element = child.element_type(parent_element)
-                setattr(parent_element, name, child_element)
-                # FIXME: it should append instead if child.multiple
+                if child.multiple:
+                    element_list = parent_element._data.setdefault(name, [])
+                    element_list.append(child_element)
+                else:
+                    setattr(parent_element, name, child_element)
                 self.stack.append((name, child_element, []))
             else:
                 raise SyntaxError('unexpected element: ' + name)
