@@ -28,3 +28,7 @@ Continuous integration (Travis)
 
 Test coverage (Coveralls)
    https://coveralls.io/r/earthreader/libearth
+
+   .. image:: https://coveralls.io/repos/earthreader/libearth/badge.png?branch=master
+      :alt: Coverage Status
+      :target: https://coveralls.io/r/earthreader/libearth?branch=master
