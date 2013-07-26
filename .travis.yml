@@ -5,9 +5,13 @@ python:
 - 3.2
 - 3.3
 - pypy
+install:
+- pip install pytest pytest-cov coveralls
 script:
 - python -mlibearth.version
-- py.test --durations=20
+- py.test --cov libearth --durations=20
+after_success:
+- coveralls
 notifications:
   irc:
     channels:
