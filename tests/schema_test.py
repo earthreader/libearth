@@ -3,10 +3,10 @@ import collections
 from pytest import fixture, raises
 
 from libearth.compat import text
-from libearth.schema import Child, Content, DocumentElement, Element
+from libearth.schema import Child, Content, DocumentElement, Element, Text
 
 
-class Text(Element):
+class TextElement(Element):
 
     value = Content()
 
@@ -14,9 +14,11 @@ class Text(Element):
 class TestDoc(DocumentElement):
 
     __tag__ = 'test'
-    title_attr = Child('title', Text, required=True)
-    content_attr = Child('content', Text, required=True)
-    multi_attr = Child('multi', Text, multiple=True)
+    title_attr = Child('title', TextElement, required=True)
+    content_attr = Child('content', TextElement, required=True)
+    multi_attr = Child('multi', TextElement, multiple=True)
+    text_content_attr = Text('text-content')
+    text_multi_attr = Text('text-multi', multiple=True)
 
 
 def string_chunks(consume_log, *chunks):
@@ -46,7 +48,13 @@ def fx_test_doc():
         '\t', '<content>', 'Content', ' test',
         '</content>', ['CONTENT_CLOSE'], '\n',
         '\t', '<multi>', 'b', '</multi>', ['MULTI_2_CLOSE'], '\n',
+        '\t', '<text-content>', 'Text ', 'content',
+        '</text-content>', ['TEXT_CONTENT_CLOSE'], '\n',
+        '\t', '<text-multi>', 'a', '</text-multi>',
+        ['TEXT_MULTI_1_CLOSE'], '\n',
         '\t', '<multi>', 'c', '</multi>', ['MULTI_3_CLOSE'], '\n',
+        '\t', '<text-multi>', 'b', '</text-multi>',
+        ['TEXT_MULTI_2_CLOSE'], '\n',
         '</test>', ['TEST_CLOSE'], '\n'
     )
     return TestDoc(xml), consume_log
@@ -104,3 +112,35 @@ def test_multiple_child_getitem_from_last(fx_test_doc):
     assert consume_log[-1] == 'MULTI_3_CLOSE'
     doc.multi_attr[0].value == 'a'
     assert consume_log[-1] == 'MULTI_3_CLOSE'
+
+
+def test_text_attribute(fx_test_doc):
+    doc, consume_log = fx_test_doc
+    assert consume_log[-1] == 'TEST_START'
+    assert doc.text_content_attr == 'Text content'
+    assert consume_log[-1] == 'TEXT_CONTENT_CLOSE'
+
+
+def test_text_multiple_text_len(fx_test_doc):
+    doc, consume_log = fx_test_doc
+    assert consume_log[-1] == 'TEST_START'
+    assert len(doc.text_multi_attr) == 2
+    assert consume_log[-1] == 'TEST_CLOSE'
+
+
+def test_multiple_text_getitem(fx_test_doc):
+    doc, consume_log = fx_test_doc
+    assert consume_log[-1] == 'TEST_START'
+    doc.text_multi_attr[0] == 'a'
+    assert consume_log[-1] == 'TEXT_MULTI_1_CLOSE'
+    doc.text_multi_attr[1] == 'b'
+    assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'
+
+
+def test_multiple_text_getitem_from_last(fx_test_doc):
+    doc, consume_log = fx_test_doc
+    assert consume_log[-1] == 'TEST_START'
+    doc.text_multi_attr[1] == 'b'
+    assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'
+    doc.text_multi_attr[0] == 'a'
+    assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'

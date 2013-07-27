@@ -53,11 +53,52 @@ import weakref
 import xml.sax
 import xml.sax.handler
 
-__all__ = ('Child', 'Content', 'ContentHandler', 'DocumeneElement', 'Element',
-           'ElementList')
+__all__ = ('Child', 'Content', 'ContentHandler', 'Descriptor',
+           'DocumeneElement', 'Element', 'ElementList', 'Text')
 
 
-class Child(object):
+class Descriptor(object):
+    """Base class for :class:`Child` and :class:`Text`."""
+
+    #: (:class:`str`) The tag name.
+    tag = None
+
+    #: (:class:`bool`) Whether it is required for the element.
+    #: If it's :const:`True` :attr:`multiple` has to be :const:`False`.
+    required = None
+
+    #: (:class:`bool`) Whether it can be zero or more for the element.
+    #: If it's :const:`True` :attr:`required` has to be :const:`False`.
+    multiple = None
+
+    def __init__(self, tag, required=False, multiple=False):
+        if required and multiple:
+            raise TypeError('required and multiple are exclusive')
+        self.tag = tag
+        self.required = bool(required)
+        self.multiple = bool(multiple)
+
+    def __get__(self, obj, cls=None):
+        if isinstance(obj, Element):
+            if self.multiple:
+                return ElementList(obj, self)
+            root = obj._root()
+            handler = root._handler
+            parser = root._parser
+            iterable = root._iterator
+            stack = handler.stack
+            while (obj._data.get(self.tag) is None and
+                   (not stack or stack[-1])):
+                try:
+                    chunk = next(iterable)
+                except StopIteration:
+                    break
+                parser.feed(chunk)
+            return obj._data.get(self.tag)
+        return self
+
+
+class Child(Descriptor):
     """Declare a possible child element as a descriptor.
 
     :param tag: the tag name
@@ -85,31 +126,8 @@ class Child(object):
                 'element_type must be a subtype of {0.__module__}.'
                 '{0.__name__}, not {1!r}'.format(Element, element_type)
             )
-        elif required and multiple:
-            raise TypeError('required and multiple are exclusive')
-        self.tag = tag
+        super(Child, self).__init__(tag, required=required, multiple=multiple)
         self.element_type = element_type
-        self.required = bool(required)
-        self.multiple = bool(multiple)
-
-    def __get__(self, obj, cls=None):
-        if isinstance(obj, Element):
-            if self.multiple:
-                return ElementList(obj, self)
-            root = obj._root()
-            handler = root._handler
-            parser = root._parser
-            iterable = root._iterator
-            stack = handler.stack
-            while (obj._data.get(self.tag) is None and
-                   (not stack or stack[-1])):
-                try:
-                    chunk = next(iterable)
-                except StopIteration:
-                    break
-                parser.feed(chunk)
-            return obj._data.get(self.tag)
-        return self
 
     def __set__(self, obj, value):
         if isinstance(obj, Element):
@@ -139,6 +157,11 @@ class Child(object):
                     )
         else:
             raise AttributeError('cannot change the class attribute')
+
+
+class Text(Descriptor):
+
+    pass
 
 
 class Content(object):
@@ -219,7 +242,7 @@ class ElementList(collections.Sequence):
                 'element must be an instance of {0.__module__}.{0.__name__}, '
                 'not {1!r}'.format(Element, element)
             )
-        elif not isinstance(descriptor, Child):
+        elif not isinstance(descriptor, Descriptor):
             raise TypeError(
                 'descriptor must be an instance of {0.__module__}.{0.__name__}'
                 ', not {1!r}'.format(Child, descriptor)
@@ -227,7 +250,6 @@ class ElementList(collections.Sequence):
         self.element = weakref.ref(element)
         self.descriptor = descriptor
         self.tag = descriptor.tag
-        self.element_type = descriptor.element_type
 
     def consume_buffer(self):
         """Consume the buffer for the parser.  It returns a generator,
@@ -239,15 +261,11 @@ class ElementList(collections.Sequence):
 
         """
         element = self.element()
-        parent = element._parent()
         root = element._root()
-        handler = root._handler
         parser = root._parser
         iterable = root._iterator
         data = element._data
-        stack = handler.stack
-        top = element._stack_top
-        while len(stack) >= top and stack[top - 1][1] is parent:
+        while not self.consumes_all():
             yield data
             try:
                 chunk = next(iterable)
@@ -255,6 +273,16 @@ class ElementList(collections.Sequence):
                 break
             parser.feed(chunk)
         yield data
+
+    def consumes_all(self):
+        element = self.element()
+        parent = element._parent()
+        root = element._root()
+        handler = root._handler
+        stack = handler.stack
+        top = element._stack_top
+        #return not (len(stack) >= top and stack[top - 1][2] is parent)
+        return len(stack) < top or stack[top - 1][2] is not parent
 
     def __len__(self):
         for data in self.consume_buffer():
@@ -271,6 +299,14 @@ class ElementList(collections.Sequence):
                 break
         return data[self.tag][index]
 
+    def __repr__(self):
+        list_repr = repr(self.element()._data.get(self.tag, []))
+        if not self.consumes_all():
+            list_repr = list_repr[:-1] + '...]'
+        return '<{0.__module__}.{0.__name__} {1}>'.format(
+            type(self), list_repr
+        )
+
 
 class ContentHandler(xml.sax.handler.ContentHandler):
     """Event handler implementation for SAX parser."""
@@ -281,14 +317,15 @@ class ContentHandler(xml.sax.handler.ContentHandler):
 
     def startElement(self, name, attrs):
         try:
-            parent_name, parent_element, characters = self.stack[-1]
+            (parent_name, parent_descriptor, parent_element,
+             characters) = self.stack[-1]
         except IndexError:
             # document element
             expected = self.document.__tag__
             if name != expected:
                 raise SyntaxError('document element must be {0}, '
                                   'not {1}'.format(expected, name))
-            self.stack.append((name, self.document, []))
+            self.stack.append((name, None, self.document, []))
         else:
             element_type = type(parent_element)
             child_tags = self.get_child_tags(element_type)
@@ -303,22 +340,31 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                     element_list.append(child_element)
                 else:
                     setattr(parent_element, attr, child_element)
-                self.stack.append((name, child_element, []))
+                self.stack.append((name, child, child_element, []))
+            elif isinstance(child, Text):
+                self.stack.append((name, child, parent_element, [])) # FIXME
             else:
                 raise SyntaxError('unexpected element: ' + name)
 
     def characters(self, content):
-        name, element, characters = self.stack[-1]
+        name, descriptor, element, characters = self.stack[-1]
         characters.append(content)
 
     def endElement(self, name):
-        parent_name, parent_element, characters = self.stack.pop()
+        parent_name, descriptor, parent_element, characters = self.stack.pop()
         assert name == parent_name
-        element_type = type(parent_element)
-        attr = self.get_content_tag(element_type)
-        if attr is None:
-            return
-        setattr(parent_element, attr, ''.join(characters))
+        text = ''.join(characters)
+        if isinstance(descriptor, Text):
+            if descriptor.multiple:
+                parent_element._data.setdefault(descriptor.tag, []).append(text)
+            else:
+                parent_element._data[descriptor.tag] = text
+        else:
+            element_type = type(parent_element)
+            attr = self.get_content_tag(element_type)
+            if attr is None:
+                return
+            setattr(parent_element, attr, text)
 
     def index_descriptors(self, element_type):
         child_tags = {}
@@ -327,7 +373,7 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             desc = getattr(element_type, attr)
             if isinstance(desc, Content):
                 content = attr, desc
-            elif isinstance(desc, Child):
+            elif isinstance(desc, Descriptor):
                 child_tags[desc.tag] = attr, desc
         element_type.__child_tags__ = child_tags
         element_type.__content__ = content
