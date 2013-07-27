@@ -43,8 +43,8 @@ You can declare the schema for this like the following class definition::
 
     class Person(DocumentElement):
         __tag__ = 'person'
-        name = Child('name', Text)
-        url = Child('url', URL)
+        name = Text('name')
+        url = Child('url', URL, multiple=True)
         dob = Child('dob', Date)
 
 """
