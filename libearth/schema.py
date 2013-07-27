@@ -287,9 +287,10 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             self.stack.append((name, self.document, []))
         else:
             element_type = type(parent_element)
+            child_tags = self.get_child_tags(element_type)
             try:
-                child = getattr(element_type, name)
-            except AttributeError:
+                attr, child = child_tags[name]
+            except KeyError:
                 raise SyntaxError('unexpected element: ' + name)
             if isinstance(child, Child):
                 child_element = child.element_type(parent_element)
@@ -297,7 +298,7 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                     element_list = parent_element._data.setdefault(name, [])
                     element_list.append(child_element)
                 else:
-                    setattr(parent_element, name, child_element)
+                    setattr(parent_element, attr, child_element)
                 self.stack.append((name, child_element, []))
             else:
                 raise SyntaxError('unexpected element: ' + name)
@@ -310,16 +311,35 @@ class ContentHandler(xml.sax.handler.ContentHandler):
         parent_name, parent_element, characters = self.stack.pop()
         assert name == parent_name
         element_type = type(parent_element)
-        try:
-            attr = element_type.__content__
-        except AttributeError:
-            for attr in dir(element_type):
-                desc = getattr(element_type, attr)
-                if isinstance(desc, Content):
-                    break
-            else:
-                attr = None
-            element_type.__content__ = attr
+        attr = self.get_content_tag(element_type)
         if attr is None:
             return
         setattr(parent_element, attr, ''.join(characters))
+
+    def index_descriptors(self, element_type):
+        child_tags = {}
+        content = None
+        for attr in dir(element_type):
+            desc = getattr(element_type, attr)
+            if isinstance(desc, Content):
+                content = attr, desc
+            elif isinstance(desc, Child):
+                child_tags[desc.tag] = attr, desc
+        element_type.__child_tags__ = child_tags
+        element_type.__content__ = content
+
+    def get_child_tags(self, element_type):
+        try:
+            child_tags = element_type.__child_tags__
+        except AttributeError:
+            self.index_descriptors(element_type)
+            child_tags = element_type.__child_tags__
+        return child_tags
+
+    def get_content_tag(self, element_type):
+        try:
+            content = element_type.__content__
+        except AttributeError:
+            self.index_descriptors(element_type)
+            content = element_type.__content__
+        return content and content[0]

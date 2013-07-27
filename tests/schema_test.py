@@ -14,9 +14,9 @@ class Text(Element):
 class TestDoc(DocumentElement):
 
     __tag__ = 'test'
-    title = Child('title', Text, required=True)
-    content = Child('content', Text, required=True)
-    multi = Child('multi', Text, multiple=True)
+    title_attr = Child('title', Text, required=True)
+    content_attr = Child('content', Text, required=True)
+    multi_attr = Child('multi', Text, multiple=True)
 
 
 def string_chunks(consume_log, *chunks):
@@ -55,16 +55,16 @@ def fx_test_doc():
 def test_document_parse(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START'
-    assert doc.title.value == 'Title test'
+    assert doc.title_attr.value == 'Title test'
     assert consume_log[-1] == 'TITLE_CLOSE'
-    assert doc.content.value == 'Content test'
+    assert doc.content_attr.value == 'Content test'
     assert consume_log[-1] == 'CONTENT_CLOSE'
-    assert isinstance(doc.multi, collections.Sequence)
+    assert isinstance(doc.multi_attr, collections.Sequence)
 
 
 def test_multiple_child_iter(fx_test_doc):
     doc, consume_log = fx_test_doc
-    it = iter(doc.multi)
+    it = iter(doc.multi_attr)
     assert consume_log[-1] == 'TEST_START'
     assert next(it).value == 'a'
     assert consume_log[-1] == 'MULTI_1_CLOSE'
@@ -80,27 +80,27 @@ def test_multiple_child_iter(fx_test_doc):
 def test_multiple_child_len(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START'
-    assert len(doc.multi) == 3
+    assert len(doc.multi_attr) == 3
     assert consume_log[-1] == 'TEST_CLOSE'
 
 
 def test_multiple_child_getitem(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START'
-    doc.multi[0].value == 'a'
+    doc.multi_attr[0].value == 'a'
     assert consume_log[-1] == 'MULTI_1_CLOSE'
-    doc.multi[1].value == 'b'
+    doc.multi_attr[1].value == 'b'
     assert consume_log[-1] == 'MULTI_2_CLOSE'
-    doc.multi[2].value == 'c'
+    doc.multi_attr[2].value == 'c'
     assert consume_log[-1] == 'MULTI_3_CLOSE'
 
 
 def test_multiple_child_getitem_from_last(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START'
-    doc.multi[2].value == 'c'
+    doc.multi_attr[2].value == 'c'
     assert consume_log[-1] == 'MULTI_3_CLOSE'
-    doc.multi[1].value == 'b'
+    doc.multi_attr[1].value == 'b'
     assert consume_log[-1] == 'MULTI_3_CLOSE'
-    doc.multi[0].value == 'a'
+    doc.multi_attr[0].value == 'a'
     assert consume_log[-1] == 'MULTI_3_CLOSE'
