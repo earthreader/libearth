@@ -58,7 +58,7 @@ __all__ = ('Child', 'Content', 'ContentHandler', 'Descriptor',
 
 
 class Descriptor(object):
-    """Base class for :class:`Child` and :class:`Text`."""
+    """Abstract base class for :class:`Child` and :class:`Text`."""
 
     #: (:class:`str`) The tag name.
     tag = None
@@ -96,6 +96,32 @@ class Descriptor(object):
                 parser.feed(chunk)
             return obj._data.get(self.tag)
         return self
+
+    def start_element(self, element, attribute):
+        """Abstract method that is invoked when the parser meets a start
+        of an element related to the descriptor.
+
+        :param element: the parent element of the read element
+        :type element: :class:`Element`
+        :param attribute: the attribute name of the descriptor
+        :type attribute: :class:`str`
+        :returns: a value to reserve.  it will be passed to
+                  ``reserved_value`` parameter of :meth:`end_element()`
+
+        """
+        raise NotImplementedError()
+
+    def end_element(self, reserved_value, content):
+        """Abstract method that is invoked when the parser meets an end
+        of an element related to the descriptor.
+
+        :param reserved_value: the value :meth:`start_element()` method
+                               returned
+        :param content: the content text of the read element
+        :type content: :class:`str`
+
+        """
+        raise NotImplementedError()
 
 
 class Child(Descriptor):
@@ -158,13 +184,40 @@ class Child(Descriptor):
         else:
             raise AttributeError('cannot change the class attribute')
 
+    def start_element(self, element, attribute):
+        child_element = self.element_type(element)
+        if self.multiple:
+            element_list = element._data.setdefault(self.tag, [])
+            element_list.append(child_element)
+        else:
+            setattr(element, attribute, child_element)
+        return child_element
+
+    def end_element(self, reserved_value, content):
+        element_type = type(reserved_value)
+        attr = reserved_value._root()._handler.get_content_tag(element_type)
+        if attr is None:
+            return
+        setattr(reserved_value, attr, content)
+
 
 class Text(Descriptor):
+    """Descriptor that declares a possible child element that only cosists
+    of character data.  All other attributes and child nodes are ignored.
 
-    pass
+    """
+
+    def start_element(self, element, attribute):
+        return element
+
+    def end_element(self, reserved_value, content):
+        if self.multiple:
+            reserved_value._data.setdefault(self.tag, []).append(content)
+        else:
+            reserved_value._data[self.tag] = content
 
 
-class Content(object):
+class Content(object):  # FIXME: subclass Descriptor
     """Declare possible text nodes as a descriptor."""
 
     def __get__(self, obj, cls=None):
@@ -245,7 +298,7 @@ class ElementList(collections.Sequence):
         elif not isinstance(descriptor, Descriptor):
             raise TypeError(
                 'descriptor must be an instance of {0.__module__}.{0.__name__}'
-                ', not {1!r}'.format(Child, descriptor)
+                ', not {1!r}'.format(Descriptor, descriptor)
             )
         self.element = weakref.ref(element)
         self.descriptor = descriptor
@@ -333,16 +386,9 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                 attr, child = child_tags[name]
             except KeyError:
                 raise SyntaxError('unexpected element: ' + name)
-            if isinstance(child, Child):
-                child_element = child.element_type(parent_element)
-                if child.multiple:
-                    element_list = parent_element._data.setdefault(name, [])
-                    element_list.append(child_element)
-                else:
-                    setattr(parent_element, attr, child_element)
-                self.stack.append((name, child, child_element, []))
-            elif isinstance(child, Text):
-                self.stack.append((name, child, parent_element, [])) # FIXME
+            if isinstance(child, Descriptor):
+                reserved_value = child.start_element(parent_element, attr)
+                self.stack.append((name, child, reserved_value, []))
             else:
                 raise SyntaxError('unexpected element: ' + name)
 
@@ -351,20 +397,16 @@ class ContentHandler(xml.sax.handler.ContentHandler):
         characters.append(content)
 
     def endElement(self, name):
-        parent_name, descriptor, parent_element, characters = self.stack.pop()
+        parent_name, descriptor, reserved_value, characters = self.stack.pop()
         assert name == parent_name
         text = ''.join(characters)
-        if isinstance(descriptor, Text):
-            if descriptor.multiple:
-                parent_element._data.setdefault(descriptor.tag, []).append(text)
-            else:
-                parent_element._data[descriptor.tag] = text
+        if descriptor is None:
+            # reserved_value is root document
+            attr = self.get_content_tag(type(reserved_value))
+            if attr is not None:
+                setattr(reserved_value, attr, text)
         else:
-            element_type = type(parent_element)
-            attr = self.get_content_tag(element_type)
-            if attr is None:
-                return
-            setattr(parent_element, attr, text)
+            descriptor.end_element(reserved_value, text)
 
     def index_descriptors(self, element_type):
         child_tags = {}
