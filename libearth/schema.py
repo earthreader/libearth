@@ -259,7 +259,11 @@ class ElementList(collections.Sequence):
     def __len__(self):
         for data in self.consume_buffer():
             continue
-        return len(data)
+        try:
+            lst = data[self.tag]
+        except KeyError:
+            return 0
+        return len(lst)
 
     def __getitem__(self, index):
         for data in self.consume_buffer():
