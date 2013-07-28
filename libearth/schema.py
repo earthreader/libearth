@@ -54,7 +54,7 @@ import xml.sax
 import xml.sax.handler
 
 __all__ = ('Child', 'Content', 'ContentHandler', 'Descriptor',
-           'DocumeneElement', 'Element', 'ElementList', 'Text')
+           'DocumentElement', 'Element', 'ElementList', 'Text')
 
 
 class Descriptor(object):
