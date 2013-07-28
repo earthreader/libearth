@@ -47,6 +47,13 @@ You can declare the schema for this like the following class definition::
         url = Child('url', URL, multiple=True)
         dob = Child('dob', Date)
 
+.. todo::
+
+   - :class:`Attribute` descriptor
+   - :class:`Content` also should be a subtype of :class:`Descriptor`
+   - Make it possible to write as well
+   - Tuples in stack should be namedtuple
+
 """
 import collections
 import weakref
