@@ -52,7 +52,6 @@ You can declare the schema for this like the following class definition::
    - :class:`Attribute` descriptor
    - :class:`Content` also should be a subtype of :class:`Descriptor`
    - Make it possible to write as well
-   - Tuples in stack should be namedtuple
 
 """
 import collections
@@ -343,8 +342,7 @@ class ElementList(collections.Sequence):
         handler = root._handler
         stack = handler.stack
         top = element._stack_top
-        #return not (len(stack) >= top and stack[top - 1][2] is parent)
-        return len(stack) < top or stack[top - 1][2] is not parent
+        return len(stack) < top or stack[top - 1].reserved_value is not parent
 
     def __len__(self):
         for data in self.consume_buffer():
@@ -370,6 +368,13 @@ class ElementList(collections.Sequence):
         )
 
 
+# Semi-structured record type for only internal use.
+ParserContext = collections.namedtuple(
+    'ParserContext',
+    'tag descriptor reserved_value content_buffer'
+)
+
+
 class ContentHandler(xml.sax.handler.ContentHandler):
     """Event handler implementation for SAX parser."""
 
@@ -379,16 +384,23 @@ class ContentHandler(xml.sax.handler.ContentHandler):
 
     def startElement(self, name, attrs):
         try:
-            (parent_name, parent_descriptor, parent_element,
-             characters) = self.stack[-1]
+            parent_context = self.stack[-1]
         except IndexError:
             # document element
             expected = self.document.__tag__
             if name != expected:
                 raise SyntaxError('document element must be {0}, '
                                   'not {1}'.format(expected, name))
-            self.stack.append((name, None, self.document, []))
+            self.stack.append(
+                ParserContext(
+                    tag=name,
+                    descriptor=None,
+                    reserved_value=self.document,
+                    content_buffer=[]
+                )
+            )
         else:
+            parent_element = parent_context.reserved_value
             element_type = type(parent_element)
             child_tags = self.get_child_tags(element_type)
             try:
@@ -397,25 +409,32 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                 raise SyntaxError('unexpected element: ' + name)
             if isinstance(child, Descriptor):
                 reserved_value = child.start_element(parent_element, attr)
-                self.stack.append((name, child, reserved_value, []))
+                self.stack.append(
+                    ParserContext(
+                        tag=name,
+                        descriptor=child,
+                        reserved_value=reserved_value,
+                        content_buffer=[]
+                    )
+                )
             else:
                 raise SyntaxError('unexpected element: ' + name)
 
     def characters(self, content):
-        name, descriptor, element, characters = self.stack[-1]
-        characters.append(content)
+        context = self.stack[-1]
+        context.content_buffer.append(content)
 
     def endElement(self, name):
-        parent_name, descriptor, reserved_value, characters = self.stack.pop()
-        assert name == parent_name
-        text = ''.join(characters)
-        if descriptor is None:
-            # reserved_value is root document
-            attr = self.get_content_tag(type(reserved_value))
+        context = self.stack.pop()
+        assert name == context.tag
+        text = ''.join(context.content_buffer)
+        if context.descriptor is None:
+            # context.reserved_value is root document
+            attr = self.get_content_tag(type(context.reserved_value))
             if attr is not None:
-                setattr(reserved_value, attr, text)
+                setattr(context.reserved_value, attr, text)
         else:
-            descriptor.end_element(reserved_value, text)
+            context.descriptor.end_element(context.reserved_value, text)
 
     def index_descriptors(self, element_type):
         child_tags = {}
