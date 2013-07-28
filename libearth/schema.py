@@ -264,7 +264,18 @@ class DocumentElement(Element):
 
     __slots__ = '_parser', '_iterator', '_handler'
 
+    #: (:class:`str`) Every :class:`DocumentElement` subtype has to define
+    #: this attribute to the root tag name.
+    __tag__ = NotImplemented
+
     def __init__(self, *args, **kwargs):
+        cls = type(self)
+        if cls.__tag__ is NotImplemented:
+            raise NotImplementedError(
+                '{0.__module__}.{0.__name__}.__tag__ is not defined; '
+                'every subtype of {1.__module__}.{1.__name__} has to '
+                'define __tag__ attribute'.format(cls, DocumentElement)
+            )
         if kwargs and args:
             raise TypeError('pass keywords only or one iterable')
         elif args and len(args) > 1:

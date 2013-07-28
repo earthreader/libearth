@@ -144,3 +144,14 @@ def test_multiple_text_getitem_from_last(fx_test_doc):
     assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'
     doc.text_multi_attr[0] == 'a'
     assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'
+
+
+def test_document_element_tag():
+    """If a subtype of DocumentElement doesn't define __tag__ attribute,
+    it should raise error.
+
+    """
+    class DocumentElementWithoutTag(DocumentElement):
+        pass
+    with raises(NotImplementedError):
+        DocumentElementWithoutTag([])
