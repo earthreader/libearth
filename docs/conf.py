@@ -11,6 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import os
 import os.path
 import sys
 
@@ -26,7 +27,26 @@ from libearth.version import VERSION
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.2'
+if os.environ.get('READTHEDOCS'):
+    # As of early July 2013 ReadTheDocs.org only supports Sphinx 1.1.3.
+    # We need Sphinx >= 1.2 because of the following bug fix:
+    #   https://bitbucket.org/birkenfeld/sphinx/pull-request/107/
+    # To workaround this we do monkeypatch Sphinx runtime on ReadTheDocs.org.
+    # FIXME: Remove this hack when ReadTheDocs.org officially supports 1.2
+    import inspect
+    from sphinx.ext.autodoc import AttributeDocumenter, ModuleDocumenter
+    from sphinx.util.inspect import isdescriptor
+    from sphinx.util.pycompat import class_types
+    def can_document_member(cls, member, membername, isattr, parent):
+        isdatadesc = isdescriptor(member) and not \
+                     isinstance(member, cls.method_types) and not \
+                     type(member).__name__ in ("type", "method_descriptor")
+        return isdatadesc or (not isinstance(parent, ModuleDocumenter)
+                              and not inspect.isroutine(member)
+                              and not isinstance(member, class_types))
+    AttributeDocumenter.can_document_member = classmethod(can_document_member)
+else:
+    needs_sphinx = '1.2'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
