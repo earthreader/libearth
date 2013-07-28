@@ -135,7 +135,7 @@ class Child(Descriptor):
     :param required: whether the child is required or not.
                      it's exclusive to ``multiple``.
                      :const:`False` by default
-    :type multiple: :class:`bool`
+    :type required: :class:`bool`
     :param multiple: whether the child can be multiple.
                      it's exclusive to ``required``.
                      :const:`False` by default
