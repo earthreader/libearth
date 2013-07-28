@@ -115,7 +115,9 @@ class Descriptor(object):
                   ``reserved_value`` parameter of :meth:`end_element()`
 
         """
-        raise NotImplementedError()
+        raise NotImplementedError(
+            'start_element() method has to be implemented'
+        )
 
     def end_element(self, reserved_value, content):
         """Abstract method that is invoked when the parser meets an end
@@ -127,7 +129,7 @@ class Descriptor(object):
         :type content: :class:`str`
 
         """
-        raise NotImplementedError()
+        raise NotImplementedError('end_element() method has to be implemented')
 
 
 class Child(Descriptor):
