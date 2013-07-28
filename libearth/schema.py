@@ -50,8 +50,9 @@ You can declare the schema for this like the following class definition::
 .. todo::
 
    - :class:`Attribute` descriptor
-   - :class:`Content` also should be a subtype of :class:`Descriptor`
+   - Encoder and decoder decorator methods
    - Make it possible to write as well
+   - Namespaces
 
 """
 import collections
@@ -227,7 +228,7 @@ class Text(Descriptor):
             reserved_value._data[self.tag] = content
 
 
-class Content(object):  # FIXME: subclass Descriptor
+class Content(object):
     """Declare possible text nodes as a descriptor."""
 
     def __get__(self, obj, cls=None):
