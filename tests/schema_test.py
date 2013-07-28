@@ -1,6 +1,6 @@
 import collections
 
-from pytest import fixture, raises
+from pytest import fixture, mark, raises
 
 from libearth.compat import text
 from libearth.schema import Child, Content, DocumentElement, Element, Text
@@ -155,3 +155,12 @@ def test_document_element_tag():
         pass
     with raises(NotImplementedError):
         DocumentElementWithoutTag([])
+
+
+@mark.parametrize('tag', [123, ('t', 'a', 'g'), ['t', 'a', 'g'], {'ta': 'g'}])
+def test_document_element_tag_type(tag):
+    """__tag__ has to be a string."""
+    class DocumentElementWithNonstringTag(DocumentElement):
+        __tag__ = tag
+    with raises(TypeError):
+        DocumentElementWithNonstringTag([])

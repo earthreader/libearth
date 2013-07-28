@@ -59,6 +59,8 @@ import weakref
 import xml.sax
 import xml.sax.handler
 
+from .compat import string_type
+
 __all__ = ('Child', 'Content', 'ContentHandler', 'Descriptor',
            'DocumentElement', 'Element', 'ElementList', 'Text')
 
@@ -277,6 +279,10 @@ class DocumentElement(Element):
                 '{0.__module__}.{0.__name__}.__tag__ is not defined; '
                 'every subtype of {1.__module__}.{1.__name__} has to '
                 'define __tag__ attribute'.format(cls, DocumentElement)
+            )
+        elif not isinstance(cls.__tag__, string_type):
+            raise TypeError(
+                '__tag__ has to be a string, not ' + repr(cls.__tag__)
             )
         if kwargs and args:
             raise TypeError('pass keywords only or one iterable')
