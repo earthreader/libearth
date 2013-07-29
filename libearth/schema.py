@@ -248,7 +248,7 @@ class Text(Descriptor):
             self.decoders.append(CodecFunction(decoder, descriptor=False))
 
     def decoder(self, function):
-        """Decorator which sets the decoder to the decorated function::
+        r"""Decorator which sets the decoder to the decorated function::
 
             import datetime
 
