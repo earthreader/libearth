@@ -50,7 +50,8 @@ You can declare the schema for this like the following class definition::
 .. todo::
 
    - :class:`Attribute` descriptor
-   - Encoder and decoder decorator methods
+   - Encoder decorator methods
+   - Converter
    - Make it possible to write as well
    - Namespaces
 
@@ -212,16 +213,104 @@ class Child(Descriptor):
         setattr(reserved_value, attr, content)
 
 
+# Semi-structured record type for only internal use.
+CodecFunction = collections.namedtuple('CodecFunction', 'function descriptor')
+
+
 class Text(Descriptor):
     """Descriptor that declares a possible child element that only cosists
     of character data.  All other attributes and child nodes are ignored.
 
+    :param tag: the tag name
+    :type tag: :class:`str`
+    :param required: whether the child is required or not.
+                     it's exclusive to ``multiple``.
+                     :const:`False` by default
+    :type required: :class:`bool`
+    :param multiple: whether the child can be multiple.
+                     it's exclusive to ``required``.
+                     :const:`False` by default
+    :type multiple: :class:`bool`
+    :param decoder: an optional function that decodes XML text value into
+                    Python value e.g. :func:`int()`.  the decoder function
+                    has to take an argument
+    :type decoder: :class:`collections.Callable`
+
     """
+
+    def __init__(self, tag, required=False, multiple=False, decoder=None):
+        super(Text, self).__init__(tag, required=required, multiple=multiple)
+        self.decoders = []
+        if decoder is not None:
+            if not callable(decoder):
+                raise TypeError('decoder must be callable, not ' +
+                                repr(decoder))
+            self.decoders.append(CodecFunction(decoder, descriptor=False))
+
+    def decoder(self, function):
+        """Decorator which sets the decoder to the decorated function::
+
+            import datetime
+
+            class Person(DocumentElement):
+                '''Person.dob will be a datetime.date instance.'''
+
+                __tag__ = 'person'
+                dob = Text('dob')
+
+                @dob.decoder
+                def dob(self, dob_text):
+                    return datetime.date.strptime(dob_text, '%Y-%m-%d')
+
+        >>> p = Person('<person><dob>1987-07-26</dob></person>')
+        >>> p.dob
+        datetime.date(1987, 7, 26)
+
+        If it's applied multiple times, all decorated functions are piped
+        in the order::
+
+            class Person(Element):
+                '''Person.age will be an integer.'''
+
+                age = Text('dob', decoder=lambda text: text.strip())
+
+                @age.decoder
+                def age(self, dob_text):
+                    return datetime.date.strptime(dob_text, '%Y-%m-%d')
+
+                @age.decoder
+                def age(self, dob):
+                    now = datetime.date.today()
+                    d = now.month < dob.month or (now.month == dob.month and
+                                                  now.day < dob.day)
+                    return now.year - dob.year - d
+
+        >>> p = Person('<person>\n\t<dob>\n\t\t1987-07-26\n\t</dob>\n</person>')
+        >>> p.age
+        26
+        >>> datetime.date.today()
+        datetime.date(2013, 7, 30)
+
+        .. note::
+
+           This creates a copy of the descriptor instance rather than
+           manipulate itself in-place.
+
+        """
+        desc = Text(self.tag, required=self.required, multiple=self.multiple)
+        desc.decoders.extend(self.decoders)
+        desc.decoders.append(CodecFunction(function, descriptor=True))
+        return desc
 
     def start_element(self, element, attribute):
         return element
 
     def end_element(self, reserved_value, content):
+        for decoder in self.decoders:
+            if decoder.descriptor and hasattr(decoder.function, '__get__'):
+                content = decoder.function.__get__(reserved_value)(content)
+            else:
+                content = decoder.function(content)
         if self.multiple:
             reserved_value._data.setdefault(self.tag, []).append(content)
         else:

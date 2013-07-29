@@ -19,6 +19,21 @@ class TestDoc(DocumentElement):
     multi_attr = Child('multi', TextElement, multiple=True)
     text_content_attr = Text('text-content')
     text_multi_attr = Text('text-multi', multiple=True)
+    text_decoder = Text('text-decoder', decoder=float)
+    text_decoder_decorator = Text('text-decoder-decorator')
+    text_combined_decoder = Text('text-combined-decoder', decoder=int)
+
+    @text_decoder_decorator.decoder
+    def text_decoder_decorator(self, text):
+        return int(text[::-1])
+
+    @text_combined_decoder.decoder
+    def text_combined_decoder(self, value):
+        return value * 100
+
+    @text_combined_decoder.decoder
+    def text_combined_decoder(self, value):
+        return -value
 
 
 def string_chunks(consume_log, *chunks):
@@ -55,6 +70,11 @@ def fx_test_doc():
         '\t', '<multi>', 'c', '</multi>', ['MULTI_3_CLOSE'], '\n',
         '\t', '<text-multi>', 'b', '</text-multi>',
         ['TEXT_MULTI_2_CLOSE'], '\n',
+        '\t', '<text-decoder>', '123.456', '</text-decoder>', '\n',
+        '\t', '<text-decoder-decorator>', '123',
+        '</text-decoder-decorator>', '\n',
+        '\t', '<text-combined-decoder>', '1234',
+        '</text-combined-decoder>', '\n',
         '</test>', ['TEST_CLOSE'], '\n'
     )
     return TestDoc(xml), consume_log
@@ -164,3 +184,18 @@ def test_document_element_tag_type(tag):
         __tag__ = tag
     with raises(TypeError):
         DocumentElementWithNonstringTag([])
+
+
+def test_text_decoder(fx_test_doc):
+    doc, _ = fx_test_doc
+    assert doc.text_decoder == 123.456
+
+
+def test_text_decoder_decorator(fx_test_doc):
+    doc, _ = fx_test_doc
+    assert doc.text_decoder_decorator == 321
+
+
+def test_text_combined_decoder(fx_test_doc):
+    doc, _ = fx_test_doc
+    assert doc.text_combined_decoder == -123400
