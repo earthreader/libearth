@@ -3,6 +3,8 @@
 
 """
 
+from .compat import xrange
+
 class Feed(object):
     def __init__(self, path=None):
         """Initializer of Feed list
@@ -18,12 +20,12 @@ class Feed(object):
     def __repr__(self):
         return '<{0.__module__}.{0.__name__} using {1}>'.format(type(self), self.path)
     
-    def add_feed(title, url):
+    def add_feed(self, title, url):
         if filter(lambda x: x['url'] == url, self.feedlist):
             raise AlreadyExistException("{0} is already Exist".format(title))
         self.feedlist.append({'title': title, 'url': url})
 
-    def remove_feed(url):
+    def remove_feed(self, url):
         """Remove feed from feed list
         @return: True when successfuly removed, False when not removed
         """
