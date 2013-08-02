@@ -27,7 +27,8 @@ class Feed(object):
 
     def remove_feed(self, url):
         """Remove feed from feed list
-        @return: True when successfuly removed, False when not removed
+        :returns: :const:`True` when successfuly removed. :const:`False` when have not to or failed to remove.
+        :rtype: :class:`bool`
         """
         count = len(self.feedlist)
         self.feedlist = filter(lambda x: x['url'] != url, self.feedlist)
