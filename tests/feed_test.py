@@ -1,10 +1,13 @@
 from pytest import raises
 
-from libearth.feed import Feed, AlreadyExistException
+from libearth.compat import xrange
+from libearth.feed import AlreadyExistException, Feed
+
 
 def test_count_empty_list():
     f = Feed()
     assert len(f) == 0
+
 
 def test_count_duplicated_url():
     f = Feed()
@@ -13,6 +16,7 @@ def test_count_duplicated_url():
             f.add_feed('title', 'url')
 
     assert len(f) == 1
+
 
 def test_count_after_remove():
     f = Feed()
