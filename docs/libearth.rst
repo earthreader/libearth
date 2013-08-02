@@ -5,7 +5,6 @@
       :maxdepth: 2
 
       libearth/compat
-      libearth/importers
       libearth/repository
       libearth/schema
       libearth/session

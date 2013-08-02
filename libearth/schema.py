@@ -109,7 +109,8 @@ class Descriptor(object):
 
     def start_element(self, element, attribute):
         """Abstract method that is invoked when the parser meets a start
-        of an element related to the descriptor.
+        of an element related to the descriptor.  It will be called by
+        :class:`ContentHandler`.
 
         :param element: the parent element of the read element
         :type element: :class:`Element`
@@ -125,7 +126,8 @@ class Descriptor(object):
 
     def end_element(self, reserved_value, content):
         """Abstract method that is invoked when the parser meets an end
-        of an element related to the descriptor.
+        of an element related to the descriptor.  It will be called by
+        :class:`ContentHandler`.
 
         :param reserved_value: the value :meth:`start_element()` method
                                returned
@@ -485,7 +487,21 @@ ParserContext = collections.namedtuple(
 
 
 class ContentHandler(xml.sax.handler.ContentHandler):
-    """Event handler implementation for SAX parser."""
+    """Event handler implementation for SAX parser.
+
+    It maintains the stack that contains parsing contexts of
+    what element is lastly open, what descriptor is associated
+    to the element, and the buffer for chunks of content characters
+    the element has.  Every context is represented as the namedtuple
+    :class:`ParserContext`.
+
+    Each time its events (:meth:`startElement()`, :meth:`characters()`,
+    and :meth:`endElement()`) are called, it forwards the data to
+    the associated descriptor.  :class:`Descriptor` subtypes
+    implement :meth:`~Descriptor.start_element()` method and
+    :meth:`~Descriptor.end_element()`.
+
+    """
 
     def __init__(self, document):
         self.document = document
