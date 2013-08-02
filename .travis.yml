@@ -10,6 +10,7 @@ install:
 script:
 - python -mlibearth.version
 - py.test --cov libearth --durations=20
+- python docs/coverage.py
 after_success:
 - coveralls
 notifications:
