@@ -6,6 +6,7 @@
 
       libearth/codecs
       libearth/compat
+      libearth/feed
       libearth/repository
       libearth/schema
       libearth/session
