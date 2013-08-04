@@ -440,7 +440,7 @@ class ElementList(collections.Sequence):
 
     """
 
-    __slots__ = 'element', 'descriptor', 'tag'
+    __slots__ = 'element', 'descriptor', 'tag', 'xmlns', 'key_pair'
 
     def __init__(self, element, descriptor):
         if not isinstance(element, Element):
