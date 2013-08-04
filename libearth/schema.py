@@ -382,7 +382,7 @@ class DocumentElement(Element):
             raise TypeError('takes only one iterable')
         self._root = weakref.ref(self)
         if args:
-            parser = xml.sax.make_parser(['xml.sax.IncrementalParser'])
+            parser = xml.sax.make_parser()
             handler = ContentHandler(self)
             self._handler = handler
             parser.setContentHandler(self._handler)
