@@ -22,6 +22,9 @@ class TestDoc(DocumentElement):
     text_decoder = Text('text-decoder', decoder=float)
     text_decoder_decorator = Text('text-decoder-decorator')
     text_combined_decoder = Text('text-combined-decoder', decoder=int)
+    ns_element_attr = Child('ns-element', TextElement,
+                            xmlns='http://earthreader.github.io/')
+    ns_text_attr = Text('ns-text', xmlns='http://earthreader.github.io/')
 
     @text_decoder_decorator.decoder
     def text_decoder_decorator(self, text):
@@ -75,6 +78,10 @@ def fx_test_doc():
         '</text-decoder-decorator>', '\n',
         '\t', '<text-combined-decoder>', '1234',
         '</text-combined-decoder>', '\n',
+        '\t', '<nst:ns-element xmlns:nst="http://earthreader.github.io/">',
+        'Namespace test', '</nst:ns-element>', '\n',
+        '\t', '<nst2:ns-text xmlns:nst2="http://earthreader.github.io/">',
+        'Namespace test', '</nst2:ns-text>', '\n',
         '</test>', ['TEST_CLOSE'], '\n'
     )
     return TestDoc(xml), consume_log
@@ -199,3 +206,46 @@ def test_text_decoder_decorator(fx_test_doc):
 def test_text_combined_decoder(fx_test_doc):
     doc, _ = fx_test_doc
     assert doc.text_combined_decoder == -123400
+
+
+def test_xmlns_element(fx_test_doc):
+    doc, _ = fx_test_doc
+    assert doc.ns_element_attr.value == 'Namespace test'
+
+
+def test_xmlns_text(fx_test_doc):
+    doc, _ = fx_test_doc
+    assert doc.ns_text_attr == 'Namespace test'
+
+
+class XmlnsDoc(DocumentElement):
+
+    __tag__ = 'nstest'
+    __xmlns__ = 'http://earthreader.github.io/'
+    samens_attr = Text('samens', xmlns=__xmlns__)
+    otherns_attr = Text('otherns',
+                        xmlns='https://github.com/earthreader/libearth')
+
+
+@fixture
+def fx_xmlns_doc():
+    return XmlnsDoc('''
+        <nstest xmlns="http://earthreader.github.io/"
+                xmlns:nst="https://github.com/earthreader/libearth">
+            <samens>Same namespace</samens>
+            <nst:otherns>Other namespace</nst:otherns>
+        </nstest>
+    ''')
+
+
+def test_xmlns_doc(fx_xmlns_doc):
+    assert fx_xmlns_doc.samens_attr is not None
+    assert fx_xmlns_doc.otherns_attr is not None
+
+
+def test_xmlns_same_xmlns_child(fx_xmlns_doc):
+    assert fx_xmlns_doc.samens_attr == 'Same namespace'
+
+
+def test_xmlns_other_xmlns_child(fx_xmlns_doc):
+    assert fx_xmlns_doc.otherns_attr == 'Other namespace'

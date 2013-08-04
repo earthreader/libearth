@@ -53,7 +53,6 @@ You can declare the schema for this like the following class definition::
    - Encoder decorator methods
    - Converter
    - Make it possible to write as well
-   - Namespaces
 
 """
 import collections
@@ -73,6 +72,12 @@ class Descriptor(object):
     #: (:class:`str`) The tag name.
     tag = None
 
+    #: (:class:`str`) The optional XML namespace URI.
+    xmlns = None
+
+    #: (:class:`tuple`) The pair of (:attr:`xmlns`, :attr:`tag`).
+    key_pair = None
+
     #: (:class:`bool`) Whether it is required for the element.
     #: If it's :const:`True` :attr:`multiple` has to be :const:`False`.
     required = None
@@ -81,10 +86,12 @@ class Descriptor(object):
     #: If it's :const:`True` :attr:`required` has to be :const:`False`.
     multiple = None
 
-    def __init__(self, tag, required=False, multiple=False):
+    def __init__(self, tag, xmlns=None, required=False, multiple=False):
         if required and multiple:
             raise TypeError('required and multiple are exclusive')
         self.tag = tag
+        self.xmlns = xmlns
+        self.key_pair = self.xmlns, self.tag
         self.required = bool(required)
         self.multiple = bool(multiple)
 
@@ -97,14 +104,14 @@ class Descriptor(object):
             parser = root._parser
             iterable = root._iterator
             stack = handler.stack
-            while (obj._data.get(self.tag) is None and
+            while (obj._data.get(self.key_pair) is None and
                    (not stack or stack[-1])):
                 try:
                     chunk = next(iterable)
                 except StopIteration:
                     break
                 parser.feed(chunk)
-            return obj._data.get(self.tag)
+            return obj._data.get(self.key_pair)
         return self
 
     def start_element(self, element, attribute):
@@ -143,6 +150,8 @@ class Child(Descriptor):
 
     :param tag: the tag name
     :type tag: :class:`str`
+    :param xmlns: an optional XML namespace URI
+    :type xmlns: :class:`str`
     :param element_type: the type of child element(s).
                          it has to be a subtype of :class:`Element`
     :type element_type: :class:`type`
@@ -157,7 +166,8 @@ class Child(Descriptor):
 
     """
 
-    def __init__(self, tag, element_type, required=False, multiple=False):
+    def __init__(self, tag, element_type, xmlns=None, required=False,
+                 multiple=False):
         if not isinstance(element_type, type):
             raise TypeError('element_type must be a class, not ' +
                             repr(element_type))
@@ -166,7 +176,12 @@ class Child(Descriptor):
                 'element_type must be a subtype of {0.__module__}.'
                 '{0.__name__}, not {1!r}'.format(Element, element_type)
             )
-        super(Child, self).__init__(tag, required=required, multiple=multiple)
+        super(Child, self).__init__(
+            tag,
+            xmlns=xmlns,
+            required=required,
+            multiple=multiple
+        )
         self.element_type = element_type
 
     def __set__(self, obj, value):
@@ -175,7 +190,7 @@ class Child(Descriptor):
                 if isinstance(value, collections.Sequence):
                     if (len(value) < 1 or
                         isinstance(value[0], self.element_type)):
-                        obj._data[self.tag] = value
+                        obj._data[self.key_pair] = value
                     else:
                         raise TypeError(
                             'expected a sequence of {0.__module__}.'
@@ -189,7 +204,7 @@ class Child(Descriptor):
                                     repr(value))
             else:
                 if isinstance(value, self.element_type):
-                    obj._data[self.tag] = value
+                    obj._data[self.key_pair] = value
                 else:
                     raise TypeError(
                         'expected an instance of {0.__module__}.{0.__name__}, '
@@ -201,7 +216,7 @@ class Child(Descriptor):
     def start_element(self, element, attribute):
         child_element = self.element_type(element)
         if self.multiple:
-            element_list = element._data.setdefault(self.tag, [])
+            element_list = element._data.setdefault(self.key_pair, [])
             element_list.append(child_element)
         else:
             setattr(element, attribute, child_element)
@@ -225,6 +240,8 @@ class Text(Descriptor):
 
     :param tag: the tag name
     :type tag: :class:`str`
+    :param xmlns: an optional XML namespace URI
+    :type xmlns: :class:`str`
     :param required: whether the child is required or not.
                      it's exclusive to ``multiple``.
                      :const:`False` by default
@@ -240,8 +257,14 @@ class Text(Descriptor):
 
     """
 
-    def __init__(self, tag, required=False, multiple=False, decoder=None):
-        super(Text, self).__init__(tag, required=required, multiple=multiple)
+    def __init__(self, tag, xmlns=None, required=False, multiple=False,
+                 decoder=None):
+        super(Text, self).__init__(
+            tag,
+            xmlns=xmlns,
+            required=required,
+            multiple=multiple
+        )
         self.decoders = []
         if decoder is not None:
             if not callable(decoder):
@@ -299,7 +322,12 @@ class Text(Descriptor):
            manipulate itself in-place.
 
         """
-        desc = Text(self.tag, required=self.required, multiple=self.multiple)
+        desc = Text(
+            self.tag,
+            xmlns=self.xmlns,
+            required=self.required,
+            multiple=self.multiple
+        )
         desc.decoders.extend(self.decoders)
         desc.decoders.append(CodecFunction(function, descriptor=True))
         return desc
@@ -313,10 +341,11 @@ class Text(Descriptor):
                 content = decoder.function.__get__(reserved_value)(content)
             else:
                 content = decoder.function(content)
+        key = self.key_pair
         if self.multiple:
-            reserved_value._data.setdefault(self.tag, []).append(content)
+            reserved_value._data.setdefault(key, []).append(content)
         else:
-            reserved_value._data[self.tag] = content
+            reserved_value._data[key] = content
 
 
 class Content(object):
@@ -364,6 +393,10 @@ class DocumentElement(Element):
     #: this attribute to the root tag name.
     __tag__ = NotImplemented
 
+    #: (:class:`str`) A :class:`DocumentElement` subtype may define this
+    #: attribute to the XML namespace of the document element.
+    __xmlns__ = None
+
     def __init__(self, *args, **kwargs):
         cls = type(self)
         if cls.__tag__ is NotImplemented:
@@ -386,6 +419,7 @@ class DocumentElement(Element):
             handler = ContentHandler(self)
             self._handler = handler
             parser.setContentHandler(self._handler)
+            parser.setFeature(xml.sax.handler.feature_namespaces, True)
             self._parser = parser
             iterator = iter(args[0])
             self._iterator = iterator
@@ -422,6 +456,8 @@ class ElementList(collections.Sequence):
         self.element = weakref.ref(element)
         self.descriptor = descriptor
         self.tag = descriptor.tag
+        self.xmlns = descriptor.xmlns
+        self.key_pair = descriptor.key_pair
 
     def consume_buffer(self):
         """Consume the buffer for the parser.  It returns a generator,
@@ -459,19 +495,20 @@ class ElementList(collections.Sequence):
         for data in self.consume_buffer():
             continue
         try:
-            lst = data[self.tag]
+            lst = data[self.key_pair]
         except KeyError:
             return 0
         return len(lst)
 
     def __getitem__(self, index):
+        key = self.key_pair
         for data in self.consume_buffer():
-            if self.tag in data and len(data[self.tag]) > index:
+            if key in data and len(data[key]) > index:
                 break
-        return data[self.tag][index]
+        return data[key][index]
 
     def __repr__(self):
-        list_repr = repr(self.element()._data.get(self.tag, []))
+        list_repr = repr(self.element()._data.get(self.key_pair, []))
         if not self.consumes_all():
             list_repr = list_repr[:-1] + '...]'
         return '<{0.__module__}.{0.__name__} {1}>'.format(
@@ -482,7 +519,7 @@ class ElementList(collections.Sequence):
 # Semi-structured record type for only internal use.
 ParserContext = collections.namedtuple(
     'ParserContext',
-    'tag descriptor reserved_value content_buffer'
+    'tag xmlns descriptor reserved_value content_buffer'
 )
 
 
@@ -507,18 +544,21 @@ class ContentHandler(xml.sax.handler.ContentHandler):
         self.document = document
         self.stack = []
 
-    def startElement(self, name, attrs):
+    def startElementNS(self, tag, qname, attrs):
+        xmlns, name = tag
         try:
             parent_context = self.stack[-1]
         except IndexError:
             # document element
-            expected = self.document.__tag__
-            if name != expected:
+            expected = (getattr(self.document, '__xmlns__', None),
+                        self.document.__tag__)
+            if tag != expected:
                 raise SyntaxError('document element must be {0}, '
                                   'not {1}'.format(expected, name))
             self.stack.append(
                 ParserContext(
                     tag=name,
+                    xmlns=xmlns,
                     descriptor=None,
                     reserved_value=self.document,
                     content_buffer=[]
@@ -529,29 +569,38 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             element_type = type(parent_element)
             child_tags = self.get_child_tags(element_type)
             try:
-                attr, child = child_tags[name]
+                attr, child = child_tags[tag]
             except KeyError:
+                if xmlns:
+                    raise SyntaxError('unexpected element: {0} (namespace: '
+                                      '{1})'.format(name, xmlns))
                 raise SyntaxError('unexpected element: ' + name)
             if isinstance(child, Descriptor):
                 reserved_value = child.start_element(parent_element, attr)
                 self.stack.append(
                     ParserContext(
                         tag=name,
+                        xmlns=xmlns,
                         descriptor=child,
                         reserved_value=reserved_value,
                         content_buffer=[]
                     )
                 )
             else:
+                if xmlns:
+                    raise SyntaxError('unexpected element: {0} (namespace: '
+                                      '{1})'.format(name, xmlns))
                 raise SyntaxError('unexpected element: ' + name)
 
     def characters(self, content):
         context = self.stack[-1]
         context.content_buffer.append(content)
 
-    def endElement(self, name):
+    def endElementNS(self, tag, qname):
+        xmlns, name = tag
         context = self.stack.pop()
         assert name == context.tag
+        assert xmlns == context.xmlns
         text = ''.join(context.content_buffer)
         if context.descriptor is None:
             # context.reserved_value is root document
@@ -569,7 +618,7 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             if isinstance(desc, Content):
                 content = attr, desc
             elif isinstance(desc, Descriptor):
-                child_tags[desc.tag] = attr, desc
+                child_tags[desc.xmlns, desc.tag] = attr, desc
         element_type.__child_tags__ = child_tags
         element_type.__content__ = content
 
