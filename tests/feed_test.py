@@ -48,11 +48,11 @@ XML = """<?xml version="1.0" encoding="ISO-8859-1"?>
 def test_OPMLDocment():
     doc = OPMLDoc(XML)
     assert doc.head.title == "EarthReader.opml"
-    assert doc.head.dateCreated == "Sat, 18 Jun 2005 12:11:52 GMT"
-    assert doc.head.dateModified == None
-    assert doc.head.ownerName == "libearth"
-    assert doc.head.expansionState == ['a','b','c','d']
-    assert doc.head.windowTop == 12
+    assert doc.head.date_created == "Sat, 18 Jun 2005 12:11:52 GMT"
+    assert doc.head.date_modified == None
+    assert doc.head.owner_name == "libearth"
+    assert doc.head.expansion_state == ['a','b','c','d']
+    assert doc.head.window_top == 12
 
     assert len(doc.body.outline) == 1
     assert doc.body.outline[0]["text"] == "CNET News.com"

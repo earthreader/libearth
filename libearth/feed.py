@@ -8,26 +8,27 @@ from .schema import Child, Content, DocumentElement, Element, Text
 
 class OutlineElement(Element):
     value = Content()
+    text = Text('text')
 
 class FeedHead(Element):
     title = Text('title')
     #FIXME: replace these two to Date
 
-    dateCreated = Text('dateCreated')
-    dateModified = Text('dateModified')
+    date_created = Text('dateCreated')
+    date_modified = Text('dateModified')
 
-    ownerName = Text('ownerName')
-    ownerEmail = Text('ownerEmail')
+    owner_name = Text('ownerName')
+    owner_email = Text('ownerEmail')
     docs = Text('docs')
-    expansionState = Text('expansionState')
-    vertScrollState = Text('vertScrollState', decoder=int)
-    windowTop = Text('windowTop', decoder=int)
-    windowBottom = Text('windowBottom', decoder=int)
-    windowLeft = Text('windowLeft', decoder=int)
-    windowRight = Text('windowRight', decoder=int)
+    expansion_state = Text('expansionState')
+    vert_scroll_state = Text('vertScrollState', decoder=int)
+    window_top = Text('windowTop', decoder=int)
+    window_bottom = Text('windowBottom', decoder=int)
+    window_left = Text('windowLeft', decoder=int)
+    window_right = Text('windowRight', decoder=int)
 
-    @expansionState.decoder
-    def expansionState(self, text):
+    @expansion_state.decoder
+    def expansion_state(self, text):
         return text.split(',')
 
 class FeedBody(Element):
@@ -62,8 +63,12 @@ class Feed(object):
                 self.doc = OPMLDoc(xml)
         except IOError as e:
             raise e
+        else:
+            #TODO: add feed list from doc to self.feedlist
+            pass
 
     def save_file(self):
+        #TODO: save as opml file
         pass
 
     def add_feed(self, title, url):
