@@ -56,9 +56,12 @@ class Feed(object):
         return len(self.feedlist)
 
     def open_file(self):
-        with open(self.path) as fp:
-            xml = fp.read()
-            self.doc = OPMLDoc(xml)
+        try:
+            with open(self.path) as fp:
+                xml = fp.read()
+                self.doc = OPMLDoc(xml)
+        except IOError as e:
+            raise e
 
     def save_file(self):
         pass
