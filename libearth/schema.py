@@ -188,8 +188,8 @@ class Child(Descriptor):
         if isinstance(obj, Element):
             if self.multiple:
                 if isinstance(value, collections.Sequence):
-                    if (len(value) < 1 or
-                        isinstance(value[0], self.element_type)):
+                    if len(value) < 1 or \
+                       isinstance(value[0], self.element_type):
                         obj._data[self.key_pair] = value
                     else:
                         raise TypeError(

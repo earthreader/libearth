@@ -32,6 +32,5 @@ except NameError:
     class FileNotFoundError(IOError, OSError):
         """Raised when a given path does not exist."""
 
-
     class NotADirectoryError(IOError, OSError):
         """Raised when a given path is not a directory."""

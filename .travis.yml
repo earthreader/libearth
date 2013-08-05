@@ -6,10 +6,11 @@ python:
 - 3.3
 - pypy
 install:
-- pip install pytest pytest-cov coveralls
+- pip install pytest pytest-cov pep8 coveralls
 script:
 - python -mlibearth.version
 - py.test --cov libearth --durations=20
+- pep8
 - python docs/coverage.py
 after_success:
 - coveralls
