@@ -3,17 +3,19 @@
 
 """
 
-from .compat import xrange
+from .compat import binary_type, text_type, xrange
 from .schema import Child, Content, DocumentElement, Element, Text
+
 
 class OutlineElement(Element):
     value = Content()
     text = Text('text')
 
+
 class FeedHead(Element):
     title = Text('title')
-    #FIXME: replace these two to Date
 
+    #FIXME: replace these two to Date
     date_created = Text('dateCreated')
     date_modified = Text('dateModified')
 
@@ -31,8 +33,10 @@ class FeedHead(Element):
     def expansion_state(self, text):
         return text.split(',')
 
+
 class FeedBody(Element):
     outline = Child('outline', OutlineElement, multiple=True)
+
 
 class OPMLDoc(DocumentElement):
     __tag__ = 'opml'
@@ -40,9 +44,8 @@ class OPMLDoc(DocumentElement):
     body = Child('body', FeedBody)
 
 
-
 class Feed(object):
-    def __init__(self, path=None):
+    def __init__(self, path=None, is_xml_string=False):
         """Initializer of Feed list
         when path is None, it doesn't save opml file. just use memory
         """
@@ -51,21 +54,22 @@ class Feed(object):
         self.feedlist = {}
 
         if self.path:
-            self.open_file()
+            self.open_file(is_xml_string)
 
     def __len__(self):
         return len(self.feedlist)
 
-    def open_file(self):
-        try:
-            with open(self.path) as fp:
-                xml = fp.read()
-                self.doc = OPMLDoc(xml)
-        except IOError as e:
-            raise e
+    def open_file(self, is_xml_string):
+        if is_xml_string:
+            xml = self.path
+            self.doc = OPMLDoc(xml)
         else:
-            #TODO: add feed list from doc to self.feedlist
-            pass
+            try:
+                with open(self.path) as fp:
+                    xml = fp.read()
+                    self.doc = OPMLDoc(xml)
+            except IOError as e:
+                raise e
 
     def save_file(self):
         #TODO: save as opml file
