@@ -23,7 +23,7 @@ class Crawler(object):
         """
         request = urllib2.Request(url)
         f = urllib2.urlopen(request)
-        if f.info().type == "text/xml":
+        if f.info().type == 'text/xml':
             f.close()
             return url
         else:
