@@ -240,6 +240,23 @@ class CodecDescriptor(object):
     """Mixin class for descriptors that provide :meth:`decoder` and
     :meth:`encoder`.
 
+    :class:`Attribute`, :class:`Content` and :class:`Text` can take
+    ``decoder`` functions for them.  It's used for decoding raw values
+    from XML to natural Python representations.  Decoders can be specified
+    using ``decoder`` parameter of descriptor's constructor,
+    or :meth:`decoder()` decorator::
+
+        class Person(DocumentElement):
+            __tag__ = 'person'
+            format_version = Attribute('version')
+            name = Text('name')
+            url = Child('url', URL, multiple=True)
+            dob = Text('dob', decoder=datetime.date.strptime)
+
+            @format_version.decoder
+            def format_version(self, value):
+                return tuple(map(int, value.split('.')))
+
     """
 
     def __init__(self, decoder=None):
