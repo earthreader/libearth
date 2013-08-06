@@ -3,13 +3,14 @@
 
 """
 
-from .compat import binary_type, text_type, xrange
-from .schema import Child, Content, DocumentElement, Element, Text
+from .compat import binary_type, text, text_type, xrange
+from .schema import Attribute, Child, Content, DocumentElement, Element, Text
 
 
 class OutlineElement(Element):
-    value = Content()
-    text = Text('text')
+    text = Attribute('text')
+    type_ = Attribute('type')
+    xml_url = Attribute('xmlUrl')
 
 
 class FeedHead(Element):
@@ -63,6 +64,7 @@ class Feed(object):
         if is_xml_string:
             xml = self.path
             self.doc = OPMLDoc(xml)
+            self.parse_doc()
         else:
             try:
                 with open(self.path) as fp:
@@ -70,19 +72,44 @@ class Feed(object):
                     self.doc = OPMLDoc(xml)
             except IOError as e:
                 raise e
+            else:
+                self.parse_doc()
+
+    def parse_doc(self):
+        for outline in self.doc.body.outline:
+            self.feedlist[outline.xml_url] = {
+                'title': outline.text,
+                'type': outline.type_,
+            }
 
     def save_file(self):
         #TODO: save as opml file
         pass
 
-    def add_feed(self, title, url):
+    def get_feed(self, url):
+        if type(url) is not text_type:
+            url = text(url)
+
+        if url not in self.feedlist:
+            return None
+        else:
+            return self.feedlist[url]
+
+    def add_feed(self, url, title, type_):
+        if type(url) is not text_type:
+            url = text(url)
+
         if url in self.feedlist:
             raise AlreadyExistException("{0} is already Exist".format(title))
-        self.feedlist[url] = {'title': title}
+        self.feedlist[url] = {
+            'title': title,
+            'type': type_,
+        }
 
     def remove_feed(self, url):
         """Remove feed from feed list
-        :returns: :const:`True` when successfuly removed. :const:`False` when have not to or failed to remove.
+        :returns: :const:`True` when successfuly removed.
+        :const:`False` when have not to or failed to remove.
         :rtype: :class:`bool`
         """
         if url not in self.feedlist:
