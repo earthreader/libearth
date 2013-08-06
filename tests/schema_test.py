@@ -17,6 +17,8 @@ class TestDoc(DocumentElement):
 
     __tag__ = 'test'
     attr_attr = Attribute('attr')
+    attr_decoder = Attribute('attr-decoder', decoder=lambda s: s.lower())
+    attr_decoder_decorator = Attribute('attr-decoder-decorator')
     title_attr = Child('title', TextElement, required=True)
     content_attr = Child('content', TextElement, required=True)
     multi_attr = Child('multi', TextElement, multiple=True)
@@ -28,6 +30,10 @@ class TestDoc(DocumentElement):
     ns_element_attr = Child('ns-element', TextElement,
                             xmlns='http://earthreader.github.io/')
     ns_text_attr = Text('ns-text', xmlns='http://earthreader.github.io/')
+
+    @attr_decoder_decorator.decoder
+    def attr_decoder_decorator(self, value):
+        return value[::-1]
 
     @text_decoder_decorator.decoder
     def text_decoder_decorator(self, text):
@@ -63,7 +69,8 @@ def fx_test_doc():
     consume_log = []
     xml = string_chunks(
         consume_log,
-        '<test attr="attribute value">', ['TEST_START'], '\n',
+        '<test attr="attribute value" attr-decoder="Decoder Test">',
+        ['TEST_START'], '\n',
         '\t', '<title>', 'Title ', 'test', '</title>', ['TITLE_CLOSE'], '\n',
         '\t', '<multi>', 'a', '</multi>', ['MULTI_1_CLOSE'], '\n',
         '\t', '<content>', 'Content', ' test',
@@ -111,6 +118,12 @@ def test_xmlns_attribute(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert doc.ns_element_attr.ns_attr_attr == 'namespace attribute value'
     assert consume_log[-1] == 'NS_ELEMENT_START'
+
+
+def test_attribute_decoder(fx_test_doc):
+    doc, consume_log = fx_test_doc
+    assert doc.attr_decoder == 'decoder test'
+    assert consume_log[-1] == 'TEST_START'
 
 
 def test_multiple_child_iter(fx_test_doc):

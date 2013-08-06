@@ -50,21 +50,23 @@ You can declare the schema for this like the following class definition::
 
 .. todo::
 
-   - Decoder decorator for :class:`Attribute` and :class:`Content`
+   - Decoder decorator for :class:`Content`
    - Encoder decorator methods
    - Converter
    - Make it possible to write as well
 
 """
 import collections
+import copy
 import weakref
 import xml.sax
 import xml.sax.handler
 
 from .compat import string_type
 
-__all__ = ('Attribute', 'Child', 'Content', 'ContentHandler', 'Descriptor',
-           'DocumentElement', 'Element', 'ElementList', 'Text')
+__all__ = ('Attribute', 'Child', 'CodecDescriptor', 'Content',
+           'ContentHandler', 'Descriptor', 'DocumentElement', 'Element',
+           'ElementList', 'Text')
 
 
 class Descriptor(object):
@@ -235,37 +237,13 @@ class Child(Descriptor):
 CodecFunction = collections.namedtuple('CodecFunction', 'function descriptor')
 
 
-class Text(Descriptor):
-    """Descriptor that declares a possible child element that only cosists
-    of character data.  All other attributes and child nodes are ignored.
-
-    :param tag: the tag name
-    :type tag: :class:`str`
-    :param xmlns: an optional XML namespace URI
-    :type xmlns: :class:`str`
-    :param required: whether the child is required or not.
-                     it's exclusive to ``multiple``.
-                     :const:`False` by default
-    :type required: :class:`bool`
-    :param multiple: whether the child can be multiple.
-                     it's exclusive to ``required``.
-                     :const:`False` by default
-    :type multiple: :class:`bool`
-    :param decoder: an optional function that decodes XML text value into
-                    Python value e.g. :func:`int()`.  the decoder function
-                    has to take an argument
-    :type decoder: :class:`collections.Callable`
+class CodecDescriptor(object):
+    """Mixin class for descriptors that provide :meth:`decoder` and
+    :meth:`encoder`.
 
     """
 
-    def __init__(self, tag, xmlns=None, required=False, multiple=False,
-                 decoder=None):
-        super(Text, self).__init__(
-            tag,
-            xmlns=xmlns,
-            required=required,
-            multiple=multiple
-        )
+    def __init__(self, decoder=None):
         self.decoders = []
         if decoder is not None:
             if not callable(decoder):
@@ -323,25 +301,68 @@ class Text(Descriptor):
            manipulate itself in-place.
 
         """
-        desc = Text(
-            self.tag,
-            xmlns=self.xmlns,
-            required=self.required,
-            multiple=self.multiple
-        )
-        desc.decoders.extend(self.decoders)
+        desc = copy.copy(self)
+        desc.decoders = self.decoders[:]
         desc.decoders.append(CodecFunction(function, descriptor=True))
         return desc
+
+    def decode(self, text, instance):
+        """Decode the given ``text`` as it's programmed.
+
+        :param text: the raw text to decode.  xml attribute value or
+                     text node value in most cases
+        :type text: :class:`str`
+        :param instance: the instance that is associated with the descriptor
+        :type instance: :class:`Element`
+        :returns: decoded value
+
+        .. note::
+
+           Internal method.
+
+        """
+        for decoder in self.decoders:
+            if decoder.descriptor and hasattr(decoder.function, '__get__'):
+                text = decoder.function.__get__(instance)(text)
+            else:
+                text = decoder.function(text)
+        return text
+
+
+class Text(Descriptor, CodecDescriptor):
+    """Descriptor that declares a possible child element that only cosists
+    of character data.  All other attributes and child nodes are ignored.
+
+    :param tag: the tag name
+    :type tag: :class:`str`
+    :param xmlns: an optional XML namespace URI
+    :type xmlns: :class:`str`
+    :param required: whether the child is required or not.
+                     it's exclusive to ``multiple``.
+                     :const:`False` by default
+    :type required: :class:`bool`
+    :param multiple: whether the child can be multiple.
+                     it's exclusive to ``required``.
+                     :const:`False` by default
+    :type multiple: :class:`bool`
+    :param decoder: an optional function that decodes XML text value into
+                    Python value e.g. :func:`int()`.  the decoder function
+                    has to take an argument
+    :type decoder: :class:`collections.Callable`
+
+    """
+
+    def __init__(self, tag, xmlns=None, required=False, multiple=False,
+                 decoder=None):
+        Descriptor.__init__(self, tag,
+                            xmlns=xmlns, required=required, multiple=multiple)
+        CodecDescriptor.__init__(self, decoder=decoder)
 
     def start_element(self, element, attribute):
         return element
 
     def end_element(self, reserved_value, content):
-        for decoder in self.decoders:
-            if decoder.descriptor and hasattr(decoder.function, '__get__'):
-                content = decoder.function.__get__(reserved_value)(content)
-            else:
-                content = decoder.function(content)
+        content = self.decode(content, reserved_value)
         key = self.key_pair
         if self.multiple:
             reserved_value._data.setdefault(key, []).append(content)
@@ -349,7 +370,7 @@ class Text(Descriptor):
             reserved_value._data[key] = content
 
 
-class Attribute(object):
+class Attribute(CodecDescriptor):
     """Declare possible element attributes as a descriptor."""
 
     #: (:class:`str`) The XML attribute name.
@@ -364,7 +385,8 @@ class Attribute(object):
     #: (:class:`bool`) Whether it is required for the element.
     required = None
 
-    def __init__(self, name, xmlns=None, required=False):
+    def __init__(self, name, xmlns=None, required=False, decoder=None):
+        super(Attribute, self).__init__(decoder=decoder)
         self.name = name
         self.xmlns = xmlns
         self.key_pair = xmlns, name
@@ -623,7 +645,13 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                                       '{1})'.format(name, xmlns))
                 raise SyntaxError('unexpected element: ' + name)
         if isinstance(reserved_value, Element):
-            reserved_value._attrs.update(attrs)
+            reserved_value_type = type(reserved_value)
+            attributes = self.get_attributes(reserved_value_type)
+            reserved_value._attrs.update(
+                (k, attributes[k][1].decode(v, reserved_value))
+                for k, v in attrs.items()
+                if k in attributes
+            )
 
     def characters(self, content):
         context = self.stack[-1]
@@ -644,16 +672,27 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             context.descriptor.end_element(context.reserved_value, text)
 
     def index_descriptors(self, element_type):
+        attributes = {}
         child_tags = {}
         content = None
         for attr in dir(element_type):
             desc = getattr(element_type, attr)
             if isinstance(desc, Content):
                 content = attr, desc
+            elif isinstance(desc, Attribute):
+                attributes[desc.key_pair] = attr, desc
             elif isinstance(desc, Descriptor):
-                child_tags[desc.xmlns, desc.tag] = attr, desc
+                child_tags[desc.key_pair] = attr, desc
+        element_type.__attributes__ = attributes
         element_type.__child_tags__ = child_tags
         element_type.__content__ = content
+
+    def get_attributes(self, element_type):
+        try:
+            return element_type.__attributes__
+        except AttributeError:
+            self.index_descriptors(element_type)
+            return element_type.__attributes__
 
     def get_child_tags(self, element_type):
         try:
