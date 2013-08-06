@@ -87,13 +87,13 @@ class Feed(object):
         pass
 
     def get_feed(self, url):
-        if type(url) is not text_type:
+        if not isinstance(url, text_type):
             url = text(url)
 
         return self.feedlist.get(url)
 
     def add_feed(self, url, title, type_):
-        if type(url) is not text_type:
+        if not isinstance(url, text_type):
             url = text(url)
 
         if url in self.feedlist:
