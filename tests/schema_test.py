@@ -13,6 +13,11 @@ class TextElement(Element):
     value = Content()
 
 
+class TextDecoderElement(Element):
+
+    value = Content(decoder=lambda s: s.upper())
+
+
 class TestDoc(DocumentElement):
 
     __tag__ = 'test'
@@ -30,6 +35,7 @@ class TestDoc(DocumentElement):
     ns_element_attr = Child('ns-element', TextElement,
                             xmlns='http://earthreader.github.io/')
     ns_text_attr = Text('ns-text', xmlns='http://earthreader.github.io/')
+    content_decoder = Child('content-decoder', TextDecoderElement)
 
     @attr_decoder_decorator.decoder
     def attr_decoder_decorator(self, value):
@@ -93,6 +99,7 @@ def fx_test_doc():
         'Namespace test', '</nst:ns-element>', '\n',
         '\t', '<nst2:ns-text xmlns:nst2="http://earthreader.github.io/">',
         'Namespace test', '</nst2:ns-text>', '\n',
+        '\t', '<content-decoder>', 'content decoder', '</content-decoder>', '\n'
         '</test>', ['TEST_CLOSE'], '\n'
     )
     return TestDoc(xml), consume_log
@@ -124,6 +131,11 @@ def test_attribute_decoder(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert doc.attr_decoder == 'decoder test'
     assert consume_log[-1] == 'TEST_START'
+
+
+def test_content_decoder(fx_test_doc):
+    doc, consume_log = fx_test_doc
+    assert doc.content_decoder.value == 'CONTENT DECODER'
 
 
 def test_multiple_child_iter(fx_test_doc):

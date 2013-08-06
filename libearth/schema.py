@@ -50,7 +50,6 @@ You can declare the schema for this like the following class definition::
 
 .. todo::
 
-   - Decoder decorator for :class:`Content`
    - Encoder decorator methods
    - Converter
    - Make it possible to write as well
@@ -229,7 +228,8 @@ class Child(Descriptor):
         attr = reserved_value._root()._handler.get_content_tag(element_type)
         if attr is None:
             return
-        setattr(reserved_value, attr, content)
+        content_desc = attr[1]
+        content_desc.read(reserved_value, content)
 
 
 # Semi-structured record type for only internal use.
@@ -396,7 +396,7 @@ class Attribute(CodecDescriptor):
         return self
 
 
-class Content(object):
+class Content(CodecDescriptor):
     """Declare possible text nodes as a descriptor."""
 
     def __get__(self, obj, cls=None):
@@ -416,6 +416,17 @@ class Content(object):
 
     def __set__(self, obj, value):
         obj._content = value
+
+    def read(self, element, value):
+        """Read raw ``value`` from XML, decode it, and then set the attribute
+        for content of the given ``element`` to the decoded value.
+
+        .. note::
+
+           Internal method.
+
+        """
+        self.__set__(element, self.decode(value, element))
 
 
 class Element(object):
@@ -668,7 +679,8 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             # context.reserved_value is root document
             attr = self.get_content_tag(type(context.reserved_value))
             if attr is not None:
-                setattr(context.reserved_value, attr, text)
+                content_desc = attr[1]
+                content_desc.read(context.reserved_value, text)
         else:
             context.descriptor.end_element(context.reserved_value, text)
 
@@ -709,4 +721,4 @@ class ContentHandler(xml.sax.handler.ContentHandler):
         except AttributeError:
             self.index_descriptors(element_type)
             content = element_type.__content__
-        return content and content[0]
+        return content
