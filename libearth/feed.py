@@ -90,10 +90,7 @@ class Feed(object):
         if type(url) is not text_type:
             url = text(url)
 
-        if url not in self.feedlist:
-            return None
-        else:
-            return self.feedlist[url]
+        return self.feedlist.get(url)
 
     def add_feed(self, url, title, type_):
         if type(url) is not text_type:
