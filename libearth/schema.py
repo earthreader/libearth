@@ -107,14 +107,13 @@ class Descriptor(object):
             parser = root._parser
             iterable = root._iterator
             stack = handler.stack
-            while (obj._data.get(self.key_pair) is None and
-                   (not stack or stack[-1])):
+            while (obj._data.get(self) is None and (not stack or stack[-1])):
                 try:
                     chunk = next(iterable)
                 except StopIteration:
                     break
                 parser.feed(chunk)
-            return obj._data.get(self.key_pair)
+            return obj._data.get(self)
         return self
 
     def start_element(self, element, attribute):
@@ -193,7 +192,7 @@ class Child(Descriptor):
                 if isinstance(value, collections.Sequence):
                     if len(value) < 1 or \
                        isinstance(value[0], self.element_type):
-                        obj._data[self.key_pair] = value
+                        obj._data[self] = value
                     else:
                         raise TypeError(
                             'expected a sequence of {0.__module__}.'
@@ -207,7 +206,7 @@ class Child(Descriptor):
                                     repr(value))
             else:
                 if isinstance(value, self.element_type):
-                    obj._data[self.key_pair] = value
+                    obj._data[self] = value
                 else:
                     raise TypeError(
                         'expected an instance of {0.__module__}.{0.__name__}, '
@@ -219,7 +218,7 @@ class Child(Descriptor):
     def start_element(self, element, attribute):
         child_element = self.element_type(element)
         if self.multiple:
-            element_list = element._data.setdefault(self.key_pair, [])
+            element_list = element._data.setdefault(self, [])
             element_list.append(child_element)
         else:
             setattr(element, attribute, child_element)
@@ -363,11 +362,10 @@ class Text(Descriptor, CodecDescriptor):
 
     def end_element(self, reserved_value, content):
         content = self.decode(content, reserved_value)
-        key = self.key_pair
         if self.multiple:
-            reserved_value._data.setdefault(key, []).append(content)
+            reserved_value._data.setdefault(self, []).append(content)
         else:
-            reserved_value._data[key] = content
+            reserved_value._data[self] = content
 
 
 class Attribute(CodecDescriptor):
@@ -394,7 +392,7 @@ class Attribute(CodecDescriptor):
 
     def __get__(self, obj, cls=None):
         if isinstance(obj, Element):
-            return obj._attrs.get(self.key_pair)
+            return obj._attrs.get(self)
         return self
 
 
@@ -507,9 +505,6 @@ class ElementList(collections.Sequence):
             )
         self.element = weakref.ref(element)
         self.descriptor = descriptor
-        self.tag = descriptor.tag
-        self.xmlns = descriptor.xmlns
-        self.key_pair = descriptor.key_pair
 
     def consume_buffer(self):
         """Consume the buffer for the parser.  It returns a generator,
@@ -547,20 +542,20 @@ class ElementList(collections.Sequence):
         for data in self.consume_buffer():
             continue
         try:
-            lst = data[self.key_pair]
+            lst = data[self.descriptor]
         except KeyError:
             return 0
         return len(lst)
 
     def __getitem__(self, index):
-        key = self.key_pair
+        key = self.descriptor
         for data in self.consume_buffer():
             if key in data and len(data[key]) > index:
                 break
         return data[key][index]
 
     def __repr__(self):
-        list_repr = repr(self.element()._data.get(self.key_pair, []))
+        list_repr = repr(self.element()._data.get(self.descriptor, []))
         if not self.consumes_all():
             list_repr = list_repr[:-1] + '...]'
         return '<{0.__module__}.{0.__name__} {1}>'.format(
@@ -645,13 +640,19 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                                       '{1})'.format(name, xmlns))
                 raise SyntaxError('unexpected element: ' + name)
         if isinstance(reserved_value, Element):
-            reserved_value_type = type(reserved_value)
-            attributes = self.get_attributes(reserved_value_type)
-            reserved_value._attrs.update(
-                (k, attributes[k][1].decode(v, reserved_value))
-                for k, v in attrs.items()
-                if k in attributes
-            )
+            instance = reserved_value
+            instance_type = type(instance)
+            attributes = self.get_attributes(instance_type)
+            instance_attrs_dict = instance._attrs
+            for xml_attr, raw_value in attrs.items():
+                try:
+                    _, attr_desc = attributes[xml_attr]
+                except KeyError:
+                    continue
+                instance_attrs_dict[attr_desc] = attr_desc.decode(
+                    raw_value,
+                    instance
+                )
 
     def characters(self, content):
         context = self.stack[-1]
