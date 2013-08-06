@@ -31,7 +31,7 @@ like ORM for XML.  For example, suppose there is a small XML document:
 .. code-block:: xml
 
    <?xml version="1.0"?>
-   <person>
+   <person version="1.0">
      <name>Hong Minhee</name>
      <url>http://dahlia.kr/</url>
      <url>https://github.com/dahlia</url>
@@ -43,13 +43,14 @@ You can declare the schema for this like the following class definition::
 
     class Person(DocumentElement):
         __tag__ = 'person'
+        format_version = Attribute('version')
         name = Text('name')
         url = Child('url', URL, multiple=True)
         dob = Child('dob', Date)
 
 .. todo::
 
-   - :class:`Attribute` descriptor
+   - Decoder decorator for :class:`Attribute` and :class:`Content`
    - Encoder decorator methods
    - Converter
    - Make it possible to write as well
@@ -62,7 +63,7 @@ import xml.sax.handler
 
 from .compat import string_type
 
-__all__ = ('Child', 'Content', 'ContentHandler', 'Descriptor',
+__all__ = ('Attribute', 'Child', 'Content', 'ContentHandler', 'Descriptor',
            'DocumentElement', 'Element', 'ElementList', 'Text')
 
 
@@ -348,6 +349,33 @@ class Text(Descriptor):
             reserved_value._data[key] = content
 
 
+class Attribute(object):
+    """Declare possible element attributes as a descriptor."""
+
+    #: (:class:`str`) The XML attribute name.
+    name = None
+
+    #: (:class:`str`) The optional XML namespace URI.
+    xmlns = None
+
+    #: (:class:`tuple`) The pair of (:attr:`xmlns`, :attr:`name`).
+    key_pair = None
+
+    #: (:class:`bool`) Whether it is required for the element.
+    required = None
+
+    def __init__(self, name, xmlns=None, required=False):
+        self.name = name
+        self.xmlns = xmlns
+        self.key_pair = xmlns, name
+        self.required = bool(required)
+
+    def __get__(self, obj, cls=None):
+        if isinstance(obj, Element):
+            return obj._attrs.get(self.key_pair)
+        return self
+
+
 class Content(object):
     """Declare possible text nodes as a descriptor."""
 
@@ -373,9 +401,10 @@ class Content(object):
 class Element(object):
     """Represent an element in XML document."""
 
-    __slots__ = '_content', '_data', '_parent', '_root'
+    __slots__ = '_attrs', '_content', '_data', '_parent', '_root'
 
     def __init__(self, _parent, *args, **kwargs):
+        self._attrs = getattr(self, '_attrs', {})  # FIXME
         self._content = None
         self._data = {}
         self._parent = weakref.ref(_parent)
@@ -415,6 +444,7 @@ class DocumentElement(Element):
             raise TypeError('takes only one iterable')
         self._root = weakref.ref(self)
         if args:
+            self._attrs = {}  # FIXME
             parser = xml.sax.make_parser()
             handler = ContentHandler(self)
             self._handler = handler
@@ -564,6 +594,7 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                     content_buffer=[]
                 )
             )
+            reserved_value = self.document
         else:
             parent_element = parent_context.reserved_value
             element_type = type(parent_element)
@@ -591,6 +622,8 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                     raise SyntaxError('unexpected element: {0} (namespace: '
                                       '{1})'.format(name, xmlns))
                 raise SyntaxError('unexpected element: ' + name)
+        if isinstance(reserved_value, Element):
+            reserved_value._attrs.update(attrs)
 
     def characters(self, content):
         context = self.stack[-1]

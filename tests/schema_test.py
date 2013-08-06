@@ -3,17 +3,20 @@ import collections
 from pytest import fixture, mark, raises
 
 from libearth.compat import text
-from libearth.schema import Child, Content, DocumentElement, Element, Text
+from libearth.schema import (Attribute, Child, Content, DocumentElement,
+                             Element, Text)
 
 
 class TextElement(Element):
 
+    ns_attr_attr = Attribute('ns-attr', xmlns='http://earthreader.github.io/')
     value = Content()
 
 
 class TestDoc(DocumentElement):
 
     __tag__ = 'test'
+    attr_attr = Attribute('attr')
     title_attr = Child('title', TextElement, required=True)
     content_attr = Child('content', TextElement, required=True)
     multi_attr = Child('multi', TextElement, multiple=True)
@@ -60,7 +63,7 @@ def fx_test_doc():
     consume_log = []
     xml = string_chunks(
         consume_log,
-        '<test>', ['TEST_START'], '\n',
+        '<test attr="attribute value">', ['TEST_START'], '\n',
         '\t', '<title>', 'Title ', 'test', '</title>', ['TITLE_CLOSE'], '\n',
         '\t', '<multi>', 'a', '</multi>', ['MULTI_1_CLOSE'], '\n',
         '\t', '<content>', 'Content', ' test',
@@ -78,7 +81,8 @@ def fx_test_doc():
         '</text-decoder-decorator>', '\n',
         '\t', '<text-combined-decoder>', '1234',
         '</text-combined-decoder>', '\n',
-        '\t', '<nst:ns-element xmlns:nst="http://earthreader.github.io/">',
+        '\t', '<nst:ns-element xmlns:nst="http://earthreader.github.io/" ',
+        'nst:ns-attr="namespace attribute value">', ['NS_ELEMENT_START'],
         'Namespace test', '</nst:ns-element>', '\n',
         '\t', '<nst2:ns-text xmlns:nst2="http://earthreader.github.io/">',
         'Namespace test', '</nst2:ns-text>', '\n',
@@ -95,6 +99,18 @@ def test_document_parse(fx_test_doc):
     assert doc.content_attr.value == 'Content test'
     assert consume_log[-1] == 'CONTENT_CLOSE'
     assert isinstance(doc.multi_attr, collections.Sequence)
+
+
+def test_attribute(fx_test_doc):
+    doc, consume_log = fx_test_doc
+    assert doc.attr_attr == 'attribute value'
+    assert consume_log[-1] == 'TEST_START'
+
+
+def test_xmlns_attribute(fx_test_doc):
+    doc, consume_log = fx_test_doc
+    assert doc.ns_element_attr.ns_attr_attr == 'namespace attribute value'
+    assert consume_log[-1] == 'NS_ELEMENT_START'
 
 
 def test_multiple_child_iter(fx_test_doc):
