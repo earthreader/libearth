@@ -65,7 +65,7 @@ from .compat import string_type
 
 __all__ = ('Attribute', 'Child', 'CodecDescriptor', 'Content',
            'ContentHandler', 'Descriptor', 'DocumentElement', 'Element',
-           'ElementList', 'Text')
+           'ElementList', 'Text', 'read')
 
 
 class Descriptor(object):
@@ -457,7 +457,8 @@ class Element(object):
         self._data = {}
         self._parent = weakref.ref(_parent)
         self._root = _parent._root
-        self._stack_top = len(self._root()._handler.stack)
+        if hasattr(self._root(), '_handler'):
+            self._stack_top = len(self._root()._handler.stack)
         assert not kwargs, 'implement sqla-style initializer'  # TODO
 
 
@@ -486,28 +487,7 @@ class DocumentElement(Element):
             raise TypeError(
                 '__tag__ has to be a string, not ' + repr(cls.__tag__)
             )
-        if kwargs and args:
-            raise TypeError('pass keywords only or one iterable')
-        elif args and len(args) > 1:
-            raise TypeError('takes only one iterable')
         self._root = weakref.ref(self)
-        if args:
-            self._attrs = {}  # FIXME
-            parser = xml.sax.make_parser()
-            handler = ContentHandler(self)
-            self._handler = handler
-            parser.setContentHandler(self._handler)
-            parser.setFeature(xml.sax.handler.feature_namespaces, True)
-            self._parser = parser
-            iterator = iter(args[0])
-            self._iterator = iterator
-            stack = handler.stack
-            while not stack:
-                try:
-                    chunk = next(iterator)
-                except StopIteration:
-                    break
-                parser.feed(chunk)
         super(DocumentElement, self).__init__(self, **kwargs)
 
 
@@ -616,7 +596,7 @@ class ContentHandler(xml.sax.handler.ContentHandler):
     """
 
     def __init__(self, document):
-        self.document = document
+        self.document = weakref.ref(document)
         self.stack = []
 
     def startElementNS(self, tag, qname, attrs):
@@ -625,8 +605,8 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             parent_context = self.stack[-1]
         except IndexError:
             # document element
-            expected = (getattr(self.document, '__xmlns__', None),
-                        self.document.__tag__)
+            doc = self.document()
+            expected = getattr(doc, '__xmlns__', None), doc.__tag__
             if tag != expected:
                 raise SyntaxError('document element must be {0}, '
                                   'not {1}'.format(expected, name))
@@ -635,11 +615,11 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                     tag=name,
                     xmlns=xmlns,
                     descriptor=None,
-                    reserved_value=self.document,
+                    reserved_value=doc,
                     content_buffer=[]
                 )
             )
-            reserved_value = self.document
+            reserved_value = doc
         else:
             parent_element = parent_context.reserved_value
             element_type = type(parent_element)
@@ -739,3 +719,46 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             self.index_descriptors(element_type)
             content = element_type.__content__
         return content
+
+
+def read(cls, iterable):
+    """Initialize a document in read mode by opening the ``iterable``
+    of XML string.
+
+    Returned document element is not fully read but partially loaded
+    into memory, and then lazily (and eventually) loaded when these
+    are actually needed.
+
+    :param cls: a subtype of :class:`DocumentElement`
+    :type cls: :class:`type`
+    :param iterable: chunks of XML string to read
+    :type iterable: :class:`collections.Iterable`
+    :returns: initialized document element in read mode
+    :rtype: :class:`DocumentElement`
+
+    """
+    if not isinstance(cls, type):
+        raise TypeError('cls must be a type object, not ' + repr(cls))
+    elif not issubclass(cls, DocumentElement):
+        raise TypeError(
+            'cls must be a subtype of {0.__module__}.{0.__name__}, not '
+            '{1.__module__}.{1.__name__}'.format(cls, DocumentElement)
+        )
+    iterator = iter(iterable)
+    doc = cls()
+    parser = xml.sax.make_parser()
+    handler = ContentHandler(doc)
+    parser.setContentHandler(handler)
+    parser.setFeature(xml.sax.handler.feature_namespaces, True)
+    doc._parser = parser
+    doc._handler = handler
+    doc._iterator = iterator
+    stack = handler.stack
+    while not stack:
+        try:
+            chunk = next(iterator)
+        except StopIteration:
+            break
+        parser.feed(chunk)
+    Element.__init__(doc, doc)
+    return doc

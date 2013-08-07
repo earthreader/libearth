@@ -4,7 +4,7 @@ from pytest import fixture, mark, raises
 
 from libearth.compat import text
 from libearth.schema import (Attribute, Child, Content, DocumentElement,
-                             Element, Text)
+                             Element, Text, read)
 
 
 class TextElement(Element):
@@ -102,7 +102,7 @@ def fx_test_doc():
         '\t', '<content-decoder>', 'content decoder', '</content-decoder>', '\n'
         '</test>', ['TEST_CLOSE'], '\n'
     )
-    return TestDoc(xml), consume_log
+    return read(TestDoc, xml), consume_log
 
 
 def test_document_parse(fx_test_doc):
@@ -270,7 +270,7 @@ class XmlnsDoc(DocumentElement):
 
 @fixture
 def fx_xmlns_doc():
-    return XmlnsDoc('''
+    return read(XmlnsDoc, '''
         <nstest xmlns="http://earthreader.github.io/"
                 xmlns:nst="https://github.com/earthreader/libearth">
             <samens>Same namespace</samens>
