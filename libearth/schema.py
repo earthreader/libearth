@@ -65,7 +65,8 @@ from .compat import string_type
 
 __all__ = ('Attribute', 'Child', 'CodecDescriptor', 'Content',
            'ContentHandler', 'Descriptor', 'DocumentElement', 'Element',
-           'ElementList', 'Text', 'read')
+           'ElementList', 'Text', 'read', 'index_descriptors',
+           'inspect_attributes', 'inspect_child_tags', 'inspect_content_tag')
 
 
 class Descriptor(object):
@@ -225,7 +226,7 @@ class Child(Descriptor):
 
     def end_element(self, reserved_value, content):
         element_type = type(reserved_value)
-        attr = reserved_value._root()._handler.get_content_tag(element_type)
+        attr = inspect_content_tag(element_type)
         if attr is None:
             return
         content_desc = attr[1]
@@ -623,7 +624,7 @@ class ContentHandler(xml.sax.handler.ContentHandler):
         else:
             parent_element = parent_context.reserved_value
             element_type = type(parent_element)
-            child_tags = self.get_child_tags(element_type)
+            child_tags = inspect_child_tags(element_type)
             try:
                 attr, child = child_tags[tag]
             except KeyError:
@@ -650,7 +651,7 @@ class ContentHandler(xml.sax.handler.ContentHandler):
         if isinstance(reserved_value, Element):
             instance = reserved_value
             instance_type = type(instance)
-            attributes = self.get_attributes(instance_type)
+            attributes = inspect_attributes(instance_type)
             instance_attrs_dict = instance._attrs
             for xml_attr, raw_value in attrs.items():
                 try:
@@ -674,51 +675,112 @@ class ContentHandler(xml.sax.handler.ContentHandler):
         text = ''.join(context.content_buffer)
         if context.descriptor is None:
             # context.reserved_value is root document
-            attr = self.get_content_tag(type(context.reserved_value))
+            attr = inspect_content_tag(type(context.reserved_value))
             if attr is not None:
                 content_desc = attr[1]
                 content_desc.read(context.reserved_value, text)
         else:
             context.descriptor.end_element(context.reserved_value, text)
 
-    def index_descriptors(self, element_type):
-        attributes = {}
-        child_tags = {}
-        content = None
-        for attr in dir(element_type):
-            desc = getattr(element_type, attr)
-            if isinstance(desc, Content):
-                content = attr, desc
-            elif isinstance(desc, Attribute):
-                attributes[desc.key_pair] = attr, desc
-            elif isinstance(desc, Descriptor):
-                child_tags[desc.key_pair] = attr, desc
-        element_type.__attributes__ = attributes
-        element_type.__child_tags__ = child_tags
-        element_type.__content__ = content
 
-    def get_attributes(self, element_type):
-        try:
-            return element_type.__attributes__
-        except AttributeError:
-            self.index_descriptors(element_type)
-            return element_type.__attributes__
+def index_descriptors(element_type):
+    """Index descriptors of the given ``element_type`` to make them
+    easy to be looked up by their identifiers (pairs of XML namespace URI
+    and tag name).
 
-    def get_child_tags(self, element_type):
-        try:
-            child_tags = element_type.__child_tags__
-        except AttributeError:
-            self.index_descriptors(element_type)
-            child_tags = element_type.__child_tags__
-        return child_tags
+    :param element_type: a subtype of :class:`Element`
+                         to index its descriptors
+    :type element_type: :class:`type`
 
-    def get_content_tag(self, element_type):
-        try:
-            content = element_type.__content__
-        except AttributeError:
-            self.index_descriptors(element_type)
-            content = element_type.__content__
-        return content
+    .. note::
+
+       Internal function.
+
+    """
+    attributes = {}
+    child_tags = {}
+    content = None
+    for attr in dir(element_type):
+        desc = getattr(element_type, attr)
+        if isinstance(desc, Content):
+            content = attr, desc
+        elif isinstance(desc, Attribute):
+            attributes[desc.key_pair] = attr, desc
+        elif isinstance(desc, Descriptor):
+            child_tags[desc.key_pair] = attr, desc
+    element_type.__attributes__ = attributes
+    element_type.__child_tags__ = child_tags
+    element_type.__content_tag__ = content
+
+
+def inspect_attributes(element_type):
+    """Get the dictionary of :class:`Attribute` descriptors of
+    the given ``element_type``.
+
+    :param element_type: a subtype of :class:`Element` to inspect
+    :type element_type: :class:`type`
+    :returns: a dictionary of attribute identifiers (pairs of
+              xml namespace uri and xml attribute name) to pairs of
+              instance attribute name and associated :class:`Attribute`
+              descriptor
+    :rtype: :class:`collections.Mapping`
+
+    .. note::
+
+       Internal function.
+
+    """
+    try:
+        return element_type.__attributes__
+    except AttributeError:
+        index_descriptors(element_type)
+        return element_type.__attributes__
+
+
+def inspect_child_tags(element_type):
+    """Get the dictionary of :class:`Descriptor` objects of
+    the given ``element_type``.
+
+    :param element_type: a subtype of :class:`Element` to inspect
+    :type element_type: :class:`type`
+    :returns: a dictionary of child node identifiers (pairs of
+              xml namespace uri and tag name) to pairs of
+              instance attribute name and associated :class:`Descriptor`
+    :rtype: :class:`collections.Mapping`
+
+    .. note::
+
+       Internal function.
+
+    """
+    try:
+        child_tags = element_type.__child_tags__
+    except AttributeError:
+        index_descriptors(element_type)
+        child_tags = element_type.__child_tags__
+    return child_tags
+
+
+def inspect_content_tag(element_type):
+    """Gets the :class:`Content` descriptor of the given ``element_type``.
+
+    :param element_type: a subtype of :class:`Element` to inspect
+    :type element_type: :class:`type`
+    :returns: a pair of instance attribute name and associated
+              :class:`Content` descriptor
+    :rtype: :class:`tuple`
+
+    .. note::
+
+       Internal function.
+
+    """
+    try:
+        content = element_type.__content_tag__
+    except AttributeError:
+        index_descriptors(element_type)
+        content = element_type.__content_tag__
+    return content
 
 
 def read(cls, iterable):

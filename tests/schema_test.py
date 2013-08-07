@@ -4,7 +4,9 @@ from pytest import fixture, mark, raises
 
 from libearth.compat import text
 from libearth.schema import (Attribute, Child, Content, DocumentElement,
-                             Element, Text, read)
+                             Element, Text, read, index_descriptors,
+                             inspect_attributes, inspect_child_tags,
+                             inspect_content_tag)
 
 
 class TextElement(Element):
@@ -290,3 +292,57 @@ def test_xmlns_same_xmlns_child(fx_xmlns_doc):
 
 def test_xmlns_other_xmlns_child(fx_xmlns_doc):
     assert fx_xmlns_doc.otherns_attr == 'Other namespace'
+
+
+@fixture
+def fx_adhoc_element_type():
+
+    class AdhocTextElement(Element):
+        value = Content()
+
+    class AdhocElement(Element):
+        format_version = Attribute('version')
+        name = Text('name-e')
+        url = Child('url-e', AdhocTextElement, multiple=True)
+        dob = Child('dob-e', AdhocTextElement, xmlns='http://example.com/')
+    return AdhocElement, AdhocTextElement
+
+
+def test_index_descriptors(fx_adhoc_element_type):
+    AdhocElement, AdhocTextElement = fx_adhoc_element_type
+    assert not hasattr(AdhocElement, '__child_tags__')
+    assert not hasattr(AdhocElement, '__attributes__')
+    assert not hasattr(AdhocElement, '__content_tag__')
+    index_descriptors(AdhocElement)
+    assert len(AdhocElement.__child_tags__) == 3
+    assert len(AdhocElement.__attributes__) == 1
+    assert not AdhocElement.__content_tag__
+    assert not hasattr(AdhocTextElement, '__child_tags__')
+    assert not hasattr(AdhocTextElement, '__attributes__')
+    assert not hasattr(AdhocTextElement, '__content_tag__')
+    index_descriptors(AdhocTextElement)
+    assert AdhocTextElement.__content_tag__
+
+
+def test_inspect_attributes(fx_adhoc_element_type):
+    element_type, _ = fx_adhoc_element_type
+    attrs = inspect_attributes(element_type)
+    assert len(attrs) == 1
+    assert attrs[None, 'version'] == ('format_version',
+                                      element_type.format_version)
+
+
+def test_inspect_child_tags(fx_adhoc_element_type):
+    element_type, _ = fx_adhoc_element_type
+    child_tags = inspect_child_tags(element_type)
+    assert len(child_tags) == 3
+    assert child_tags[None, 'name-e'] == ('name', element_type.name)
+    assert child_tags[None, 'url-e'] == ('url', element_type.url)
+    assert child_tags['http://example.com/', 'dob-e'] == ('dob',
+                                                          element_type.dob)
+
+
+def test_inspect_content_tag(fx_adhoc_element_type):
+    _, element_type = fx_adhoc_element_type
+    content_tag = inspect_content_tag(element_type)
+    assert content_tag == ('value', element_type.value)
