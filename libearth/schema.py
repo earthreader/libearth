@@ -57,9 +57,11 @@ You can declare the schema for this like the following class definition::
 """
 import collections
 import copy
+import itertools
 import weakref
 import xml.sax
 import xml.sax.handler
+import xml.sax.saxutils
 
 from .compat import string_type
 
@@ -67,7 +69,8 @@ __all__ = ('Attribute', 'Child', 'CodecDescriptor', 'Content',
            'ContentHandler', 'Descriptor', 'DescriptorConflictError',
            'DocumentElement', 'Element', 'ElementList', 'SchemaError', 'Text',
            'read', 'index_descriptors', 'inspect_attributes',
-           'inspect_child_tags', 'inspect_content_tag', 'inspect_xmlns_set')
+           'inspect_child_tags', 'inspect_content_tag', 'inspect_xmlns_set',
+           'write')
 
 
 class SchemaError(TypeError):
@@ -908,13 +911,95 @@ def read(cls, iterable):
     return doc
 
 
-def write(document):
+def write(document, indent='  ', newline='\n'):
     if not isinstance(document, DocumentElement):
         raise TypeError(
             'document must be an instance of {0.__module__}.{0.__name__}, '
             'not {1!r}'.format(DocumentElement, document)
         )
+    escape = xml.sax.saxutils.escape
+    quoteattr = xml.sax.saxutils.quoteattr
+    doc_cls = type(document)
+    xmlns_alias = dict(
+        (uri, 'ns{0}'.format(i))
+        for i, uri in enumerate(inspect_xmlns_set(doc_cls))
+    )
 
-    def _export(element, tag, xmlns):
-        pass
-    return _export(document, document.__tag__, document.__xmlns__)
+    def _export(element, tag, xmlns, depth=0):
+        element_type = type(element)
+        for s in itertools.repeat(indent, depth):
+            yield s
+        yield '<'
+        if xmlns:
+            yield xmlns_alias[xmlns]
+            yield ':'
+        yield tag
+        if not depth:
+            for uri, prefix in xmlns_alias.items():
+                yield ' xmlns:'
+                yield prefix
+                yield '='
+                yield quoteattr(uri)
+        attr_descriptors = inspect_attributes(element_type)
+        for attr, desc in attr_descriptors.values():
+            attr_value = getattr(element, attr, None)
+            if attr_value is None:
+                continue
+            yield ' '
+            if desc.xmlns:
+                yield xmlns_alias[desc.xmlns]
+                yield ':'
+            yield desc.name
+            yield '='
+            yield quoteattr(attr_value)  # TODO: encode
+        content = inspect_content_tag(element_type)
+        children = inspect_child_tags(element_type)
+        if content or children:
+            assert not (content and children)
+            yield '>'
+            if content:
+                content_value = getattr(element, content[0], None)
+                if content_value is not None:
+                    yield escape(content_value)  # TODO: encode
+            else:
+                for attr, desc in children.values():
+                    child_elements = getattr(element, attr, None)
+                    if not desc.multiple:
+                        child_elements = [child_elements]
+                    for child_element in child_elements:
+                        if child_element is None:
+                            continue
+                        yield newline
+                        if isinstance(desc, Text):  # FIXME: remote type query
+                            for s in itertools.repeat(indent, depth + 1):
+                                yield s
+                            yield '<'
+                            if desc.xmlns:
+                                yield xmlns_alias[desc.xmlns]
+                                yield ':'
+                            yield desc.tag
+                            yield '>'
+                            yield escape(str(child_element))  # TODO: encode
+                            yield '</'
+                            if desc.xmlns:
+                                yield xmlns_alias[desc.xmlns]
+                                yield ':'
+                            yield desc.tag
+                            yield '>'
+                        else:
+                            subiter = _export(child_element,
+                                              desc.tag,
+                                              desc.xmlns,
+                                              depth=depth + 1)
+                            for chunk in subiter:
+                                yield chunk
+                yield newline
+            yield '</'
+            if xmlns:
+                yield xmlns_alias[xmlns]
+                yield ':'
+            yield tag
+            yield '>'
+        else:
+            yield '/>'
+    return _export(document, doc_cls.__tag__, doc_cls.__xmlns__)

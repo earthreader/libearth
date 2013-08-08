@@ -7,7 +7,7 @@ from libearth.schema import (Attribute, Child, Content, DescriptorConflictError,
                              DocumentElement,
                              Element, Text, read, index_descriptors,
                              inspect_attributes, inspect_child_tags,
-                             inspect_content_tag, inspect_xmlns_set)
+                             inspect_content_tag, inspect_xmlns_set, write)
 
 
 class TextElement(Element):
