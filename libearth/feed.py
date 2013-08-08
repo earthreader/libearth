@@ -60,6 +60,20 @@ class Feed(object):
     def __len__(self):
         return len(self.feedlist)
 
+    def __getattr__(self, name):
+        if name == "title":
+            return self.doc.head.title
+
+    def __setattr__(self, name, value):
+        if name == "title":
+            self.doc.head.title = value
+        else:
+            self.__dict__[name] = value
+
+    def __iter__(self):
+        for feed in self.feedlist.values():
+            yield feed
+
     def open_file(self, is_xml_string):
         if is_xml_string:
             xml = self.path

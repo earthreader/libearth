@@ -68,6 +68,14 @@ def test_file_not_found():
 
 def test_path_as_string():
     feed = Feed(XML, is_xml_string=True)
-    assert feed.doc.head.title == "EarthReader.opml"
+    assert feed.title == "EarthReader.opml"
     assert len(feed) == 2
     assert feed.get_feed('http://test.com')['type'] == 'rss'
+
+
+def test_feed_as_iterator():
+    feeds = Feed(XML, is_xml_string=True)
+    expected = ['CNET News.com', 'test.com']
+    for feed in feeds:
+        expected.remove(feed['title'])
+    assert not expected
