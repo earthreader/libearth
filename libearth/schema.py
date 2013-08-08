@@ -67,7 +67,7 @@ __all__ = ('Attribute', 'Child', 'CodecDescriptor', 'Content',
            'ContentHandler', 'Descriptor', 'DescriptorConflictError',
            'DocumentElement', 'Element', 'ElementList', 'SchemaError', 'Text',
            'read', 'index_descriptors', 'inspect_attributes',
-           'inspect_child_tags', 'inspect_content_tag')
+           'inspect_child_tags', 'inspect_content_tag', 'inspect_xmlns_set')
 
 
 class SchemaError(TypeError):
@@ -713,9 +713,15 @@ def index_descriptors(element_type):
        Internal function.
 
     """
+    if issubclass(element_type, DocumentElement) and \
+       getattr(element_type, '__xmlns__', None):
+        xmlns_set = set([element_type.__xmlns__])
+    else:
+        xmlns_set = set()
     attributes = {}
     child_tags = {}
     content = None
+    element_type.__xmlns_set__ = xmlns_set  # to avoid infinite loop
     for attr in dir(element_type):
         desc = getattr(element_type, attr)
         if isinstance(desc, Content):
@@ -742,6 +748,8 @@ def index_descriptors(element_type):
                     )
                 )
             attributes[desc.key_pair] = attr, desc
+            if desc.xmlns:
+                xmlns_set.add(desc.xmlns)
         elif isinstance(desc, Descriptor):
             if desc.key_pair in child_tags:
                 if desc.xmlns:
@@ -756,9 +764,35 @@ def index_descriptors(element_type):
                     )
                 )
             child_tags[desc.key_pair] = attr, desc
+            if desc.xmlns:
+                xmlns_set.add(desc.xmlns)
+            if isinstance(desc, Child):  # FIXME: should be polymorphic
+                xmlns_set.update(inspect_xmlns_set(desc.element_type))
+    element_type.__xmlns_set__ = frozenset(xmlns_set)
     element_type.__attributes__ = attributes
     element_type.__child_tags__ = child_tags
     element_type.__content_tag__ = content
+
+
+def inspect_xmlns_set(element_type):
+    """Get the set of XML namespaces used in the given ``element_type``,
+    recursively including all child elements.
+
+    :param element_type: a subtype of :class:`Element` to inspect
+    :type element_type: :class:`type`
+    :returns: a set of uri strings of used all xml namespaces
+    :rtype: :class:`collections.Set`
+
+    .. note::
+
+       Internal function.
+
+    """
+    try:
+        return element_type.__xmlns_set__
+    except AttributeError:
+        index_descriptors(element_type)
+        return element_type.__xmlns_set__
 
 
 def inspect_attributes(element_type):

@@ -7,7 +7,7 @@ from libearth.schema import (Attribute, Child, Content, DescriptorConflictError,
                              DocumentElement,
                              Element, Text, read, index_descriptors,
                              inspect_attributes, inspect_child_tags,
-                             inspect_content_tag)
+                             inspect_content_tag, inspect_xmlns_set)
 
 
 class TextElement(Element):
@@ -337,18 +337,47 @@ def fx_adhoc_element_type():
 
 def test_index_descriptors(fx_adhoc_element_type):
     AdhocElement, AdhocTextElement = fx_adhoc_element_type
-    assert not hasattr(AdhocElement, '__child_tags__')
-    assert not hasattr(AdhocElement, '__attributes__')
-    assert not hasattr(AdhocElement, '__content_tag__')
-    index_descriptors(AdhocElement)
-    assert len(AdhocElement.__child_tags__) == 3
-    assert len(AdhocElement.__attributes__) == 1
-    assert not AdhocElement.__content_tag__
+    assert not hasattr(AdhocTextElement, '__xmlns_set__')
     assert not hasattr(AdhocTextElement, '__child_tags__')
     assert not hasattr(AdhocTextElement, '__attributes__')
     assert not hasattr(AdhocTextElement, '__content_tag__')
     index_descriptors(AdhocTextElement)
     assert AdhocTextElement.__content_tag__
+    assert not hasattr(AdhocElement, '__xmlns_set__')
+    assert not hasattr(AdhocElement, '__child_tags__')
+    assert not hasattr(AdhocElement, '__attributes__')
+    assert not hasattr(AdhocElement, '__content_tag__')
+    index_descriptors(AdhocElement)
+    assert len(AdhocElement.__xmlns_set__) == 1
+    assert len(AdhocElement.__child_tags__) == 3
+    assert len(AdhocElement.__attributes__) == 1
+    assert not AdhocElement.__content_tag__
+
+
+class InspectXmlnsSetElement(Element):
+
+    a = Child('child', XmlnsDoc, xmlns='http://dahlia.kr/')
+
+
+def test_inspect_xmlns_set(fx_adhoc_element_type):
+    element_type, text_element_type = fx_adhoc_element_type
+    assert inspect_xmlns_set(element_type) == set(['http://example.com/'])
+    assert not inspect_xmlns_set(text_element_type)
+    assert inspect_xmlns_set(TestDoc) == frozenset([
+        'http://earthreader.github.io/'
+    ])
+    assert inspect_xmlns_set(TextElement) == frozenset([
+        'http://earthreader.github.io/'
+    ])
+    assert inspect_xmlns_set(XmlnsDoc) == frozenset([
+        'https://github.com/earthreader/libearth',
+        'http://earthreader.github.io/'
+    ])
+    assert inspect_xmlns_set(InspectXmlnsSetElement) == frozenset([
+        'https://github.com/earthreader/libearth',
+        'http://earthreader.github.io/',
+        'http://dahlia.kr/'
+    ])
 
 
 def test_inspect_attributes(fx_adhoc_element_type):
