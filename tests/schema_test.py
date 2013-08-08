@@ -3,7 +3,8 @@ import collections
 from pytest import fixture, mark, raises
 
 from libearth.compat import text, text_type
-from libearth.schema import (Attribute, Child, Content, DocumentElement,
+from libearth.schema import (Attribute, Child, Content, DescriptorConflictError,
+                             DocumentElement,
                              Element, Text, read, index_descriptors,
                              inspect_attributes, inspect_child_tags,
                              inspect_content_tag)
@@ -372,3 +373,36 @@ def test_inspect_content_tag(fx_adhoc_element_type):
     _, element_type = fx_adhoc_element_type
     content_tag = inspect_content_tag(element_type)
     assert content_tag == ('value', element_type.value)
+
+
+class ContentDescriptorConflictElement(Element):
+
+    value = Content()
+    value2 = Content()
+
+
+def test_content_descriptor_conflict():
+    with raises(DescriptorConflictError):
+        index_descriptors(ContentDescriptorConflictElement)
+
+
+class ChildDescriptorConflictElement(Element):
+
+    child = Child('same-tag', TextElement)
+    text = Text('same-tag')
+
+
+def test_child_descriptor_conflict():
+    with raises(DescriptorConflictError):
+        index_descriptors(ChildDescriptorConflictElement)
+
+
+class AttrDescriptorConflictElement(Element):
+
+    attr = Attribute('same-attr')
+    attr2 = Attribute('same-attr')
+
+
+def test_attribute_descriptor_conflict():
+    with raises(DescriptorConflictError):
+        index_descriptors(AttrDescriptorConflictElement)

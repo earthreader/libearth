@@ -64,9 +64,21 @@ import xml.sax.handler
 from .compat import string_type
 
 __all__ = ('Attribute', 'Child', 'CodecDescriptor', 'Content',
-           'ContentHandler', 'Descriptor', 'DocumentElement', 'Element',
-           'ElementList', 'Text', 'read', 'index_descriptors',
-           'inspect_attributes', 'inspect_child_tags', 'inspect_content_tag')
+           'ContentHandler', 'Descriptor', 'DescriptorConflictError',
+           'DocumentElement', 'Element', 'ElementList', 'SchemaError', 'Text',
+           'read', 'index_descriptors', 'inspect_attributes',
+           'inspect_child_tags', 'inspect_content_tag')
+
+
+class SchemaError(TypeError):
+    """Error which rises when a schema definition has logical errors."""
+
+
+class DescriptorConflictError(SchemaError, AttributeError):
+    """Error which rises when a schema has duplicate descriptors more than
+    one for the same attribute, the same child element, or the text node.
+
+    """
 
 
 class Descriptor(object):
@@ -707,10 +719,42 @@ def index_descriptors(element_type):
     for attr in dir(element_type):
         desc = getattr(element_type, attr)
         if isinstance(desc, Content):
+            if content is not None:
+                raise DescriptorConflictError(
+                    'there are more than a descriptor for the element content '
+                    '(text node): {0!r} and {1!r}; there must not be any '
+                    'duplicate descriptors for the same content'.format(
+                        content[0], attr
+                    )
+                )
             content = attr, desc
         elif isinstance(desc, Attribute):
+            if desc.key_pair in attributes:
+                if desc.xmlns:
+                    name = '{{{0}}}{1}'.format(*desc.key_pair)
+                else:
+                    name = desc.name
+                raise DescriptorConflictError(
+                    'there are more than a descriptor for the same attribute '
+                    '{0!r}: {1!r} and {2!r}; there must not be any duplicate '
+                    'descriptors for the same attribute'.format(
+                        name, attributes[desc.key_pair], attr
+                    )
+                )
             attributes[desc.key_pair] = attr, desc
         elif isinstance(desc, Descriptor):
+            if desc.key_pair in child_tags:
+                if desc.xmlns:
+                    tag = '{{{0}}}{1}'.format(*desc.key_pair)
+                else:
+                    tag = desc.tag
+                raise DescriptorConflictError(
+                    'there are more than a descriptor for the same element '
+                    '{0!r}: {1!r} and {2!r}; there must not be any duplicate '
+                    'descriptors for the same element'.format(
+                        tag, child_tags[desc.key_pair], attr
+                    )
+                )
             child_tags[desc.key_pair] = attr, desc
     element_type.__attributes__ = attributes
     element_type.__child_tags__ = child_tags
