@@ -165,22 +165,22 @@ def test_multiple_child_len(fx_test_doc):
 def test_multiple_child_getitem(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START'
-    doc.multi_attr[0].value == 'a'
+    assert doc.multi_attr[0].value == 'a'
     assert consume_log[-1] == 'MULTI_1_CLOSE'
-    doc.multi_attr[1].value == 'b'
+    assert doc.multi_attr[1].value == 'b'
     assert consume_log[-1] == 'MULTI_2_CLOSE'
-    doc.multi_attr[2].value == 'c'
+    assert doc.multi_attr[2].value == 'c'
     assert consume_log[-1] == 'MULTI_3_CLOSE'
 
 
 def test_multiple_child_getitem_from_last(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START'
-    doc.multi_attr[2].value == 'c'
+    assert doc.multi_attr[2].value == 'c'
     assert consume_log[-1] == 'MULTI_3_CLOSE'
-    doc.multi_attr[1].value == 'b'
+    assert doc.multi_attr[1].value == 'b'
     assert consume_log[-1] == 'MULTI_3_CLOSE'
-    doc.multi_attr[0].value == 'a'
+    assert doc.multi_attr[0].value == 'a'
     assert consume_log[-1] == 'MULTI_3_CLOSE'
 
 
@@ -201,18 +201,18 @@ def test_text_multiple_text_len(fx_test_doc):
 def test_multiple_text_getitem(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START'
-    doc.text_multi_attr[0] == 'a'
+    assert doc.text_multi_attr[0] == 'a'
     assert consume_log[-1] == 'TEXT_MULTI_1_CLOSE'
-    doc.text_multi_attr[1] == 'b'
+    assert doc.text_multi_attr[1] == 'b'
     assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'
 
 
 def test_multiple_text_getitem_from_last(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START'
-    doc.text_multi_attr[1] == 'b'
+    assert doc.text_multi_attr[1] == 'b'
     assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'
-    doc.text_multi_attr[0] == 'a'
+    assert doc.text_multi_attr[0] == 'a'
     assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'
 
 
