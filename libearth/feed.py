@@ -45,7 +45,7 @@ class OPMLDoc(DocumentElement):
     body = Child('body', FeedBody)
 
 
-class Feed(object):
+class Feeds(object):
     def __init__(self, path=None, is_xml_string=False):
         """Initializer of Feed list
         when path is None, it doesn't save opml file. just use memory

@@ -1,30 +1,30 @@
 from pytest import raises
 
 from libearth.compat import binary_type, text_type, xrange
-from libearth.feed import AlreadyExistException, Feed, OPMLDoc
+from libearth.feed import AlreadyExistException, Feeds, OPMLDoc
 from libearth.schema import Child, Content, DocumentElement, Element, Text
 
 
 def test_count_empty_list():
-    f = Feed()
-    assert len(f) == 0
+    feeds = Feeds()
+    assert len(feeds) == 0
 
 
 def test_count_duplicated_url():
-    f = Feed()
+    feeds = Feeds()
     with raises(AlreadyExistException):
         for i in xrange(30):
-            f.add_feed('title', 'url', 'type')
+            feeds.add_feed('title', 'url', 'type')
 
-    assert len(f) == 1
+    assert len(feeds) == 1
 
 
 def test_count_after_remove():
-    f = Feed()
-    f.add_feed('url', 'title', 'type')
-    f.remove_feed('url')
+    feeds = Feeds()
+    feeds.add_feed('url', 'title', 'type')
+    feeds.remove_feed('url')
 
-    assert len(f) == 0
+    assert len(feeds) == 0
 
 XML = """<?xml version="1.0" encoding="ISO-8859-1"?>
 <opml version="2.0">
@@ -63,18 +63,18 @@ def test_OPMLDocment():
 
 def test_file_not_found():
     with raises(IOError):
-        doc = Feed('this_file_must_be_not_found.ext')
+        feeds = Feeds('this_file_must_be_not_found.ext')
 
 
 def test_path_as_string():
-    feed = Feed(XML, is_xml_string=True)
-    assert feed.title == "EarthReader.opml"
-    assert len(feed) == 2
-    assert feed.get_feed('http://test.com')['type'] == 'rss'
+    feeds = Feeds(XML, is_xml_string=True)
+    assert feeds.title == "EarthReader.opml"
+    assert len(feeds) == 2
+    assert feeds.get_feed('http://test.com')['type'] == 'rss'
 
 
 def test_feed_as_iterator():
-    feeds = Feed(XML, is_xml_string=True)
+    feeds = Feeds(XML, is_xml_string=True)
     expected = ['CNET News.com', 'test.com']
     for feed in feeds:
         expected.remove(feed['title'])
