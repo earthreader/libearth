@@ -2,7 +2,7 @@ import collections
 
 from pytest import fixture, mark, raises
 
-from libearth.compat import text
+from libearth.compat import text, text_type
 from libearth.schema import (Attribute, Child, Content, DocumentElement,
                              Element, Text, read, index_descriptors,
                              inspect_attributes, inspect_child_tags,
@@ -214,6 +214,32 @@ def test_multiple_text_getitem_from_last(fx_test_doc):
     assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'
     assert doc.text_multi_attr[0] == 'a'
     assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'
+
+
+def test_element_list_repr(fx_test_doc):
+    doc, consume_log = fx_test_doc
+    elist = doc.text_multi_attr
+    assert repr(elist) == '<libearth.schema.ElementList [...]>'
+    it = iter(elist)
+    next(it)
+    assert (repr(elist) ==
+            "<libearth.schema.ElementList [{0!r}, ...]>".format(text_type('a')))
+    next(it)
+    assert (
+        repr(elist) ==
+        "<libearth.schema.ElementList [{0!r}, {1!r}, ...]>".format(
+            text_type('a'),
+            text_type('b')
+        )
+    )
+    next(it, None)
+    assert (
+        repr(elist) ==
+        "<libearth.schema.ElementList [{0!r}, {1!r}]>".format(
+            text_type('a'),
+            text_type('b')
+        )
+    )
 
 
 def test_document_element_tag():

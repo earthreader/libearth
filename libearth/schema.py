@@ -564,9 +564,13 @@ class ElementList(collections.Sequence):
         return data[key][index]
 
     def __repr__(self):
-        list_repr = repr(self.element()._data.get(self.descriptor, []))
+        consumed = self.element()._data.get(self.descriptor, [])
+        list_repr = repr(consumed)
         if not self.consumes_all():
-            list_repr = list_repr[:-1] + '...]'
+            if consumed:
+                list_repr = list_repr[:-1] + ', ...]'
+            else:
+                list_repr = '[...]'
         return '<{0.__module__}.{0.__name__} {1}>'.format(
             type(self), list_repr
         )
@@ -824,3 +828,15 @@ def read(cls, iterable):
         parser.feed(chunk)
     Element.__init__(doc, doc)
     return doc
+
+
+def write(document):
+    if not isinstance(document, DocumentElement):
+        raise TypeError(
+            'document must be an instance of {0.__module__}.{0.__name__}, '
+            'not {1!r}'.format(DocumentElement, document)
+        )
+
+    def _export(element, tag, xmlns):
+        pass
+    return _export(document, document.__tag__, document.__xmlns__)
