@@ -4,7 +4,8 @@
 """
 
 from .compat import binary_type, text, text_type, xrange
-from .schema import Attribute, Child, Content, DocumentElement, Element, Text
+from .schema import (Attribute, Child, Content, DocumentElement, Element, Text,
+                     read)
 
 
 class OutlineElement(Element):
@@ -68,13 +69,13 @@ class FeedList(object):
     def open_file(self, is_xml_string):
         if is_xml_string:
             xml = self.path
-            self.doc = OPMLDoc(xml)
+            self.doc = read(OPMLDoc, xml)
             self.parse_doc()
         else:
             try:
                 with open(self.path) as fp:
                     xml = fp.read()
-                    self.doc = OPMLDoc(xml)
+                    self.doc = read(OPMLDoc, xml)
             except IOError as e:
                 raise e
             else:

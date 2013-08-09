@@ -2,7 +2,8 @@ from pytest import raises
 
 from libearth.compat import binary_type, text_type, xrange
 from libearth.feed import AlreadyExistException, FeedList, OPMLDoc
-from libearth.schema import Child, Content, DocumentElement, Element, Text
+from libearth.schema import (Child, Content, DocumentElement, Element, Text,
+                             read)
 
 
 def test_count_empty_list():
@@ -49,7 +50,7 @@ XML = """<?xml version="1.0" encoding="ISO-8859-1"?>
 
 
 def test_OPMLDocment():
-    doc = OPMLDoc(XML)
+    doc = read(OPMLDoc, XML)
     assert doc.head.title == "EarthReader.opml"
     assert doc.head.date_created == "Sat, 18 Jun 2005 12:11:52 GMT"
     assert doc.head.date_modified is None
