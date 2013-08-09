@@ -16,6 +16,9 @@ class OutlineElement(Element):
     html_url = Attribute('htmlUrl')
 
 
+OutlineElement.children = Child('outline', OutlineElement, multiple=True)
+
+
 class FeedHead(Element):
     title = Text('title')
 
@@ -46,6 +49,27 @@ class OPMLDoc(DocumentElement):
     __tag__ = 'opml'
     head = Child('head', FeedHead)
     body = Child('body', FeedBody)
+
+
+def convert_from_outline(outline_obj):
+    if not outline_obj.children:
+        res = {
+            'title': outline_obj.title or outline_obj.text,
+            'text': outline_obj.text,
+            'type': outline_obj.type_,
+            'html_url': outline_obj.html_url,
+        }
+    else:
+        res = {
+            'type': 'category',
+            'title': outline_obj.title or outline_obj.text,
+            'text': outline_obj.text,
+            'children': []
+        }
+
+        for outline in outline_obj.children:
+            res['children'].append(convert_from_outline(outline))
+    return res
 
 
 class FeedList(object):
@@ -86,12 +110,8 @@ class FeedList(object):
     def parse_doc(self):
         self.title = self.doc.head.title
         for outline in self.doc.body.outline:
-            self.feedlist[outline.xml_url] = {
-                'title': outline.title or outline.text,
-                'text': outline.text,
-                'type': outline.type_,
-                'html_url': outline.html_url,
-            }
+            title = outline.xml_url or outline.title or outline.text
+            self.feedlist[title] = convert_from_outline(outline)
 
     def save_file(self):
         #TODO: save as opml file

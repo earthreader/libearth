@@ -48,6 +48,33 @@ XML = """<?xml version="1.0" encoding="ISO-8859-1"?>
     </body>
 </opml>"""
 
+XML_CATEGORY = """<?xml version="1.0" encoding="ISO-8859-1"?>
+<opml version="2.0">
+    <head>
+        <title>EarthReader.opml</title>
+        <dateCreated>Sat, 18 Jun 2005 12:11:52 GMT</dateCreated>
+        <ownerName>libearth</ownerName>
+        <ownerEmail>earthreader@librelist.com</ownerEmail>
+        <expansionState>a,b,c,d</expansionState>
+        <vertScrollState>1</vertScrollState>
+        <windowTop>12</windowTop>
+        <windowLeft>34</windowLeft>
+        <windowBottom>56</windowBottom>
+        <windowRight>78</windowRight>
+    </head>
+    <body>
+        <outline text="Game" title="Game" type="category">
+            <outline text="valve" title="valve" xmlUrl="http://valve.com/" />
+            <outline text="nintendo" title="nintendo"
+            xmlUrl="http://nintendo.com/" />
+        </outline>
+        <outline text="Music" title="Music" type="category">
+            <outline text="capsule" title="capsule"
+            xmlUrl="http://www.capsule-web.com/" />
+        </outline>
+    </body>
+</opml>"""
+
 
 def test_OPMLDocment():
     doc = read(OPMLDoc, XML)
@@ -80,3 +107,18 @@ def test_feed_as_iterator():
     for feed in feeds:
         expected.remove(feed['title'])
     assert not expected
+
+
+def test_feed_contains_category():
+    feeds = FeedList(XML_CATEGORY, is_xml_string=True)
+    expected = {
+        'Game': ['valve', 'nintendo'],
+        'Music': ['capsule'],
+    }
+    for feed in feeds:
+        assert feed['type'] == 'category'
+        for child_feed in feed['children']:
+            expected[feed['title']].remove(child_feed['title'])
+        assert not expected[feed['title']]
+        expected.pop(feed['title'])
+    assert not expected.keys()
