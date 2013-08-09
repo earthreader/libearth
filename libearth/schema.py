@@ -52,7 +52,6 @@ You can declare the schema for this like the following class definition::
 
    - Encoder decorator methods
    - Converter
-   - Make it possible to write as well
 
 """
 import collections
@@ -181,6 +180,10 @@ class Child(Descriptor):
                      it's exclusive to ``required``.
                      :const:`False` by default
     :type multiple: :class:`bool`
+
+    .. todo::
+
+       It crashes when the document has any non-ASCII characters.
 
     """
 
@@ -913,6 +916,21 @@ def read(cls, iterable):
 
 
 def write(document, indent='  ', newline='\n', canonical_order=False):
+    """Write the given ``document`` to XML string.  The return value is
+    an iterator that yields chunks of an XML string.
+
+    :param document: the document element to serialize
+    :type document: :class:`DocumentElement`
+    :param indent: an optional string to be used for indent.
+                   default is four spaces (``'    '``)
+    :type indent: :class:`str`
+    :param newline: an optional character to be used for newline.
+                    default is ``'\n'``
+    :type newline: :class:`str`
+    :returns: chunks of an XML string
+    :rtype: :class:`types.GeneratorType`
+
+    """
     if not isinstance(document, DocumentElement):
         raise TypeError(
             'document must be an instance of {0.__module__}.{0.__name__}, '
