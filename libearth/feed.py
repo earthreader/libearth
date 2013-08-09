@@ -45,11 +45,13 @@ class OPMLDoc(DocumentElement):
     body = Child('body', FeedBody)
 
 
-class Feeds(object):
+class FeedList(object):
     def __init__(self, path=None, is_xml_string=False):
         """Initializer of Feed list
         when path is None, it doesn't save opml file. just use memory
         """
+        #default value
+        self.title = "EarthReader"
         #TODO: save with file, load with file
         self.path = path
         self.feedlist = {}
@@ -60,19 +62,8 @@ class Feeds(object):
     def __len__(self):
         return len(self.feedlist)
 
-    def __getattr__(self, name):
-        if name == "title":
-            return self.doc.head.title
-
-    def __setattr__(self, name, value):
-        if name == "title":
-            self.doc.head.title = value
-        else:
-            self.__dict__[name] = value
-
     def __iter__(self):
-        for feed in self.feedlist.values():
-            yield feed
+        return iter(self.feedlist.values())
 
     def open_file(self, is_xml_string):
         if is_xml_string:
@@ -90,6 +81,7 @@ class Feeds(object):
                 self.parse_doc()
 
     def parse_doc(self):
+        self.title = self.doc.head.title
         for outline in self.doc.body.outline:
             self.feedlist[outline.xml_url] = {
                 'title': outline.text,
