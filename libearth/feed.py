@@ -3,9 +3,11 @@
 
 """
 
+from datetime import datetime
+
 from .compat import binary_type, text, text_type, xrange
 from .schema import (Attribute, Child, Content, DocumentElement, Element, Text,
-                     read)
+                     read, write)
 
 
 class OutlineElement(Element):
@@ -114,8 +116,17 @@ class FeedList(object):
             self.feedlist[title] = convert_from_outline(outline)
 
     def save_file(self):
-        #TODO: save as opml file
-        pass
+        now = datetime.now().strftime('%a, %d %b %Y %H:%M:%S %Z')
+        self.doc.head.date_modified = now
+        if not self.doc.head.date_created:
+            self.doc.head.date_created = now
+
+        try:
+            with open(self.path, 'w') as fp:
+                for chunk in write(self.doc):
+                    fp.write(chunk)
+        except Exception as e:
+            raise SaveOPMLError()
 
     def get_feed(self, url):
         if not isinstance(url, text_type):
@@ -150,4 +161,8 @@ class FeedList(object):
 
 
 class AlreadyExistException(Exception):
+    pass
+
+
+class SaveOPMLError(Exception):
     pass
