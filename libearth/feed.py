@@ -10,8 +10,10 @@ from .schema import (Attribute, Child, Content, DocumentElement, Element, Text,
 
 class OutlineElement(Element):
     text = Attribute('text')
+    title = Attribute('title')
     type_ = Attribute('type')
     xml_url = Attribute('xmlUrl')
+    html_url = Attribute('htmlUrl')
 
 
 class FeedHead(Element):
@@ -85,8 +87,10 @@ class FeedList(object):
         self.title = self.doc.head.title
         for outline in self.doc.body.outline:
             self.feedlist[outline.xml_url] = {
-                'title': outline.text,
+                'title': outline.title or outline.text,
+                'text': outline.text,
                 'type': outline.type_,
+                'html_url': outline.html_url,
             }
 
     def save_file(self):
@@ -99,7 +103,7 @@ class FeedList(object):
 
         return self.feedlist.get(url)
 
-    def add_feed(self, url, title, type_):
+    def add_feed(self, url, title, type_, html_url=None, text_=None):
         if not isinstance(url, text_type):
             url = text(url)
 
@@ -108,6 +112,8 @@ class FeedList(object):
         self.feedlist[url] = {
             'title': title,
             'type': type_,
+            'html_url': html_url,
+            'text': text_ or title,
         }
 
     def remove_feed(self, url):
