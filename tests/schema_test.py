@@ -435,3 +435,38 @@ class AttrDescriptorConflictElement(Element):
 def test_attribute_descriptor_conflict():
     with raises(DescriptorConflictError):
         index_descriptors(AttrDescriptorConflictElement)
+
+
+def test_write_test_doc(fx_test_doc):
+    doc, _ = fx_test_doc
+    g = write(doc, indent='    ', canonical_order=True)
+    assert ''.join(g) == text_type('''\
+<test xmlns:ns0="http://earthreader.github.io/"\
+ attr="attribute value" attr-decoder="decoder test">
+    <content>Content test</content>
+    <content-decoder>CONTENT DECODER</content-decoder>
+    <multi>a</multi>
+    <multi>b</multi>
+    <multi>c</multi>
+    <ns0:ns-element ns0:ns-attr="namespace attribute value">\
+Namespace test</ns0:ns-element>
+    <ns0:ns-text>Namespace test</ns0:ns-text>
+    <text-combined-decoder>-123400</text-combined-decoder>
+    <text-content>Text content</text-content>
+    <text-decoder>123.456</text-decoder>
+    <text-decoder-decorator>321</text-decoder-decorator>
+    <text-multi>a</text-multi>
+    <text-multi>b</text-multi>
+    <title>Title test</title>
+</test>''')
+
+
+def test_write_xmlns_doc(fx_xmlns_doc):
+    doc = fx_xmlns_doc
+    g = write(doc, indent='    ', canonical_order=True)
+    assert ''.join(g) == text_type('''\
+<ns0:nstest xmlns:ns0="http://earthreader.github.io/"\
+ xmlns:ns1="https://github.com/earthreader/libearth">
+    <ns1:otherns>Other namespace</ns1:otherns>
+    <ns0:samens>Same namespace</ns0:samens>
+</ns0:nstest>''')

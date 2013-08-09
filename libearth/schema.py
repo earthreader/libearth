@@ -58,6 +58,7 @@ You can declare the schema for this like the following class definition::
 import collections
 import copy
 import itertools
+import operator
 import weakref
 import xml.sax
 import xml.sax.handler
@@ -911,7 +912,7 @@ def read(cls, iterable):
     return doc
 
 
-def write(document, indent='  ', newline='\n'):
+def write(document, indent='  ', newline='\n', canonical_order=False):
     if not isinstance(document, DocumentElement):
         raise TypeError(
             'document must be an instance of {0.__module__}.{0.__name__}, '
@@ -920,9 +921,10 @@ def write(document, indent='  ', newline='\n'):
     escape = xml.sax.saxutils.escape
     quoteattr = xml.sax.saxutils.quoteattr
     doc_cls = type(document)
+    sort = sorted if canonical_order else lambda l, *a, **k: l
     xmlns_alias = dict(
         (uri, 'ns{0}'.format(i))
-        for i, uri in enumerate(inspect_xmlns_set(doc_cls))
+        for i, uri in enumerate(sort(inspect_xmlns_set(doc_cls)))
     )
 
     def _export(element, tag, xmlns, depth=0):
@@ -935,13 +937,15 @@ def write(document, indent='  ', newline='\n'):
             yield ':'
         yield tag
         if not depth:
-            for uri, prefix in xmlns_alias.items():
+            for uri, prefix in sort(xmlns_alias.items(),
+                                    key=operator.itemgetter(0)):
                 yield ' xmlns:'
                 yield prefix
                 yield '='
                 yield quoteattr(uri)
-        attr_descriptors = inspect_attributes(element_type)
-        for attr, desc in attr_descriptors.values():
+        attr_descriptors = sort(inspect_attributes(element_type).values(),
+                                key=operator.itemgetter(0))
+        for attr, desc in attr_descriptors:
             attr_value = getattr(element, attr, None)
             if attr_value is None:
                 continue
@@ -962,7 +966,9 @@ def write(document, indent='  ', newline='\n'):
                 if content_value is not None:
                     yield escape(content_value)  # TODO: encode
             else:
-                for attr, desc in children.values():
+                children = sort(children.values(),
+                                key=operator.itemgetter(0))
+                for attr, desc in children:
                     child_elements = getattr(element, attr, None)
                     if not desc.multiple:
                         child_elements = [child_elements]
