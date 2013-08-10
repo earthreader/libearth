@@ -1,4 +1,5 @@
 import collections
+import xml.etree.ElementTree
 
 from pytest import fixture, mark, raises
 
@@ -459,6 +460,56 @@ Namespace test</ns0:ns-element>
     <text-multi>b</text-multi>
     <title>Title test</title>
 </test>''')
+
+
+def test_write_test_doc_tree(fx_test_doc):
+    doc, _ = fx_test_doc
+    g = write(doc, canonical_order=True)
+    tree = xml.etree.ElementTree.fromstringlist(g)
+    assert tree.tag == 'test'
+    assert tree.attrib == {
+        'attr': 'attribute value',
+        'attr-decoder': 'decoder test'
+    }
+    assert tree[0].tag == 'content'
+    assert tree[0].text == 'Content test'
+    assert not tree[0].attrib
+    assert tree[1].tag == 'content-decoder'
+    assert tree[1].text == 'CONTENT DECODER'
+    assert not tree[1].attrib
+    assert tree[2].tag == tree[3].tag == tree[4].tag == 'multi'
+    assert tree[2].attrib == tree[3].attrib == tree[4].attrib == {}
+    assert tree[2].text == 'a'
+    assert tree[3].text == 'b'
+    assert tree[4].text == 'c'
+    assert tree[5].tag == '{http://earthreader.github.io/}ns-element'
+    assert tree[5].attrib == {
+        '{http://earthreader.github.io/}ns-attr': 'namespace attribute value'
+    }
+    assert tree[5].text == 'Namespace test'
+    assert tree[6].tag == '{http://earthreader.github.io/}ns-text'
+    assert not tree[6].attrib
+    assert tree[6].text == 'Namespace test'
+    assert tree[7].tag == 'text-combined-decoder'
+    assert not tree[7].attrib
+    assert tree[7].text == '-123400'
+    assert tree[8].tag == 'text-content'
+    assert not tree[8].attrib
+    assert tree[8].text == 'Text content'
+    assert tree[9].tag == 'text-decoder'
+    assert not tree[9].attrib
+    assert tree[9].text == '123.456'
+    assert tree[10].tag == 'text-decoder-decorator'
+    assert not tree[10].attrib
+    assert tree[10].text == '321'
+    assert tree[11].tag == tree[12].tag == 'text-multi'
+    assert tree[11].attrib == tree[12].attrib == {}
+    assert tree[11].text == 'a'
+    assert tree[12].text == 'b'
+    assert tree[13].tag == 'title'
+    assert not tree[13].attrib
+    assert tree[13].text == 'Title test'
+    assert len(tree) == 14
 
 
 def test_write_xmlns_doc(fx_xmlns_doc):
