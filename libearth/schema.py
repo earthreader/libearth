@@ -927,6 +927,11 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
     :param newline: an optional character to be used for newline.
                     default is ``'\n'``
     :type newline: :class:`str`
+    :param canonical_order: make the order of attributes and child nodes
+                            consistent to any python versions and
+                            implementations.  useful for testing.
+                            :const:`False` by default
+    :type canonical_order: :class:`bool`
     :returns: chunks of an XML string
     :rtype: :class:`types.GeneratorType`
 
