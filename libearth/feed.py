@@ -115,14 +115,15 @@ class FeedList(object):
             title = outline.xml_url or outline.title or outline.text
             self.feedlist[title] = convert_from_outline(outline)
 
-    def save_file(self):
+    def save_file(self, filename=None):
+        self.doc.head.title = self.title
         now = datetime.now().strftime('%a, %d %b %Y %H:%M:%S %Z')
         self.doc.head.date_modified = now
         if not self.doc.head.date_created:
             self.doc.head.date_created = now
 
         try:
-            with open(self.path, 'w') as fp:
+            with open(filename or self.path, 'w') as fp:
                 for chunk in write(self.doc):
                     fp.write(chunk)
         except Exception as e:
