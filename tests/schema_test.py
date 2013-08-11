@@ -86,9 +86,9 @@ def fx_test_doc():
     consume_log = []
     xml = string_chunks(
         consume_log,
-        '<test attr="attribute value" attr-decoder="Decoder Test">',
+        '<test attr="속성 값" attr-decoder="Decoder Test">',
         ['TEST_START'], '\n',
-        '\t', '<title>', 'Title ', 'test', '</title>', ['TITLE_CLOSE'], '\n',
+        '\t', '<title>', '제목 ', 'test', '</title>', ['TITLE_CLOSE'], '\n',
         '\t', '<multi>', 'a', '</multi>', ['MULTI_1_CLOSE'], '\n',
         '\t', '<content>', 'Content', ' test',
         '</content>', ['CONTENT_CLOSE'], '\n',
@@ -119,7 +119,7 @@ def fx_test_doc():
 def test_document_parse(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START'
-    assert doc.title_attr.value == 'Title test'
+    assert doc.title_attr.value == u('제목 test')
     assert consume_log[-1] == 'TITLE_CLOSE'
     assert doc.content_attr.value == 'Content test'
     assert consume_log[-1] == 'CONTENT_CLOSE'
@@ -128,7 +128,7 @@ def test_document_parse(fx_test_doc):
 
 def test_attribute(fx_test_doc):
     doc, consume_log = fx_test_doc
-    assert doc.attr_attr == 'attribute value'
+    assert doc.attr_attr == u('속성 값')
     assert consume_log[-1] == 'TEST_START'
 
 
@@ -451,7 +451,7 @@ def test_write_test_doc(fx_test_doc):
     assert ''.join(g) == '''\
 <?xml version="1.0" encoding="utf-8"?>
 <test xmlns:ns0="http://earthreader.github.io/"\
- attr="attribute value" attr-decoder="decoder test">
+ attr="속성 값" attr-decoder="decoder test">
     <content>Content test</content>
     <content-decoder>CONTENT DECODER</content-decoder>
     <multi>a</multi>
@@ -466,7 +466,7 @@ Namespace test</ns0:ns-element>
     <text-decoder-decorator>321</text-decoder-decorator>
     <text-multi>a</text-multi>
     <text-multi>b</text-multi>
-    <title>Title test</title>
+    <title>제목 test</title>
 </test>'''
 
 
@@ -476,7 +476,7 @@ def test_write_test_doc_tree(fx_test_doc):
     tree = xml.etree.ElementTree.fromstringlist(g)
     assert tree.tag == 'test'
     assert tree.attrib == {
-        'attr': 'attribute value',
+        'attr': u('속성 값'),
         'attr-decoder': 'decoder test'
     }
     assert tree[0].tag == 'content'
@@ -516,7 +516,7 @@ def test_write_test_doc_tree(fx_test_doc):
     assert tree[12].text == 'b'
     assert tree[13].tag == 'title'
     assert not tree[13].attrib
-    assert tree[13].text == 'Title test'
+    assert tree[13].text == u('제목 test')
     assert len(tree) == 14
 
 
