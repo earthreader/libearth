@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import collections
 import xml.etree.ElementTree
 
@@ -9,6 +10,12 @@ from libearth.schema import (Attribute, Child, Content, DescriptorConflictError,
                              Element, Text, read, index_descriptors,
                              inspect_attributes, inspect_child_tags,
                              inspect_content_tag, inspect_xmlns_set, write)
+
+
+def u(text):
+    if isinstance(text, text_type):
+        return text
+    return text.decode('utf-8')
 
 
 class TextElement(Element):
@@ -86,7 +93,7 @@ def fx_test_doc():
         '\t', '<content>', 'Content', ' test',
         '</content>', ['CONTENT_CLOSE'], '\n',
         '\t', '<multi>', 'b', '</multi>', ['MULTI_2_CLOSE'], '\n',
-        '\t', '<text-content>', 'Text ', 'content',
+        '\t', '<text-content>', '텍스트 ', '내용',
         '</text-content>', ['TEXT_CONTENT_CLOSE'], '\n',
         '\t', '<text-multi>', 'a', '</text-multi>',
         ['TEXT_MULTI_1_CLOSE'], '\n',
@@ -189,7 +196,7 @@ def test_multiple_child_getitem_from_last(fx_test_doc):
 def test_text_attribute(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START'
-    assert doc.text_content_attr == 'Text content'
+    assert doc.text_content_attr == u('텍스트 내용')
     assert consume_log[-1] == 'TEXT_CONTENT_CLOSE'
 
 
@@ -441,7 +448,8 @@ def test_attribute_descriptor_conflict():
 def test_write_test_doc(fx_test_doc):
     doc, _ = fx_test_doc
     g = write(doc, indent='    ', canonical_order=True)
-    assert ''.join(g) == text_type('''\
+    assert ''.join(g) == '''\
+<?xml version="1.0" encoding="utf-8"?>
 <test xmlns:ns0="http://earthreader.github.io/"\
  attr="attribute value" attr-decoder="decoder test">
     <content>Content test</content>
@@ -453,13 +461,13 @@ def test_write_test_doc(fx_test_doc):
 Namespace test</ns0:ns-element>
     <ns0:ns-text>Namespace test</ns0:ns-text>
     <text-combined-decoder>-123400</text-combined-decoder>
-    <text-content>Text content</text-content>
+    <text-content>텍스트 내용</text-content>
     <text-decoder>123.456</text-decoder>
     <text-decoder-decorator>321</text-decoder-decorator>
     <text-multi>a</text-multi>
     <text-multi>b</text-multi>
     <title>Title test</title>
-</test>''')
+</test>'''
 
 
 def test_write_test_doc_tree(fx_test_doc):
@@ -495,7 +503,7 @@ def test_write_test_doc_tree(fx_test_doc):
     assert tree[7].text == '-123400'
     assert tree[8].tag == 'text-content'
     assert not tree[8].attrib
-    assert tree[8].text == 'Text content'
+    assert tree[8].text == u('텍스트 내용')
     assert tree[9].tag == 'text-decoder'
     assert not tree[9].attrib
     assert tree[9].text == '123.456'
@@ -516,6 +524,7 @@ def test_write_xmlns_doc(fx_xmlns_doc):
     doc = fx_xmlns_doc
     g = write(doc, indent='    ', canonical_order=True)
     assert ''.join(g) == text_type('''\
+<?xml version="1.0" encoding="utf-8"?>
 <ns0:nstest xmlns:ns0="http://earthreader.github.io/"\
  xmlns:ns1="https://github.com/earthreader/libearth">
     <ns1:otherns>Other namespace</ns1:otherns>

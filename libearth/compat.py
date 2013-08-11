@@ -17,6 +17,10 @@ __all__ = ('PY3', 'binary', 'binary_type', 'encode_filename', 'file_types',
 #: (:class:`bool`) Whether it is Python 3.x or not.
 PY3 = sys.version_info >= (3,)
 
+#: (:class:`bool`) Whether the Python VM uses Unicode strings by default.
+#: It must be :const:`True` if :const:`PY3` or IronPython.
+UNICODE_BY_DEFAULT = PY3
+
 #: (:class:`type`) Type for representing binary data.  :class:`str` in Python 2
 #: and :class:`bytes` in Python 3.
 binary_type = bytes if PY3 else str

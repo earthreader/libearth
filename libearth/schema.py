@@ -63,7 +63,7 @@ import xml.sax
 import xml.sax.handler
 import xml.sax.saxutils
 
-from .compat import string_type
+from .compat import UNICODE_BY_DEFAULT, string_type, text_type
 
 __all__ = ('Attribute', 'Child', 'CodecDescriptor', 'Content',
            'ContentHandler', 'Descriptor', 'DescriptorConflictError',
@@ -949,6 +949,10 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
         (uri, 'ns{0}'.format(i))
         for i, uri in enumerate(sort(inspect_xmlns_set(doc_cls)))
     )
+    if UNICODE_BY_DEFAULT:
+        encode = lambda s: s
+    else:
+        encode = lambda s: s.encode('utf-8')
 
     def _export(element, tag, xmlns, depth=0):
         element_type = type(element)
@@ -978,7 +982,7 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
                 yield ':'
             yield desc.name
             yield '='
-            yield quoteattr(attr_value)  # TODO: encode
+            yield encode(quoteattr(attr_value))  # TODO: encode
         content = inspect_content_tag(element_type)
         children = inspect_child_tags(element_type)
         if content or children:
@@ -987,7 +991,7 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
             if content:
                 content_value = getattr(element, content[0], None)
                 if content_value is not None:
-                    yield escape(content_value)  # TODO: encode
+                    yield encode(escape(content_value))  # TODO: encode
             else:
                 children = sort(children.values(),
                                 key=operator.itemgetter(0))
@@ -1008,7 +1012,9 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
                                 yield ':'
                             yield desc.tag
                             yield '>'
-                            yield escape(str(child_element))  # TODO: encode
+                            child_value = text_type(child_element)
+                            # TODO: ^ encode
+                            yield encode(escape(child_value))
                             yield '</'
                             if desc.xmlns:
                                 yield xmlns_alias[desc.xmlns]
@@ -1031,4 +1037,7 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
             yield '>'
         else:
             yield '/>'
-    return _export(document, doc_cls.__tag__, doc_cls.__xmlns__)
+    return itertools.chain(
+        ['<?xml version="1.0" encoding="utf-8"?>\n'],
+        _export(document, doc_cls.__tag__, doc_cls.__xmlns__)
+    )
