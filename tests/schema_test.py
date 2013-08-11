@@ -473,7 +473,10 @@ Namespace test</ns0:ns-element>
 def test_write_test_doc_tree(fx_test_doc):
     doc, _ = fx_test_doc
     g = write(doc, canonical_order=True)
-    tree = xml.etree.ElementTree.fromstringlist(g)
+    if hasattr(xml.etree.ElementTree, 'fromstringlist'):
+        tree = xml.etree.ElementTree.fromstringlist(g)
+    else:
+        tree = xml.etree.ElementTree.fromstring(''.join(g))
     assert tree.tag == 'test'
     assert tree.attrib == {
         'attr': u('속성 값'),
