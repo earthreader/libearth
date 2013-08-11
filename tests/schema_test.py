@@ -42,7 +42,8 @@ class TestDoc(DocumentElement):
     text_multi_attr = Text('text-multi', multiple=True)
     text_decoder = Text('text-decoder', decoder=float)
     text_decoder_decorator = Text('text-decoder-decorator')
-    text_combined_decoder = Text('text-combined-decoder', decoder=int)
+    text_combined_decoder = Text('text-combined-decoder',
+                                 decoder=int, encoder=lambda i: i / 100)
     ns_element_attr = Child('ns-element', TextElement,
                             xmlns='http://earthreader.github.io/')
     ns_text_attr = Text('ns-text', xmlns='http://earthreader.github.io/')
@@ -52,9 +53,18 @@ class TestDoc(DocumentElement):
     def attr_decoder_decorator(self, value):
         return value[::-1]
 
+    @attr_decoder_decorator.encoder
+    def attr_decoder_decorator(self, value):
+        return value and value[::-1]
+
     @text_decoder_decorator.decoder
     def text_decoder_decorator(self, text):
         return int(text[::-1])
+
+    @text_decoder_decorator.encoder
+    def text_decoder_decorator(self, value):
+        if value is not None:
+            return str(value)[::-1]
 
     @text_combined_decoder.decoder
     def text_combined_decoder(self, value):
@@ -63,6 +73,16 @@ class TestDoc(DocumentElement):
     @text_combined_decoder.decoder
     def text_combined_decoder(self, value):
         return -value
+
+    @text_combined_decoder.encoder
+    def text_combined_decoder(self, value):
+        return -value
+
+    @text_combined_decoder.encoder
+    def text_combined_decoder(self, value):
+        if value % 1 <= 0:
+            value = int(value)
+        return str(value)
 
 
 def string_chunks(consume_log, *chunks):
@@ -460,10 +480,10 @@ def test_write_test_doc(fx_test_doc):
     <ns0:ns-element ns0:ns-attr="namespace attribute value">\
 Namespace test</ns0:ns-element>
     <ns0:ns-text>Namespace test</ns0:ns-text>
-    <text-combined-decoder>-123400</text-combined-decoder>
+    <text-combined-decoder>1234</text-combined-decoder>
     <text-content>텍스트 내용</text-content>
     <text-decoder>123.456</text-decoder>
-    <text-decoder-decorator>321</text-decoder-decorator>
+    <text-decoder-decorator>123</text-decoder-decorator>
     <text-multi>a</text-multi>
     <text-multi>b</text-multi>
     <title>제목 test</title>
@@ -503,7 +523,7 @@ def test_write_test_doc_tree(fx_test_doc):
     assert tree[6].text == 'Namespace test'
     assert tree[7].tag == 'text-combined-decoder'
     assert not tree[7].attrib
-    assert tree[7].text == '-123400'
+    assert tree[7].text == '1234'
     assert tree[8].tag == 'text-content'
     assert not tree[8].attrib
     assert tree[8].text == u('텍스트 내용')
@@ -512,7 +532,7 @@ def test_write_test_doc_tree(fx_test_doc):
     assert tree[9].text == '123.456'
     assert tree[10].tag == 'text-decoder-decorator'
     assert not tree[10].attrib
-    assert tree[10].text == '321'
+    assert tree[10].text == '123'
     assert tree[11].tag == tree[12].tag == 'text-multi'
     assert tree[11].attrib == tree[12].attrib == {}
     assert tree[11].text == 'a'

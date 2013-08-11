@@ -50,8 +50,8 @@ You can declare the schema for this like the following class definition::
 
 .. todo::
 
-   - Encoder decorator methods
-   - Converter
+   - Codec
+   - Syntax error
 
 """
 import collections
@@ -261,31 +261,119 @@ class CodecDescriptor(object):
     :meth:`encoder`.
 
     :class:`Attribute`, :class:`Content` and :class:`Text` can take
-    ``decoder`` functions for them.  It's used for decoding raw values
-    from XML to natural Python representations.  Decoders can be specified
-    using ``decoder`` parameter of descriptor's constructor,
-    or :meth:`decoder()` decorator::
+    ``encoder`` and ``decoder`` functions for them.  It's used for encoding
+    from Python values to XML string and decoding raw values from XML to
+    natural Python representations.
+
+    Encoders can be specified using ``encoder`` parameter of descriptor's
+    constructor, or :meth:`encoder()` decorator.
+
+    Decoders can be specified using ``decoder`` parameter of descriptor's
+    constructor, or :meth:`decoder()` decorator::
 
         class Person(DocumentElement):
             __tag__ = 'person'
             format_version = Attribute('version')
             name = Text('name')
             url = Child('url', URL, multiple=True)
-            dob = Text('dob', decoder=datetime.date.strptime)
+            dob = Text('dob',
+                       encoder=datetime.date.strftime.isoformat,
+                       decoder=lambda s: datetime.date.strptime(s, '%Y-%m-%d'))
+
+            @format_version.encoder
+            def format_version(self, value):
+                return '.'.join(map(str, value))
 
             @format_version.decoder
             def format_version(self, value):
                 return tuple(map(int, value.split('.')))
 
+    :param encoder: an optional function that encodes Python value into
+                    XML text value e.g. :func:`str()`.  the encoder function
+                    has to take an argument
+    :type encoder: :class:`collections.Callable`
+    :param decoder: an optional function that decodes XML text value into
+                    Python value e.g. :func:`int()`.  the decoder function
+                    has to take a string argument
+    :type decoder: :class:`collections.Callable`
+
     """
 
-    def __init__(self, decoder=None):
+    def __init__(self, encoder=None, decoder=None):
+        self.encoders = []
         self.decoders = []
+        if encoder is not None:
+            if not callable(encoder):
+                raise TypeError('encoder must be callable, not ' +
+                                repr(encoder))
+            self.encoders.append(CodecFunction(encoder, descriptor=False))
         if decoder is not None:
             if not callable(decoder):
                 raise TypeError('decoder must be callable, not ' +
                                 repr(decoder))
             self.decoders.append(CodecFunction(decoder, descriptor=False))
+
+    def encoder(self, function):
+        r"""Decorator which sets the encoder to the decorated function::
+
+            import datetime
+
+            class Person(DocumentElement):
+                '''Person.dob will be written to ISO 8601 format'''
+
+                __tag__ = 'person'
+                dob = Text('dob')
+
+                @dob.encoder
+                def dob(self, dob):
+                    if not isinstance(dob, datetime.date):
+                        raise TypeError('expected datetime.date')
+                    return dob.strftime('%Y-%m-%d')
+
+        >>> isinstance(p, Person)
+        True
+        >>> p.dob
+        datetime.date(1987, 7, 26)
+        >>> ''.join(write(p, indent='', newline=''))
+        '<person><dob>1987-07-26</dob></person>'
+
+        If it's applied multiple times, all decorated functions are piped
+        in the order::
+
+            class Person(Element):
+                '''Person.email will have mailto: prefix when it's written
+                to XML.
+
+                '''
+
+                email = Text('email', encoder=lambda email: 'mailto:' + email)
+
+                @age.encoder
+                def email(self, email):
+                    return email.strip()
+
+                @email.encoder
+                def email(self, email):
+                    login, host = email.split('@', 1)
+                    return login + '@' + host.lower()
+
+        >>> isinstance(p, Person)
+        True
+        >>> p.email
+        '  earthreader@librelist.com  '
+        >>> ''.join(write(p, indent='', newline=''))
+        >>> '<person><email>mailto:earthreader@librelist.com</email></person>')
+
+        .. note::
+
+           This creates a copy of the descriptor instance rather than
+           manipulate itself in-place.
+
+        """
+        desc = copy.copy(self)
+        desc.encoders = self.encoders[:]
+        desc.encoders.append(CodecFunction(function, descriptor=True))
+        return desc
 
     def decoder(self, function):
         r"""Decorator which sets the decoder to the decorated function::
@@ -342,6 +430,14 @@ class CodecDescriptor(object):
         desc.decoders.append(CodecFunction(function, descriptor=True))
         return desc
 
+    def encode(self, value, instance):
+        for encoder in self.encoders:
+            if encoder.descriptor and hasattr(encoder.function, '__get__'):
+                value = encoder.function.__get__(instance)(value)
+            else:
+                value = encoder.function(value)
+        return value
+
     def decode(self, text, instance):
         """Decode the given ``text`` as it's programmed.
 
@@ -369,7 +465,7 @@ class Text(Descriptor, CodecDescriptor):
     """Descriptor that declares a possible child element that only cosists
     of character data.  All other attributes and child nodes are ignored.
 
-    :param tag: the tag name
+    :param tag: the XML tag name
     :type tag: :class:`str`
     :param xmlns: an optional XML namespace URI
     :type xmlns: :class:`str`
@@ -381,18 +477,22 @@ class Text(Descriptor, CodecDescriptor):
                      it's exclusive to ``required``.
                      :const:`False` by default
     :type multiple: :class:`bool`
+    :param encoder: an optional function that encodes Python value into
+                    XML text value e.g. :func:`str()`.  the encoder function
+                    has to take an argument
+    :type encoder: :class:`collections.Callable`
     :param decoder: an optional function that decodes XML text value into
                     Python value e.g. :func:`int()`.  the decoder function
-                    has to take an argument
+                    has to take a string argument
     :type decoder: :class:`collections.Callable`
 
     """
 
     def __init__(self, tag, xmlns=None, required=False, multiple=False,
-                 decoder=None):
+                 encoder=None, decoder=None):
         Descriptor.__init__(self, tag,
                             xmlns=xmlns, required=required, multiple=multiple)
-        CodecDescriptor.__init__(self, decoder=decoder)
+        CodecDescriptor.__init__(self, encoder=encoder, decoder=decoder)
 
     def start_element(self, element, attribute):
         return element
@@ -406,7 +506,25 @@ class Text(Descriptor, CodecDescriptor):
 
 
 class Attribute(CodecDescriptor):
-    """Declare possible element attributes as a descriptor."""
+    """Declare possible element attributes as a descriptor.
+
+    :param name: the XML attribute name
+    :type name: :class:`str`
+    :param xmlns: an optional XML namespace URI
+    :type xmlns: :class:`str`
+    :param required: whether the child is required or not.
+                     :const:`False` by default
+    :type required: :class:`bool`
+    :param encoder: an optional function that encodes Python value into
+                    XML text value e.g. :func:`str()`.  the encoder function
+                    has to take an argument
+    :type encoder: :class:`collections.Callable`
+    :param decoder: an optional function that decodes XML text value into
+                    Python value e.g. :func:`int()`.  the decoder function
+                    has to take a string argument
+    :type decoder: :class:`collections.Callable`
+
+    """
 
     #: (:class:`str`) The XML attribute name.
     name = None
@@ -420,8 +538,9 @@ class Attribute(CodecDescriptor):
     #: (:class:`bool`) Whether it is required for the element.
     required = None
 
-    def __init__(self, name, xmlns=None, required=False, decoder=None):
-        super(Attribute, self).__init__(decoder=decoder)
+    def __init__(self, name, xmlns=None, required=False,
+                 encoder=None, decoder=None):
+        super(Attribute, self).__init__(encoder=encoder, decoder=decoder)
         self.name = name
         self.xmlns = xmlns
         self.key_pair = xmlns, name
@@ -434,7 +553,18 @@ class Attribute(CodecDescriptor):
 
 
 class Content(CodecDescriptor):
-    """Declare possible text nodes as a descriptor."""
+    """Declare possible text nodes as a descriptor.
+
+    :param encoder: an optional function that encodes Python value into
+                    XML text value e.g. :func:`str()`.  the encoder function
+                    has to take an argument
+    :type encoder: :class:`collections.Callable`
+    :param decoder: an optional function that decodes XML text value into
+                    Python value e.g. :func:`int()`.  the decoder function
+                    has to take a string argument
+    :type decoder: :class:`collections.Callable`
+
+    """
 
     def __get__(self, obj, cls=None):
         if isinstance(obj, Element):
@@ -973,7 +1103,8 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
         attr_descriptors = sort(inspect_attributes(element_type).values(),
                                 key=operator.itemgetter(0))
         for attr, desc in attr_descriptors:
-            attr_value = getattr(element, attr, None)
+            attr_value = desc.encode(getattr(element, attr, None),
+                                     element)
             if attr_value is None:
                 continue
             yield ' '
@@ -982,16 +1113,19 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
                 yield ':'
             yield desc.name
             yield '='
-            yield encode(quoteattr(attr_value))  # TODO: encode
+            yield encode(quoteattr(attr_value))
         content = inspect_content_tag(element_type)
         children = inspect_child_tags(element_type)
         if content or children:
             assert not (content and children)
             yield '>'
             if content:
-                content_value = getattr(element, content[0], None)
+                content_value = content[1].encode(
+                    getattr(element, content[0], None),
+                    element
+                )
                 if content_value is not None:
-                    yield encode(escape(content_value))  # TODO: encode
+                    yield encode(escape(content_value))
             else:
                 children = sort(children.values(),
                                 key=operator.itemgetter(0))
@@ -1000,10 +1134,11 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
                     if not desc.multiple:
                         child_elements = [child_elements]
                     for child_element in child_elements:
-                        if child_element is None:
-                            continue
-                        yield newline
                         if isinstance(desc, Text):  # FIXME: remote type query
+                            child_element = desc.encode(child_element, element)
+                            if child_element is None:
+                                continue
+                            yield newline
                             for s in itertools.repeat(indent, depth + 1):
                                 yield s
                             yield '<'
@@ -1013,7 +1148,6 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
                             yield desc.tag
                             yield '>'
                             child_value = text_type(child_element)
-                            # TODO: ^ encode
                             yield encode(escape(child_value))
                             yield '</'
                             if desc.xmlns:
@@ -1021,7 +1155,8 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
                                 yield ':'
                             yield desc.tag
                             yield '>'
-                        else:
+                        elif child_element is not None:
+                            yield newline
                             subiter = _export(child_element,
                                               desc.tag,
                                               desc.xmlns,
