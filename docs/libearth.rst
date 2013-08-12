@@ -5,7 +5,8 @@
       :maxdepth: 2
 
       libearth/compat
-      libearthd/crawler
+      libearth/crawler
+      libearth/parser
       libearth/repository
       libearth/schema
       libearth/session

@@ -6,7 +6,7 @@ python:
 - 3.3
 - pypy
 install:
-- pip install pytest pytest-cov pep8 coveralls
+- pip install pytest pytest-cov pep8 httpretty coveralls
 script:
 - python -mlibearth.version
 - py.test --cov libearth --durations=20
