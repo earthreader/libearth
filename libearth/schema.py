@@ -52,6 +52,8 @@ You can declare the schema for this like the following class definition::
 
    - Codec
    - Syntax error
+   - :class:`ElementList` should be :class:`collections.MutableSequence`
+   - :func:`write()` should be aware of :attr:`Descriptor.required`
 
 """
 import collections

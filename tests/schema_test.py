@@ -553,3 +553,16 @@ def test_write_xmlns_doc(fx_xmlns_doc):
     <ns1:otherns>Other namespace</ns1:otherns>
     <ns0:samens>Same namespace</ns0:samens>
 </ns0:nstest>''')
+
+
+def test_mutate_element_before_read(fx_test_doc):
+    doc, consume_log = fx_test_doc
+    assert consume_log[-1] == 'TEST_START'
+    doc.text_content_attr = u('바뀐 텍스트 내용')
+    assert consume_log[-1] == 'TEST_START'
+    assert doc.text_content_attr == u('바뀐 텍스트 내용')
+    assert consume_log[-1] == 'TEST_START'
+    assert doc.text_multi_attr[0] == 'a'
+    assert consume_log[-1] == 'TEXT_MULTI_1_CLOSE'
+    assert doc.text_content_attr == u('바뀐 텍스트 내용')
+    assert consume_log[-1] == 'TEXT_MULTI_1_CLOSE'
