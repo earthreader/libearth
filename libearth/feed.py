@@ -60,6 +60,7 @@ def convert_from_outline(outline_obj):
             'text': outline_obj.text,
             'type': outline_obj.type_,
             'html_url': outline_obj.html_url,
+            'xml_url': outline_obj.xml_url,
         }
     else:
         res = {
@@ -71,6 +72,24 @@ def convert_from_outline(outline_obj):
 
         for outline in outline_obj.children:
             res['children'].append(convert_from_outline(outline))
+    return res
+
+
+def convert_to_outline(outline_dic):
+    res = OutlineElement()
+    if outline_dic['type'] == category:
+        res.type_ = 'category'
+        res.text = outline_dic['text']
+        res.title = outline_dic['title']
+
+        #TODO: add children here
+    else:
+        res.type_ = outline_dic['type']
+        res.text = outline_dic['text']
+        res.title = outline_dic['title']
+        res.xml_url = outline_dic['xml_url']
+        res.html_url = outline_dic['html_url']
+
     return res
 
 
@@ -117,6 +136,9 @@ class FeedList(object):
 
     def save_file(self, filename=None):
         self.doc.head.title = self.title
+
+        #TODO: Change doc.body here
+
         now = datetime.now().strftime('%a, %d %b %Y %H:%M:%S %Z')
         self.doc.head.date_modified = now
         if not self.doc.head.date_created:
