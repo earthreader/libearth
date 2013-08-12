@@ -52,7 +52,6 @@ You can declare the schema for this like the following class definition::
 
    - Codec
    - Syntax error
-   - :class:`ElementList` should be :class:`collections.MutableSequence`
    - :func:`write()` should be aware of :attr:`Descriptor.required`
 
 """
@@ -674,7 +673,7 @@ class DocumentElement(Element):
         super(DocumentElement, self).__init__(self, **kwargs)
 
 
-class ElementList(collections.Sequence):
+class ElementList(collections.MutableSequence):
     """List-like object to represent multiple chidren.  It makes the parser
     to lazily consume the buffer when an element of a particular offset
     is requested.
@@ -731,26 +730,53 @@ class ElementList(collections.Sequence):
             return True
         parent = element._parent()
         root = element._root()
-        handler = root._handler
+        handler = getattr(root, '_handler', None)
+        if not handler:
+            return True
         stack = handler.stack
         top = element._stack_top
         return len(stack) < top or stack[top - 1].reserved_value is not parent
 
+    def consume_index(self, index):
+        key = self.descriptor
+        if index >= 0:
+            for data in self.consume_buffer():
+                if key in data and len(data[key]) > index:
+                    return data[key]
+        else:
+            for data in self.consume_buffer():
+                continue
+        return self.element()._data.setdefault(key, [])
+
     def __len__(self):
+        key = self.descriptor
+        data = self.element()._data
         for data in self.consume_buffer():
             continue
         try:
-            lst = data[self.descriptor]
+            lst = data[key]
         except KeyError:
             return 0
         return len(lst)
 
     def __getitem__(self, index):
-        key = self.descriptor
-        for data in self.consume_buffer():
-            if key in data and len(data[key]) > index:
-                return data[key][index]
-        raise IndexError(index)
+        return self.consume_index(index)[index]
+
+    def __setitem__(self, index, value):
+        data = self.consume_index(index)
+        data[index] = value
+
+    def __delitem__(self, index):
+        data = self.consume_index(index)
+        del data[index]
+
+    def insert(self, index, value):
+        data = self.consume_index(index)
+        data.insert(index, value)
+
+    def __nonzero__(self):
+        data = self.consume_index(1)
+        return bool(data)
 
     def __repr__(self):
         consumed = self.element()._data.get(self.descriptor, [])

@@ -584,3 +584,54 @@ def test_element_initialize():
     assert doc.text_content_attr == 'Text content'
     tree = etree_fromstringlist(write(doc))
     assert tree.find('title').text == 'Title test'
+
+
+def test_mutate_element_list():
+    doc = TestDoc()
+    assert not doc.multi_attr
+    assert len(doc.multi_attr) == 0
+    with raises(IndexError):
+        doc.multi_attr[0]
+    doc.multi_attr.append(TextElement(value='First element'))
+    assert doc.multi_attr
+    assert len(doc.multi_attr) == 1
+    assert doc.multi_attr[0].value == 'First element'
+    doc.multi_attr.insert(1, TextElement(value='Second element'))
+    assert len(doc.multi_attr) == 2
+    assert doc.multi_attr[1].value == 'Second element'
+    tree = etree_fromstringlist(write(doc))
+    elements = tree.findall('multi')
+    assert len(elements) == 2
+    assert elements[0].text == 'First element'
+    assert elements[1].text == 'Second element'
+    doc.multi_attr[0] = TextElement(value='Replacing element')
+    assert len(doc.multi_attr) == 2
+    assert doc.multi_attr[0].value == 'Replacing element'
+    tree = etree_fromstringlist(write(doc))
+    elements = tree.findall('multi')
+    assert len(elements) == 2
+    assert elements[0].text == 'Replacing element'
+    assert elements[1].text == 'Second element'
+    del doc.multi_attr[0]
+    assert len(doc.multi_attr) == 1
+    assert doc.multi_attr[0].value == 'Second element'
+    tree = etree_fromstringlist(write(doc))
+    elements = tree.findall('multi')
+    assert len(elements) == 1
+    assert elements[0].text == 'Second element'
+
+
+def test_mutate_read_element_list(fx_test_doc):
+    doc, _ = fx_test_doc
+    doc.multi_attr.insert(2, TextElement(value='inserted'))
+    assert doc.multi_attr[0].value == 'a'
+    assert doc.multi_attr[1].value == 'b'
+    assert doc.multi_attr[2].value == 'inserted'
+    assert doc.multi_attr[3].value == 'c'
+    tree = etree_fromstringlist(write(doc))
+    elements = tree.findall('multi')
+    assert len(elements) == 4
+    assert elements[0].text == 'a'
+    assert elements[1].text == 'b'
+    assert elements[2].text == 'inserted'
+    assert elements[3].text == 'c'
