@@ -43,7 +43,7 @@ class TestDoc(DocumentElement):
     text_decoder = Text('text-decoder', decoder=float)
     text_decoder_decorator = Text('text-decoder-decorator')
     text_combined_decoder = Text('text-combined-decoder',
-                                 decoder=int, encoder=lambda i: i / 100)
+                                 decoder=int, encoder=lambda i: i and i / 100)
     ns_element_attr = Child('ns-element', TextElement,
                             xmlns='http://earthreader.github.io/')
     ns_text_attr = Text('ns-text', xmlns='http://earthreader.github.io/')
@@ -76,13 +76,15 @@ class TestDoc(DocumentElement):
 
     @text_combined_decoder.encoder
     def text_combined_decoder(self, value):
-        return -value
+        if value is not None:
+            return -value
 
     @text_combined_decoder.encoder
     def text_combined_decoder(self, value):
-        if value % 1 <= 0:
-            value = int(value)
-        return str(value)
+        if value is not None:
+            if value % 1 <= 0:
+                value = int(value)
+            return str(value)
 
 
 def string_chunks(consume_log, *chunks):
@@ -490,13 +492,16 @@ Namespace test</ns0:ns-element>
 </test>'''
 
 
+def etree_fromstringlist(iterable):
+    if hasattr(xml.etree.ElementTree, 'fromstringlist'):
+        return xml.etree.ElementTree.fromstringlist(iterable)
+    return xml.etree.ElementTree.fromstring(''.join(iterable))
+
+
 def test_write_test_doc_tree(fx_test_doc):
     doc, _ = fx_test_doc
     g = write(doc, canonical_order=True)
-    if hasattr(xml.etree.ElementTree, 'fromstringlist'):
-        tree = xml.etree.ElementTree.fromstringlist(g)
-    else:
-        tree = xml.etree.ElementTree.fromstring(''.join(g))
+    tree = etree_fromstringlist(g)
     assert tree.tag == 'test'
     assert tree.attrib == {
         'attr': u('속성 값'),
@@ -566,3 +571,16 @@ def test_mutate_element_before_read(fx_test_doc):
     assert consume_log[-1] == 'TEXT_MULTI_1_CLOSE'
     assert doc.text_content_attr == u('바뀐 텍스트 내용')
     assert consume_log[-1] == 'TEXT_MULTI_1_CLOSE'
+
+
+def test_element_initialize():
+    doc = TestDoc(title_attr=TextElement(value='Title test'),
+                  content_attr=TextElement(value=u('내용 테스트')),
+                  attr_attr='Attribute value',
+                  text_content_attr='Text content')
+    assert doc.title_attr.value == 'Title test'
+    assert doc.content_attr.value == u('내용 테스트')
+    assert doc.attr_attr == 'Attribute value'
+    assert doc.text_content_attr == 'Text content'
+    tree = etree_fromstringlist(write(doc))
+    assert tree.find('title').text == 'Title test'

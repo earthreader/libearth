@@ -120,16 +120,18 @@ class Descriptor(object):
             if self.multiple:
                 return ElementList(obj, self)
             root = obj._root()
-            handler = root._handler
-            parser = root._parser
-            iterable = root._iterator
-            stack = handler.stack
-            while (obj._data.get(self) is None and (not stack or stack[-1])):
-                try:
-                    chunk = next(iterable)
-                except StopIteration:
-                    break
-                parser.feed(chunk)
+            if getattr(root, '_handler', None):
+                handler = root._handler
+                parser = root._parser
+                iterable = root._iterator
+                stack = handler.stack
+                while ((obj._data.get(self) is None and
+                       (not stack or stack[-1]))):
+                    try:
+                        chunk = next(iterable)
+                    except StopIteration:
+                        break
+                    parser.feed(chunk)
             return obj._data.get(self)
         return self
 
@@ -570,16 +572,17 @@ class Content(CodecDescriptor):
 
     def __get__(self, obj, cls=None):
         if isinstance(obj, Element):
-            root = obj._root()
-            handler = root._handler
-            parser = root._parser
-            iterable = root._iterator
-            while (obj._content is None and
-                   (not handler.stack or handler.stack[-1])):
-                try:
-                    parser.feed(next(iterable))
-                except StopIteration:
-                    break
+            if getattr(obj, '_root', None):
+                root = obj._root()
+                handler = root._handler
+                parser = root._parser
+                iterable = root._iterator
+                while (obj._content is None and
+                       (not handler.stack or handler.stack[-1])):
+                    try:
+                        parser.feed(next(iterable))
+                    except StopIteration:
+                        break
             return obj._content or ''
         return self
 
@@ -599,19 +602,47 @@ class Content(CodecDescriptor):
 
 
 class Element(object):
-    """Represent an element in XML document."""
+    """Represent an element in XML document.
+
+    It provides the default constructor which takes keywords
+    and initializes the attributes by given keyword arguments.
+    For example, the following code that uses the default
+    constructor::
+
+        assert issubclass(Person, Element)
+
+        author = Person(
+            name='Hong Minhee',
+            url='http://dahlia.kr/'
+        )
+
+    is equivalent to the following code::
+
+        author = Person()
+        author.name = 'Hong Minhee'
+        author.url = 'http://dahlia.kr/'
+
+    """
 
     __slots__ = '_attrs', '_content', '_data', '_parent', '_root'
 
-    def __init__(self, _parent, *args, **kwargs):
+    def __init__(self, _parent=None, *args, **attributes):
         self._attrs = getattr(self, '_attrs', {})  # FIXME
         self._content = None
         self._data = {}
-        self._parent = weakref.ref(_parent)
-        self._root = _parent._root
-        if hasattr(self._root(), '_handler'):
-            self._stack_top = len(self._root()._handler.stack)
-        assert not kwargs, 'implement sqla-style initializer'  # TODO
+        if _parent is not None:
+            self._parent = weakref.ref(_parent)
+            self._root = _parent._root
+            if hasattr(self._root(), '_handler'):
+                self._stack_top = len(self._root()._handler.stack)
+        cls = type(self)
+        acceptable_desc_types = Descriptor, Content, Attribute  # FIXME
+        for attr_name, attr_value in attributes.items():
+            if isinstance(getattr(cls, attr_name, None), acceptable_desc_types):
+                setattr(self, attr_name, attr_value)
+            else:
+                raise SchemaError('{0.__module__}.{0.__name__} has no such '
+                                  'attribute: {1}'.format(cls, attr_name))
 
 
 class DocumentElement(Element):
@@ -676,8 +707,13 @@ class ElementList(collections.Sequence):
 
         """
         element = self.element()
-        root = element._root()
-        parser = root._parser
+        root_ref = getattr(element, '_root', None)
+        if not root_ref:
+            return
+        root = root_ref()
+        parser = getattr(root, '_parser', None)
+        if not parser:
+            return
         iterable = root._iterator
         data = element._data
         while not self.consumes_all():
@@ -691,6 +727,8 @@ class ElementList(collections.Sequence):
 
     def consumes_all(self):
         element = self.element()
+        if not getattr(element, '_parent', None):
+            return True
         parent = element._parent()
         root = element._root()
         handler = root._handler
@@ -711,8 +749,8 @@ class ElementList(collections.Sequence):
         key = self.descriptor
         for data in self.consume_buffer():
             if key in data and len(data[key]) > index:
-                break
-        return data[key][index]
+                return data[key][index]
+        raise IndexError(index)
 
     def __repr__(self):
         consumed = self.element()._data.get(self.descriptor, [])
