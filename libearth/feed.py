@@ -92,7 +92,6 @@ def convert_to_outline(outline_dic):
 
     return res
 
-
 class FeedList(object):
     def __init__(self, path=None, is_xml_string=False):
         """Initializer of Feed list

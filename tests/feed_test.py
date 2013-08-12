@@ -1,7 +1,8 @@
-from pytest import raises
+from pytest import mark, raises, skip
 
 from libearth.compat import binary_type, text_type, xrange
-from libearth.feed import AlreadyExistException, FeedList, OPMLDoc
+from libearth.feed import (AlreadyExistException, FeedList, OPMLDoc,
+                           SaveOPMLError)
 from libearth.schema import (Child, Content, DocumentElement, Element, Text,
                              read)
 
@@ -122,3 +123,25 @@ def test_feed_contains_category():
         assert not expected[feed['title']]
         expected.pop(feed['title'])
     assert not expected.keys()
+
+
+def test_save_as_file(tmpdir):
+    #schema.write() is currently doesn't working. so skip
+    test_for_schema = FeedList(XML, is_xml_string=True)
+    try:
+        test_for_schema.save_file(tmpdir.join('test.opml'))
+    except SaveOPMLError:
+        skip()
+
+    filename = tmpdir.join('feeds.opml')
+    print(filename)
+    feeds = FeedList(XML, is_xml_string=True)
+    feeds.title = "changed_title"
+    feeds.save_file(filename)
+    feeds.add_feed('http://addedurl.com', 'addedurl', 'rss')
+    feeds.get_feed('http://test.com')['title'] = "feed_title"
+
+    feeds_another = FeedList(filename)
+    assert feeds_another.title == "changed_title"
+    assert feeds_another.get_feed('http://addedurl.com')['title'] == "addedurl"
+    assert feeds_another.get_feed('http://test.com')['title'] == "feed_title"
