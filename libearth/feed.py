@@ -117,57 +117,25 @@ class OPMLDoc(DocumentElement):
     body = Child('body', BodyElement)
 
 
-def convert_from_outline(outline_obj):
-    if outline_obj.children:
-        title = outline_obj.title or outline_obj.text
-
-        res = FeedCategory(title)
-
-        for outline in outline_obj.children:
-            res.append(convert_from_outline(outline))
-    else:
-        type = outline_obj.type
-        title = outline_obj.title or outline_obj.text
-        xml_url = outline_obj.xml_url
-        html_url = outline_obj.html_url
-
-        res = Feed(type, title, xml_url, html_url)
-
-    return res
-
-
-def convert_to_outline(feed_obj):
-    res = OutlineElement()
-    if feed_obj.type == 'category':
-        res.type = 'category'
-        res.text = feed_obj['text']
-        res.title = feed_obj['title']
-
-        res.children = []
-        for child in feed_obj:
-            res.children.append(convert_to_outline(child))
-    else:
-        res.type = feed_obj.rsstype
-        res.text = feed_obj.text
-        res.title = feed_obj.title
-        res.xml_url = feed_obj.xml_url
-        res.html_url = feed_obj.html_url
-
-    return res
-
-
 class FeedList(object):
+    """FeedList is Class for OPML file
+    it has a dictionary named :var:`all_feeds` which have all :class:`Feed` for
+    linked on multi :class:`FeedCategory`
+    :var:`all_feeds` is hashed with tuple key: (type, title, xml_url)
+    """
     def __init__(self, path=None, is_xml_string=False):
         """Initializer of Feed list
         when path is None, it doesn't save opml file. just use memory
         """
         #TODO: same Feed on multiple category
+        #TODO: Only one feed on same category
 
         #default value
         self.title = "EarthReader"
-        #TODO: save with file, load with file
+
         self.path = path
         self.feedlist = FeedCategory(self.title)
+        self.all_feeds = {}
 
         if self.path:
             self.open_file(is_xml_string)
@@ -191,7 +159,7 @@ class FeedList(object):
         self.title = self.doc.head.title
         self.expansion_state = self.doc.head.expansion_state
         for outline in self.doc.body.outline:
-            self.feedlist.append(convert_from_outline(outline))
+            self.feedlist.append(self.convert_from_outline(outline))
 
     def save_file(self, filename=None):
         self.doc.head.title = self.title
@@ -200,7 +168,7 @@ class FeedList(object):
         #TODO: Change doc.body here
         self.doc.body.outline[:] = []
         for feed in self.feedlist:
-            self.doc.body.outline.append(convert_to_outline(feed))
+            self.doc.body.outline.append(self.convert_to_outline(feed))
 
         now = datetime.now().strftime('%a, %d %b %Y %H:%M:%S %Z')
         self.doc.head.date_modified = now
@@ -224,6 +192,43 @@ class FeedList(object):
 
     def remove_feed(self, title):
         del self.feedlist[('rss', title)]
+
+    def convert_from_outline(self, outline_obj):
+        if outline_obj.children:
+            title = outline_obj.title or outline_obj.text
+
+            res = FeedCategory(title)
+
+            for outline in outline_obj.children:
+                res.append(self.convert_from_outline(outline))
+        else:
+            type = outline_obj.type
+            title = outline_obj.title or outline_obj.text
+            xml_url = outline_obj.xml_url
+            html_url = outline_obj.html_url
+
+            res = Feed(type, title, xml_url, html_url)
+
+        return res
+
+    def convert_to_outline(self, feed_obj):
+        res = OutlineElement()
+        if feed_obj.type == 'category':
+            res.type = 'category'
+            res.text = feed_obj['text']
+            res.title = feed_obj['title']
+
+            res.children = []
+            for child in feed_obj:
+                res.children.append(self.convert_to_outline(child))
+        else:
+            res.type = feed_obj.rsstype
+            res.text = feed_obj.text
+            res.title = feed_obj.title
+            res.xml_url = feed_obj.xml_url
+            res.html_url = feed_obj.html_url
+
+        return res
 
     def __len__(self):
         return len(self.feedlist)
