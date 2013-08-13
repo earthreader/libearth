@@ -1117,7 +1117,10 @@ def inspect_content_tag(element_type):
 
 def read(cls, iterable):
     """Initialize a document in read mode by opening the ``iterable``
-    of XML string.
+    of XML string.  ::
+
+        with open('doc.xml', 'r') as f:
+            read(Person, f)
 
     Returned document element is not fully read but partially loaded
     into memory, and then lazily (and eventually) loaded when these
@@ -1159,7 +1162,14 @@ def read(cls, iterable):
 
 
 def validate(element, recurse=True, raise_error=True):
-    """Validate the given ``element`` according to the schema.
+    """Validate the given ``element`` according to the schema.  ::
+
+        from libearth.schema import IntegrityError, validate
+
+        try:
+            validate(element)
+        except IntegrityError:
+            print('the element {0!r} is invalid!'.format(element))
 
     :param element: the element object to validate
     :type element: :class:`Element`
@@ -1206,7 +1216,11 @@ def validate(element, recurse=True, raise_error=True):
 def write(document, validate=True, indent='  ', newline='\n',
           canonical_order=False):
     r"""Write the given ``document`` to XML string.  The return value is
-    an iterator that yields chunks of an XML string.
+    an iterator that yields chunks of an XML string.  ::
+
+        with open('doc.xml', 'w') as f:
+            for chunk in write(document):
+                f.write(chunk)
 
     :param document: the document element to serialize
     :type document: :class:`DocumentElement`
