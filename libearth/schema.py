@@ -1205,7 +1205,7 @@ def validate(element, recurse=True, raise_error=True):
 
 def write(document, validate=True, indent='  ', newline='\n',
           canonical_order=False):
-    """Write the given ``document`` to XML string.  The return value is
+    r"""Write the given ``document`` to XML string.  The return value is
     an iterator that yields chunks of an XML string.
 
     :param document: the document element to serialize
