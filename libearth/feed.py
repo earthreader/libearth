@@ -27,9 +27,19 @@ class FeedCategory(FeedTree, collections.MutableSequence):
         super(FeedCategory, self).__init__('category', title)
         self.children = []
 
+        #for not allowing same feed on same category
+        self.urls = []
+
     def append(self, obj):
         if not isinstance(obj, FeedTree):
             raise TypeError('class is must be instance of FeedTree')
+        if obj.type == 'feed':
+            if obj.xml_url in self.urls:
+                raise AlreadyExistException(
+                    "{0} is already here".format(obj.title)
+                )
+            else:
+                self.urls.append(obj.xml_url)
 
         self.children.append(obj)
 
@@ -59,7 +69,7 @@ class FeedCategory(FeedTree, collections.MutableSequence):
 
 class Feed(FeedTree):
     def __init__(self, rsstype, title, xml_url, html_url=None, text=None):
-        super(Feed, self).__init__('rss', title)
+        super(Feed, self).__init__('feed', title)
         self.rsstype = rsstype
         self.xml_url = xml_url
         self.html_url = html_url
@@ -188,10 +198,15 @@ class FeedList(object):
         self.feedlist.append(feed)
 
     def append(self, feed):
-        self.feedlist.append(feed)
+        key = (feed.type, feed.title, feed.xml_url)
+        if key in self.all_feeds:
+            orig_feed = self.all_feeds.get(key)
+            self.feedlist.append(orig_feed)
 
-    def remove_feed(self, title):
-        del self.feedlist[('rss', title)]
+            orig_feed.html_url = feed.html_url
+            orig_feed.text = feed.text
+        else:
+            self.feedlist.append(feed)
 
     def make_feed(self, type, title, xml_url, html_url=None, text=None):
         """pick from all_feeds or make feed for multiple linking"""
@@ -201,7 +216,10 @@ class FeedList(object):
         key = (type, title, xml_url)
 
         feed = self.all_feeds.get(key)
-        if not feed:
+        if feed:
+            feed.html_url = html_url
+            feed.text = text
+        else:
             feed = Feed(type, title, xml_url, html_url, text)
             self.all_feeds[key] = feed
 

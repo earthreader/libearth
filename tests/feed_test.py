@@ -158,6 +158,7 @@ def test_save_as_file(tmpdir):
     assert feeds_another.expansion_state == ['a', 'b', 'c', 'd']
     assert feeds_another[2].title == "newfeed"
 
+
 def test_same_feed_on_multi_category():
     feeds = FeedList(XML_DUPLICAED, is_xml_string=True)
     feeds[0][0].xml_url = "changed"
