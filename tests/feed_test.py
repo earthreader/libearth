@@ -76,6 +76,23 @@ XML_CATEGORY = """<?xml version="1.0" encoding="ISO-8859-1"?>
     </body>
 </opml>"""
 
+XML_DUPLICAED = """<?xml version="1.0" encoding="utf-8"?><opml version="1.1">
+<head>
+    <title>feeds for test</title>
+    <dateCreated>Tue, 13 Jul 2013 21:34:05 +0900</dateCreated>
+    <ownerName>Kjwon15</ownerName>
+</head>
+<body>
+    <outline type="category" text="sub1">
+    <outline type="rss" text="cake" xmlUrl="http://kjwon15.tistory.com/" />
+    </outline>
+    <outline type="category" text="sub2">
+    <outline type="rss" text="cake" xmlUrl="http://kjwon15.tistory.com/" />
+    </outline>
+</body>
+</opml>
+"""
+
 
 def test_OPMLDocment():
     doc = read(OPMLDoc, XML)
@@ -140,3 +157,8 @@ def test_save_as_file(tmpdir):
     assert feeds_another.title == "changed_title"
     assert feeds_another.expansion_state == ['a', 'b', 'c', 'd']
     assert feeds_another[2].title == "newfeed"
+
+def test_same_feed_on_multi_category():
+    feeds = FeedList(XML_DUPLICAED, is_xml_string=True)
+    feeds[0][0].xml_url = "changed"
+    assert feeds[1][0].xml_url == "changed"

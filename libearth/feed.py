@@ -184,7 +184,7 @@ class FeedList(object):
             raise SaveOPMLError(e.message)
 
     def add_feed(self, type, title, xml_url, html_url=None, text=None):
-        feed = Feed(type, title, xml_url, html_url, text)
+        feed = self.make_feed(type, title, xml_url, html_url, text)
         self.feedlist.append(feed)
 
     def append(self, feed):
@@ -193,6 +193,20 @@ class FeedList(object):
     def remove_feed(self, title):
         del self.feedlist[('rss', title)]
 
+    def make_feed(self, type, title, xml_url, html_url=None, text=None):
+        """pick from all_feeds or make feed for multiple linking"""
+
+        text = text or title
+
+        key = (type, title, xml_url)
+
+        feed = self.all_feeds.get(key)
+        if not feed:
+            feed = Feed(type, title, xml_url, html_url, text)
+            self.all_feeds[key] = feed
+
+        return feed
+
     def convert_from_outline(self, outline_obj):
         if outline_obj.children:
             title = outline_obj.title or outline_obj.text
@@ -200,14 +214,16 @@ class FeedList(object):
             res = FeedCategory(title)
 
             for outline in outline_obj.children:
+                feed = self.convert_from_outline(outline)
                 res.append(self.convert_from_outline(outline))
         else:
             type = outline_obj.type
             title = outline_obj.title or outline_obj.text
             xml_url = outline_obj.xml_url
             html_url = outline_obj.html_url
+            text = outline_obj.text
 
-            res = Feed(type, title, xml_url, html_url)
+            res = self.make_feed(type, title, xml_url, html_url, text)
 
         return res
 
