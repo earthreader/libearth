@@ -594,27 +594,27 @@ def test_mutate_element_list():
         doc.multi_attr[0]
     doc.multi_attr.append(TextElement(value='First element'))
     assert doc.multi_attr
-    assert len(doc.multi_attr) == 1
     assert doc.multi_attr[0].value == 'First element'
+    assert len(doc.multi_attr) == 1
     doc.multi_attr.insert(1, TextElement(value='Second element'))
-    assert len(doc.multi_attr) == 2
     assert doc.multi_attr[1].value == 'Second element'
+    assert len(doc.multi_attr) == 2
     tree = etree_fromstringlist(write(doc))
     elements = tree.findall('multi')
     assert len(elements) == 2
     assert elements[0].text == 'First element'
     assert elements[1].text == 'Second element'
     doc.multi_attr[0] = TextElement(value='Replacing element')
-    assert len(doc.multi_attr) == 2
     assert doc.multi_attr[0].value == 'Replacing element'
+    assert len(doc.multi_attr) == 2
     tree = etree_fromstringlist(write(doc))
     elements = tree.findall('multi')
     assert len(elements) == 2
     assert elements[0].text == 'Replacing element'
     assert elements[1].text == 'Second element'
     del doc.multi_attr[0]
-    assert len(doc.multi_attr) == 1
     assert doc.multi_attr[0].value == 'Second element'
+    assert len(doc.multi_attr) == 1
     tree = etree_fromstringlist(write(doc))
     elements = tree.findall('multi')
     assert len(elements) == 1
@@ -628,6 +628,7 @@ def test_mutate_read_element_list(fx_test_doc):
     assert doc.multi_attr[1].value == 'b'
     assert doc.multi_attr[2].value == 'inserted'
     assert doc.multi_attr[3].value == 'c'
+    assert len(doc.multi_attr) == 4
     tree = etree_fromstringlist(write(doc))
     elements = tree.findall('multi')
     assert len(elements) == 4
@@ -635,3 +636,36 @@ def test_mutate_read_element_list(fx_test_doc):
     assert elements[1].text == 'b'
     assert elements[2].text == 'inserted'
     assert elements[3].text == 'c'
+
+
+@mark.parametrize('index', [1, -2])
+def test_element_list_getslice(index, fx_test_doc):
+    doc, _ = fx_test_doc
+    sliced = doc.multi_attr[index:]
+    assert len(sliced) == 2
+    assert sliced[0].value == 'b'
+    assert sliced[1].value == 'c'
+
+
+@mark.parametrize('index', [2, -1])
+def test_element_list_setslice(index, fx_test_doc):
+    doc, _ = fx_test_doc
+    doc.multi_attr[index:2] = [
+        TextElement(value='inserted a'),
+        TextElement(value='inserted b')
+    ]
+    assert doc.multi_attr[0].value == 'a'
+    assert doc.multi_attr[1].value == 'b'
+    assert doc.multi_attr[2].value == 'inserted a'
+    assert doc.multi_attr[3].value == 'inserted b'
+    assert doc.multi_attr[4].value == 'c'
+    assert len(doc.multi_attr) == 5
+
+
+@mark.parametrize('index', [2, -1])
+def test_element_list_delslice(index, fx_test_doc):
+    doc, _ = fx_test_doc
+    doc.multi_attr[index:] = []
+    assert doc.multi_attr[0].value == 'a'
+    assert doc.multi_attr[1].value == 'b'
+    assert len(doc.multi_attr) == 2

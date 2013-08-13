@@ -738,6 +738,12 @@ class ElementList(collections.MutableSequence):
         return len(stack) < top or stack[top - 1].reserved_value is not parent
 
     def consume_index(self, index):
+        if isinstance(index, slice):
+            if index.start is not None and index.start >= 0 and \
+               index.stop is not None and index.stop >= 0:
+                index = max(index.start, index.stop)
+            else:
+                index = -1
         key = self.descriptor
         if index >= 0:
             for data in self.consume_buffer():
