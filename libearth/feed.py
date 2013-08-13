@@ -3,6 +3,8 @@
 
 """
 
+from abc import ABCMeta, abstractmethod
+import collections
 from datetime import datetime
 
 from .compat import binary_type, text, text_type, xrange
@@ -10,10 +12,64 @@ from .schema import (Attribute, Child, Content, DocumentElement, Element, Text,
                      read, write)
 
 
+class FeedTree():
+    __metaclass__ = ABCMeta
+
+    def __init__(self, type, title):
+        self.type = type
+        self.title = title
+
+
+class FeedCategory(FeedTree, collections.MutableSequence):
+    type = 'category'
+
+    def __init__(self, title):
+        super(FeedCategory, self).__init__('category', title)
+        self.children = []
+
+    def append(self, obj):
+        if not isinstance(obj, FeedTree):
+            raise TypeError('class is must be instance of FeedTree')
+
+        self.children.append(obj)
+
+    def insert(self, index, value):
+        if not isinstance(obj, FeedTree):
+            raise TypeError('class is must be instance of FeedTree')
+
+        self.children.insert(index, value)
+
+    def __iter__(self):
+        return iter(self.children)
+
+    def __len__(self):
+        return len(self.children)
+
+    def __getitem__(self, index):
+        return self.children[index]
+
+    def __setitem__(self, index, value):
+        if not isinstance(value, FeedTree):
+            raise TypeError('class is must be instance of FeedTree')
+        self.children[index] = value
+
+    def __delitem__(self, index):
+        del self.children[index]
+
+
+class Feed(FeedTree):
+    def __init__(self, rsstype, title, xml_url, html_url=None, text=None):
+        super(Feed, self).__init__('rss', title)
+        self.rsstype = rsstype
+        self.xml_url = xml_url
+        self.html_url = html_url
+        self.text = text or title
+
+
 class OutlineElement(Element):
     text = Attribute('text')
     title = Attribute('title')
-    type_ = Attribute('type')
+    type = Attribute('type')
     xml_url = Attribute('xmlUrl')
     html_url = Attribute('htmlUrl')
 
@@ -21,7 +77,7 @@ class OutlineElement(Element):
 OutlineElement.children = Child('outline', OutlineElement, multiple=True)
 
 
-class FeedHead(Element):
+class HeadElement(Element):
     title = Text('title')
 
     #FIXME: replace these two to Date
@@ -51,54 +107,51 @@ class FeedHead(Element):
         return res
 
 
-class FeedBody(Element):
+class BodyElement(Element):
     outline = Child('outline', OutlineElement, multiple=True)
 
 
 class OPMLDoc(DocumentElement):
     __tag__ = 'opml'
-    head = Child('head', FeedHead)
-    body = Child('body', FeedBody)
+    head = Child('head', HeadElement)
+    body = Child('body', BodyElement)
 
 
 def convert_from_outline(outline_obj):
-    if not outline_obj.children:
-        res = {
-            'title': outline_obj.title or outline_obj.text,
-            'text': outline_obj.text,
-            'type': outline_obj.type_,
-            'html_url': outline_obj.html_url,
-            'xml_url': outline_obj.xml_url,
-        }
-    else:
-        res = {
-            'type': 'category',
-            'title': outline_obj.title or outline_obj.text,
-            'text': outline_obj.text,
-            'children': []
-        }
+    if outline_obj.children:
+        title = outline_obj.title or outline_obj.text
+
+        res = FeedCategory(title)
 
         for outline in outline_obj.children:
-            res['children'].append(convert_from_outline(outline))
+            res.append(convert_from_outline(outline))
+    else:
+        type = outline_obj.type
+        title = outline_obj.title or outline_obj.text
+        xml_url = outline_obj.xml_url
+        html_url = outline_obj.html_url
+
+        res = Feed(type, title, xml_url, html_url)
+
     return res
 
 
-def convert_to_outline(outline_dic):
+def convert_to_outline(feed_obj):
     res = OutlineElement()
-    if outline_dic['type'] == 'category':
-        res.type_ = 'category'
-        res.text = outline_dic['text']
-        res.title = outline_dic['title']
+    if feed_obj.type == 'category':
+        res.type = 'category'
+        res.text = feed_obj['text']
+        res.title = feed_obj['title']
 
         res.children = []
-        for child in outline_dic['children']:
+        for child in feed_obj:
             res.children.append(convert_to_outline(child))
     else:
-        res.type_ = outline_dic['type']
-        res.text = outline_dic['text']
-        res.title = outline_dic['title']
-        res.xml_url = outline_dic['xml_url']
-        res.html_url = outline_dic['html_url']
+        res.type = feed_obj.rsstype
+        res.text = feed_obj.text
+        res.title = feed_obj.title
+        res.xml_url = feed_obj.xml_url
+        res.html_url = feed_obj.html_url
 
     return res
 
@@ -108,20 +161,16 @@ class FeedList(object):
         """Initializer of Feed list
         when path is None, it doesn't save opml file. just use memory
         """
+        #TODO: same Feed on multiple category
+
         #default value
         self.title = "EarthReader"
         #TODO: save with file, load with file
         self.path = path
-        self.feedlist = {}
+        self.feedlist = FeedCategory(self.title)
 
         if self.path:
             self.open_file(is_xml_string)
-
-    def __len__(self):
-        return len(self.feedlist)
-
-    def __iter__(self):
-        return iter(self.feedlist.values())
 
     def open_file(self, is_xml_string):
         if is_xml_string:
@@ -142,8 +191,7 @@ class FeedList(object):
         self.title = self.doc.head.title
         self.expansion_state = self.doc.head.expansion_state
         for outline in self.doc.body.outline:
-            title = outline.xml_url or outline.title or outline.text
-            self.feedlist[title] = convert_from_outline(outline)
+            self.feedlist.append(convert_from_outline(outline))
 
     def save_file(self, filename=None):
         self.doc.head.title = self.title
@@ -151,7 +199,7 @@ class FeedList(object):
 
         #TODO: Change doc.body here
         self.doc.body.outline[:] = []
-        for feed in self.feedlist.values():
+        for feed in self.feedlist:
             self.doc.body.outline.append(convert_to_outline(feed))
 
         now = datetime.now().strftime('%a, %d %b %Y %H:%M:%S %Z')
@@ -165,44 +213,39 @@ class FeedList(object):
                 for chunk in write(self.doc):
                     fp.write(chunk)
         except Exception as e:
-            raise SaveOPMLError()
+            raise SaveOPMLError(e.message)
 
-    def get_feed(self, url):
-        if not isinstance(url, text_type):
-            url = text(url)
+    def add_feed(self, type, title, xml_url, html_url=None, text=None):
+        feed = Feed(type, title, xml_url, html_url, text)
+        self.feedlist.append(feed)
 
-        return self.feedlist.get(url)
+    def append(self, feed):
+        self.feedlist.append(feed)
 
-    def add_feed(self, url, title, type_, html_url=None, text_=None):
-        if not isinstance(url, text_type):
-            url = text(url)
+    def remove_feed(self, title):
+        del self.feedlist[('rss', title)]
 
-        if url in self.feedlist:
-            raise AlreadyExistException("{0} is already Exist".format(title))
-        self.feedlist[url] = {
-            'title': title,
-            'type': type_,
-            'html_url': html_url,
-            'xml_url': url,
-            'text': text_ or title,
-        }
+    def __len__(self):
+        return len(self.feedlist)
 
-    def remove_feed(self, url):
-        """Remove feed from feed list
-        :returns: :const:`True` when successfuly removed.
-        :const:`False` when have not to or failed to remove.
-        :rtype: :class:`bool`
-        """
-        if url not in self.feedlist:
-            return False
-        else:
-            self.feedlist.pop(url)
-            return True
+    def __iter__(self):
+        return iter(self.feedlist)
+
+    def __getitem__(self, key):
+        return self.feedlist[key]
+
+    def __setitem__(self, key, value):
+        self.feedlist[key] = value
+
+    def __delitem__(self, key):
+        del self.feedlist[key]
 
 
 class AlreadyExistException(Exception):
-    pass
+    def __init__(self, message):
+        super(AlreadyExistException, self).__init__(message)
 
 
 class SaveOPMLError(Exception):
-    pass
+    def __init__(self, message):
+        super(SaveOPMLError, self).__init__(message)
