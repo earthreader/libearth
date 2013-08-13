@@ -249,8 +249,8 @@ class FeedList(object):
         res = OutlineElement()
         if feed_obj.type == 'category':
             res.type = 'category'
-            res.text = feed_obj['text']
-            res.title = feed_obj['title']
+            res.text = feed_obj.text
+            res.title = feed_obj.title
 
             res.children = []
             for child in feed_obj:
