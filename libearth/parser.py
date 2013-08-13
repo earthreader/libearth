@@ -14,14 +14,6 @@ except ImportError:
         from xml.etree import ElementTree as etree
 
 
-class ParserError(TypeError):
-    """Error which rises when feed data are logically wrong."""
-
-
-class RequiredDuplicatedError(ParserError, AttributeError):
-    """Error which rieses when a tag which has to be only one defined
-    twice"""
-
 XMLNS_ATOM = '{http://www.w3.org/2005/Atom}'
 XMLNS_XML = "{http://www.w3.org/XML/1998/namespace}"
 
