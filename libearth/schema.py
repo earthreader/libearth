@@ -52,11 +52,11 @@ You can declare the schema for this like the following class definition::
 
    - Codec
    - Syntax error
-   - :class:`Child` should be able to contain self-referential element type
 
 """
 import collections
 import copy
+import inspect
 import itertools
 import operator
 import weakref
@@ -173,13 +173,24 @@ class Descriptor(object):
 class Child(Descriptor):
     """Declare a possible child element as a descriptor.
 
+    In order to have :class:`Child` of the element type which is not
+    defined yet (or self-referential) pass the class name of the element
+    type to contain.  The name will be lazily evaluated e.g.::
+
+        class Person(Element):
+            '''Everyone can have their children, that also are a Person.'''
+
+            children = Child('child', 'Person', multiple=True)
+
     :param tag: the tag name
     :type tag: :class:`str`
     :param xmlns: an optional XML namespace URI
     :type xmlns: :class:`str`
     :param element_type: the type of child element(s).
-                         it has to be a subtype of :class:`Element`
-    :type element_type: :class:`type`
+                         it has to be a subtype of :class:`Element`.
+                         if it's a string it means referring the class name
+                         which is going to be lazily evaluated
+    :type element_type: :class:`type`, :class:`str`
     :param required: whether the child is required or not.
                      it's exclusive to ``multiple``.
                      :const:`False` by default
@@ -197,21 +208,42 @@ class Child(Descriptor):
 
     def __init__(self, tag, element_type, xmlns=None, required=False,
                  multiple=False):
-        if not isinstance(element_type, type):
-            raise TypeError('element_type must be a class, not ' +
-                            repr(element_type))
-        elif not issubclass(element_type, Element):
-            raise TypeError(
-                'element_type must be a subtype of {0.__module__}.'
-                '{0.__name__}, not {1!r}'.format(Element, element_type)
-            )
+        if isinstance(element_type, type):
+            if not issubclass(element_type, Element):
+                raise TypeError(
+                    'element_type must be a subtype of {0.__module__}.'
+                    '{0.__name__}, not {1!r}'.format(Element, element_type)
+                )
+        elif isinstance(element_type, string_type):
+            frame = inspect.currentframe().f_back
+            element_type = element_type, frame.f_locals, frame.f_globals
+        else:
+            raise TypeError('element_type must be a class (or a string '
+                            'referring its name), not ' + repr(element_type))
         super(Child, self).__init__(
             tag,
             xmlns=xmlns,
             required=required,
             multiple=multiple
         )
-        self.element_type = element_type
+        self._element_type = element_type
+
+    @property
+    def element_type(self):
+        """(:class:`type`) The class of this child can contain.  It must
+        be a subtype of :class:`Element`.
+
+        """
+        if not isinstance(self._element_type, type):
+            name, loc, glob = self._element_type
+            try:
+                self._element_type = loc[name]
+            except KeyError:
+                try:
+                    self._element_type = glob[name]
+                except KeyError:
+                    raise NameError('name {0!r} is not defined'.format(name))
+        return self._element_type
 
     def __set__(self, obj, value):
         if isinstance(obj, Element):

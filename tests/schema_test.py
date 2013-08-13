@@ -753,3 +753,13 @@ def test_validate_recurse(element, recur_valid, valid):
         assert not recur_valid
     else:
         assert recur_valid
+
+
+class SelfReferentialChild(Element):
+
+    self_ref = Child('self-ref', 'SelfReferentialChild')
+
+
+def test_self_referential_child():
+    SelfReferentialChild()
+    SelfReferentialChild.self_ref.element_type is SelfReferentialChild
