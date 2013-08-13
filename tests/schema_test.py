@@ -7,9 +7,10 @@ from pytest import fixture, mark, raises
 from libearth.compat import text, text_type
 from libearth.schema import (Attribute, Child, Content, DescriptorConflictError,
                              DocumentElement,
-                             Element, Text, read, index_descriptors,
+                             Element, IntegrityError, Text, index_descriptors,
                              inspect_attributes, inspect_child_tags,
-                             inspect_content_tag, inspect_xmlns_set, write)
+                             inspect_content_tag, inspect_xmlns_set,
+                             read, validate, write)
 
 
 def u(text):
@@ -613,7 +614,7 @@ def test_mutate_element_list():
     doc.multi_attr.insert(1, TextElement(value='Second element'))
     assert doc.multi_attr[1].value == 'Second element'
     assert len(doc.multi_attr) == 2
-    tree = etree_fromstringlist(write(doc))
+    tree = etree_fromstringlist(write(doc, validate=False))
     elements = tree.findall('multi')
     assert len(elements) == 2
     assert elements[0].text == 'First element'
@@ -621,7 +622,7 @@ def test_mutate_element_list():
     doc.multi_attr[0] = TextElement(value='Replacing element')
     assert doc.multi_attr[0].value == 'Replacing element'
     assert len(doc.multi_attr) == 2
-    tree = etree_fromstringlist(write(doc))
+    tree = etree_fromstringlist(write(doc, validate=False))
     elements = tree.findall('multi')
     assert len(elements) == 2
     assert elements[0].text == 'Replacing element'
@@ -629,7 +630,7 @@ def test_mutate_element_list():
     del doc.multi_attr[0]
     assert doc.multi_attr[0].value == 'Second element'
     assert len(doc.multi_attr) == 1
-    tree = etree_fromstringlist(write(doc))
+    tree = etree_fromstringlist(write(doc, validate=False))
     elements = tree.findall('multi')
     assert len(elements) == 1
     assert elements[0].text == 'Second element'
@@ -683,3 +684,72 @@ def test_element_list_delslice(index, fx_test_doc):
     assert doc.multi_attr[0].value == 'a'
     assert doc.multi_attr[1].value == 'b'
     assert len(doc.multi_attr) == 2
+
+
+class VTElement(Element):
+
+    req_attr = Attribute('a', required=True)
+    attr = Attribute('b')
+    req_child = Child('c', TextElement, required=True)
+    child = Child('d', TextElement)
+
+    def __repr__(self):
+        return 'VTElement(req_attr={0!r}, req_child={1!r})'.format(
+            self.req_attr, self.req_child
+        )
+
+
+class VTDoc(DocumentElement):
+
+    __tag__ = 'vtest'
+    req_attr = Attribute('a', required=True)
+    attr = Attribute('b')
+    req_child = Child('c', VTElement, required=True)
+    child = Child('d', VTElement)
+
+    def __repr__(self):
+        return 'VTDoc(req_attr={0!r}, req_child={1!r})'.format(
+            self.req_attr, self.req_child
+        )
+
+
+@mark.parametrize(('element', 'recur_valid', 'valid'), [
+    (VTDoc(), False, False),
+    (VTDoc(req_attr='a'), False, False),
+    (VTDoc(req_child=VTElement()), False, False),
+    (VTDoc(req_child=VTElement(req_attr='a')), False, False),
+    (VTDoc(req_child=VTElement(req_child=TextElement(value='a'))),
+     False, False),
+    (VTDoc(req_child=VTElement(req_attr='a',
+                               req_child=TextElement(value='a'))),
+     False, False),
+    (VTDoc(req_attr='a', req_child=VTElement()), False, True),
+    (VTDoc(req_attr='a', req_child=VTElement(req_attr='a')), False, True),
+    (VTDoc(req_attr='a',
+           req_child=VTElement(req_child=TextElement(value='a'))), False, True),
+    (VTDoc(req_attr='a',
+           req_child=VTElement(req_attr='a',
+                               req_child=TextElement(value='a'))), True, True)
+])
+def test_validate_recurse(element, recur_valid, valid):
+    assert validate(element, recurse=True, raise_error=False) is recur_valid
+    try:
+        validate(element, recurse=True, raise_error=True)
+    except IntegrityError:
+        assert not recur_valid
+    else:
+        assert recur_valid
+    assert validate(element, recurse=False, raise_error=False) is valid
+    try:
+        validate(element, recurse=False, raise_error=True)
+    except IntegrityError:
+        assert not valid
+    else:
+        assert valid
+    try:
+        for _ in write(element):
+            pass
+    except IntegrityError:
+        assert not recur_valid
+    else:
+        assert recur_valid

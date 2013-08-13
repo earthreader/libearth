@@ -52,7 +52,7 @@ You can declare the schema for this like the following class definition::
 
    - Codec
    - Syntax error
-   - :func:`write()` should be aware of :attr:`Descriptor.required`
+   - :class:`Child` should be able to contain self-referential element type
 
 """
 import collections
@@ -68,9 +68,10 @@ from .compat import UNICODE_BY_DEFAULT, string_type, text_type
 
 __all__ = ('Attribute', 'Child', 'CodecDescriptor', 'Content',
            'ContentHandler', 'Descriptor', 'DescriptorConflictError',
-           'DocumentElement', 'Element', 'ElementList', 'SchemaError', 'Text',
-           'read', 'index_descriptors', 'inspect_attributes',
-           'inspect_child_tags', 'inspect_content_tag', 'inspect_xmlns_set',
+           'DocumentElement', 'Element', 'ElementList', 'IntegrityError',
+           'SchemaError', 'Text',
+           'index_descriptors', 'inspect_attributes', 'inspect_child_tags',
+           'inspect_content_tag', 'inspect_xmlns_set', 'read', 'validate',
            'write')
 
 
@@ -83,6 +84,10 @@ class DescriptorConflictError(SchemaError, AttributeError):
     one for the same attribute, the same child element, or the text node.
 
     """
+
+
+class IntegrityError(SchemaError, AttributeError):
+    """Rise when an element is invalid according to the schema."""
 
 
 class Descriptor(object):
@@ -118,8 +123,8 @@ class Descriptor(object):
         if isinstance(obj, Element):
             if self.multiple:
                 return ElementList(obj, self)
-            root = obj._root()
-            if getattr(root, '_handler', None):
+            root = obj._root() if hasattr(obj, '_root') else None
+            if root and getattr(root, '_handler', None):
                 handler = root._handler
                 parser = root._parser
                 iterable = root._iterator
@@ -922,8 +927,12 @@ def index_descriptors(element_type):
        Internal function.
 
     """
-    if issubclass(element_type, DocumentElement) and \
-       getattr(element_type, '__xmlns__', None):
+    if not (isinstance(element_type, type) and
+            issubclass(element_type, Element)):
+        raise TypeError('element_type must be a subtype of {0.__name__}.'
+                        '{0.__name__}, not {1!r}'.format(Element, element_type))
+    elif (issubclass(element_type, DocumentElement) and
+          getattr(element_type, '__xmlns__', None)):
         xmlns_set = set([element_type.__xmlns__])
     else:
         xmlns_set = set()
@@ -1117,12 +1126,61 @@ def read(cls, iterable):
     return doc
 
 
-def write(document, indent='  ', newline='\n', canonical_order=False):
+def validate(element, recurse=True, raise_error=True):
+    """Validate the given ``element`` according to the schema.
+
+    :param element: the element object to validate
+    :type element: :class:`Element`
+    :param recurse: recursively validate the whole tree (child nodes).
+                    :const:`True` by default
+    :type recurse: :class:`bool`
+    :param raise_error: raise exception when the ``element`` is invalid.
+                        if it's :const:`False` it returns :const:`False`
+                        instead of raising an exception.
+                        :const:`True` by default
+    :type raise_error: :class:`bool`
+    :returns: :const:`True` if the ``element`` is valid.
+              :const:`False` if the ``element`` is invalid and
+              ``raise_error`` option is :const:`False``
+    :raise IntegrityError: when the ``element`` is invalid and
+                           ``raise_error`` option is :const:`True`
+
+    """
+    element_type = type(element)
+    for name, desc in inspect_attributes(element_type).values():
+        if desc.required and not getattr(element, name, None):
+            if raise_error:
+                raise IntegrityError(
+                    '{0.__module__}.{0.__name__}.{1} is required, but '
+                    '{2!r} lacks it'.format(element_type, name, element)
+                )
+            return False
+    for name, desc in inspect_child_tags(element_type).values():
+        child_element = getattr(element, name, None)
+        if desc.required and not child_element:
+            if raise_error:
+                raise IntegrityError(
+                    '{0.__module__}.{0.__name__}.{1} is required, but '
+                    '{2!r} lacks it'.format(element_type, name, element)
+                )
+            return False
+        if recurse and child_element is not None:
+            if validate(child_element, recurse=True, raise_error=raise_error):
+                continue
+            return False
+    return True
+
+
+def write(document, validate=True, indent='  ', newline='\n',
+          canonical_order=False):
     """Write the given ``document`` to XML string.  The return value is
     an iterator that yields chunks of an XML string.
 
     :param document: the document element to serialize
     :type document: :class:`DocumentElement`
+    :param validate: whether validate the ``document`` or not.
+                     :const:`True` by default
+    :type validate: :class:`bool`
     :param indent: an optional string to be used for indent.
                    default is four spaces (``'    '``)
     :type indent: :class:`str`
@@ -1145,6 +1203,7 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
         )
     escape = xml.sax.saxutils.escape
     quoteattr = xml.sax.saxutils.quoteattr
+    validate_fn = globals()['validate']
     doc_cls = type(document)
     sort = sorted if canonical_order else lambda l, *a, **k: l
     xmlns_alias = dict(
@@ -1157,6 +1216,8 @@ def write(document, indent='  ', newline='\n', canonical_order=False):
         encode = lambda s: s.encode('utf-8')
 
     def _export(element, tag, xmlns, depth=0):
+        if validate:
+            validate_fn(element, recurse=False, raise_error=True)
         element_type = type(element)
         for s in itertools.repeat(indent, depth):
             yield s
