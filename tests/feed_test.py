@@ -1,7 +1,7 @@
 from pytest import mark, raises, skip
 
 from libearth.compat import binary_type, text_type, xrange
-from libearth.feed import (AlreadyExistException, FeedList, OPMLDoc,
+from libearth.feed import (AlreadyExistException, Feed, FeedList, OPMLDoc,
                            SaveOPMLError)
 from libearth.schema import (Child, Content, DocumentElement, Element, Text,
                              read)
@@ -16,15 +16,15 @@ def test_count_duplicated_url():
     feeds = FeedList()
     with raises(AlreadyExistException):
         for i in xrange(30):
-            feeds.add_feed('title', 'url', 'type')
+            feeds.add_feed('type', 'title', 'url')
 
     assert len(feeds) == 1
 
 
 def test_count_after_remove():
     feeds = FeedList()
-    feeds.add_feed('url', 'title', 'type')
-    feeds.remove_feed('url')
+    feeds.add_feed('type', 'title', 'url')
+    del feeds[0]
 
     assert len(feeds) == 0
 
@@ -99,14 +99,14 @@ def test_path_as_string():
     feeds = FeedList(XML, is_xml_string=True)
     assert feeds.title == "EarthReader.opml"
     assert len(feeds) == 2
-    assert feeds.get_feed('http://test.com')['type'] == 'rss'
 
 
 def test_feed_as_iterator():
     feeds = FeedList(XML, is_xml_string=True)
     expected = ['CNET News.com', 'test.com']
     for feed in feeds:
-        expected.remove(feed['title'])
+        print(feed.title)
+        expected.remove(feed.title)
     assert not expected
 
 
@@ -117,11 +117,13 @@ def test_feed_contains_category():
         'Music': ['capsule'],
     }
     for feed in feeds:
-        assert feed['type'] == 'category'
-        for child_feed in feed['children']:
-            expected[feed['title']].remove(child_feed['title'])
-        assert not expected[feed['title']]
-        expected.pop(feed['title'])
+        print(feed.title)
+        assert feed.type == 'category'
+        for child_feed in feed:
+            print(child_feed.title)
+            expected[feed.title].remove(child_feed.title)
+        assert not expected[feed.title]
+        expected.pop(feed.title)
     assert not expected.keys()
 
 
@@ -130,12 +132,11 @@ def test_save_as_file(tmpdir):
     print(filename)
     feeds = FeedList(XML, is_xml_string=True)
     feeds.title = "changed_title"
-    feeds.add_feed('http://addedurl.com', 'addedurl', 'rss')
-    feeds.get_feed('http://test.com')['title'] = "feed_title"
+    newfeed = Feed('rss2', 'newfeed', 'http://earthreader.com/rss')
+    feeds.append(newfeed)
     feeds.save_file(filename)
 
     feeds_another = FeedList(filename)
     assert feeds_another.title == "changed_title"
     assert feeds_another.expansion_state == ['a', 'b', 'c', 'd']
-    assert feeds_another.get_feed('http://addedurl.com')['title'] == "addedurl"
-    assert feeds_another.get_feed('http://test.com')['title'] == "feed_title"
+    assert feeds_another[2].title == "newfeed"
