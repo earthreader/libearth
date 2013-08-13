@@ -126,22 +126,16 @@ def test_feed_contains_category():
 
 
 def test_save_as_file(tmpdir):
-    #schema.write() is currently doesn't working. so skip
-    test_for_schema = FeedList(XML, is_xml_string=True)
-    try:
-        test_for_schema.save_file(tmpdir.join('test.opml'))
-    except SaveOPMLError:
-        skip()
-
-    filename = tmpdir.join('feeds.opml')
+    filename = tmpdir.join('feeds.opml').strpath
     print(filename)
     feeds = FeedList(XML, is_xml_string=True)
     feeds.title = "changed_title"
-    feeds.save_file(filename)
     feeds.add_feed('http://addedurl.com', 'addedurl', 'rss')
     feeds.get_feed('http://test.com')['title'] = "feed_title"
+    feeds.save_file(filename)
 
     feeds_another = FeedList(filename)
     assert feeds_another.title == "changed_title"
+    assert feeds_another.expansion_state == ['a', 'b', 'c', 'd']
     assert feeds_another.get_feed('http://addedurl.com')['title'] == "addedurl"
     assert feeds_another.get_feed('http://test.com')['title'] == "feed_title"

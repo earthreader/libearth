@@ -42,6 +42,14 @@ class FeedHead(Element):
     def expansion_state(self, text):
         return text.split(',')
 
+    @expansion_state.encoder
+    def expansion_state(self, obj):
+        if not obj:
+            res = ""
+        else:
+            res = ','.join(obj)
+        return res
+
 
 class FeedBody(Element):
     outline = Child('outline', OutlineElement, multiple=True)
@@ -77,12 +85,14 @@ def convert_from_outline(outline_obj):
 
 def convert_to_outline(outline_dic):
     res = OutlineElement()
-    if outline_dic['type'] == category:
+    if outline_dic['type'] == 'category':
         res.type_ = 'category'
         res.text = outline_dic['text']
         res.title = outline_dic['title']
 
-        #TODO: add children here
+        res.children = []
+        for child in outline_dic['children']:
+            res.children.append(convert_to_outline(child))
     else:
         res.type_ = outline_dic['type']
         res.text = outline_dic['text']
@@ -91,6 +101,7 @@ def convert_to_outline(outline_dic):
         res.html_url = outline_dic['html_url']
 
     return res
+
 
 class FeedList(object):
     def __init__(self, path=None, is_xml_string=False):
@@ -129,14 +140,19 @@ class FeedList(object):
 
     def parse_doc(self):
         self.title = self.doc.head.title
+        self.expansion_state = self.doc.head.expansion_state
         for outline in self.doc.body.outline:
             title = outline.xml_url or outline.title or outline.text
             self.feedlist[title] = convert_from_outline(outline)
 
     def save_file(self, filename=None):
         self.doc.head.title = self.title
+        self.doc.head.expansion_state = self.expansion_state
 
         #TODO: Change doc.body here
+        self.doc.body.outline[:] = []
+        for feed in self.feedlist.values():
+            self.doc.body.outline.append(convert_to_outline(feed))
 
         now = datetime.now().strftime('%a, %d %b %Y %H:%M:%S %Z')
         self.doc.head.date_modified = now
@@ -144,7 +160,8 @@ class FeedList(object):
             self.doc.head.date_created = now
 
         try:
-            with open(filename or self.path, 'w') as fp:
+            filename = filename or self.path
+            with open(filename, 'w') as fp:
                 for chunk in write(self.doc):
                     fp.write(chunk)
         except Exception as e:
@@ -166,6 +183,7 @@ class FeedList(object):
             'title': title,
             'type': type_,
             'html_url': html_url,
+            'xml_url': url,
             'text': text_ or title,
         }
 
