@@ -214,7 +214,7 @@ class Child(Descriptor):
                 if isinstance(value, collections.Sequence):
                     if len(value) < 1 or \
                        isinstance(value[0], self.element_type):
-                        obj._data[self] = value
+                        obj._data[self] = list(value)
                     else:
                         raise TypeError(
                             'expected a sequence of {0.__module__}.'

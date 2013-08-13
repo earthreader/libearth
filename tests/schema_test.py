@@ -577,13 +577,27 @@ def test_element_initialize():
     doc = TestDoc(title_attr=TextElement(value='Title test'),
                   content_attr=TextElement(value=u('내용 테스트')),
                   attr_attr='Attribute value',
-                  text_content_attr='Text content')
+                  text_content_attr='Text content',
+                  multi_attr=(TextElement(value='a'), TextElement(value='b')))
     assert doc.title_attr.value == 'Title test'
     assert doc.content_attr.value == u('내용 테스트')
     assert doc.attr_attr == 'Attribute value'
     assert doc.text_content_attr == 'Text content'
+    assert len(doc.multi_attr) == 2
+    assert doc.multi_attr[0].value == 'a'
+    assert doc.multi_attr[1].value == 'b'
+    doc.multi_attr.append(TextElement(value='c'))
+    assert doc.multi_attr[2].value == 'c'
+    assert len(doc.multi_attr) == 3
     tree = etree_fromstringlist(write(doc))
     assert tree.find('title').text == 'Title test'
+    assert tree.find('content').text == u('내용 테스트')
+    assert tree.attrib['attr'] == 'Attribute value'
+    elements = tree.findall('multi')
+    assert len(elements) == 3
+    assert elements[0].text == 'a'
+    assert elements[1].text == 'b'
+    assert elements[2].text == 'c'
 
 
 def test_mutate_element_list():
