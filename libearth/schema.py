@@ -51,7 +51,7 @@ You can declare the schema for this like the following class definition::
 .. todo::
 
    - Codec
-   - Syntax error
+   - CodecError, EncodeError, DecodeError
 
 """
 import collections
@@ -871,8 +871,8 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             doc = self.document()
             expected = getattr(doc, '__xmlns__', None), doc.__tag__
             if tag != expected:
-                raise SyntaxError('document element must be {0}, '
-                                  'not {1}'.format(expected, name))
+                raise IntegrityError('document element must be {0}, '
+                                     'not {1}'.format(expected, name))
             self.stack.append(
                 ParserContext(
                     tag=name,
@@ -891,9 +891,9 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                 attr, child = child_tags[tag]
             except KeyError:
                 if xmlns:
-                    raise SyntaxError('unexpected element: {0} (namespace: '
-                                      '{1})'.format(name, xmlns))
-                raise SyntaxError('unexpected element: ' + name)
+                    raise IntegrityError('unexpected element: {0} (namespace: '
+                                         '{1})'.format(name, xmlns))
+                raise IntegrityError('unexpected element: ' + name)
             if isinstance(child, Descriptor):
                 reserved_value = child.start_element(parent_element, attr)
                 self.stack.append(
@@ -907,9 +907,9 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                 )
             else:
                 if xmlns:
-                    raise SyntaxError('unexpected element: {0} (namespace: '
-                                      '{1})'.format(name, xmlns))
-                raise SyntaxError('unexpected element: ' + name)
+                    raise IntegrityError('unexpected element: {0} (namespace: '
+                                         '{1})'.format(name, xmlns))
+                raise IntegrityError('unexpected element: ' + name)
         if isinstance(reserved_value, Element):
             instance = reserved_value
             instance_type = type(instance)
