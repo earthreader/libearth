@@ -8,4 +8,5 @@
       libearth/repository
       libearth/schema
       libearth/session
+      libearth/tz
       libearth/version
