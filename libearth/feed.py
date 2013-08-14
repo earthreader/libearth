@@ -84,8 +84,7 @@ class OutlineElement(Element):
     xml_url = Attribute('xmlUrl')
     html_url = Attribute('htmlUrl')
 
-
-OutlineElement.children = Child('outline', OutlineElement, multiple=True)
+    children = Child('outline', 'OutlineElement', multiple=True)
 
 
 class HeadElement(Element):
