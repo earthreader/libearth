@@ -7,7 +7,8 @@ from pytest import fixture, mark, raises
 from libearth.compat import text, text_type
 from libearth.schema import (Attribute, Child, Content, DescriptorConflictError,
                              DocumentElement,
-                             Element, IntegrityError, Text, index_descriptors,
+                             Element, EncodeError, IntegrityError, Text,
+                             index_descriptors,
                              inspect_attributes, inspect_child_tags,
                              inspect_content_tag, inspect_xmlns_set,
                              read, validate, write)
@@ -41,7 +42,7 @@ class TestDoc(DocumentElement):
     multi_attr = Child('multi', TextElement, multiple=True)
     text_content_attr = Text('text-content')
     text_multi_attr = Text('text-multi', multiple=True)
-    text_decoder = Text('text-decoder', decoder=float)
+    text_decoder = Text('text-decoder', decoder=float, encoder=str)
     text_decoder_decorator = Text('text-decoder-decorator')
     text_combined_decoder = Text('text-combined-decoder',
                                  decoder=int, encoder=lambda i: i and i / 100)
@@ -763,3 +764,37 @@ class SelfReferentialChild(Element):
 def test_self_referential_child():
     SelfReferentialChild()
     SelfReferentialChild.self_ref.element_type is SelfReferentialChild
+
+
+class EncodeErrorDoc(DocumentElement):
+
+    __tag__ = 'encode-error-test'
+    attr = Attribute('attr', encoder=lambda s: s and 123)
+    text = Text('text', encoder=lambda s: s and object())
+
+
+def test_attribute_encode_error():
+    doc = EncodeErrorDoc(attr=True)
+    with raises(EncodeError):
+        for _ in write(doc):
+            pass
+
+
+def test_text_encode_error():
+    doc = EncodeErrorDoc(text=True)
+    with raises(EncodeError):
+        for _ in write(doc):
+            pass
+
+
+class ContentEncodeErrorDoc(DocumentElement):
+
+    __tag__ = 'content-encode-error-test'
+    value = Content(encoder=lambda s: object)
+
+
+def test_content_encode_error():
+    doc = ContentEncodeErrorDoc()
+    with raises(EncodeError):
+        for _ in write(doc):
+            pass

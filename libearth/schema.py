@@ -51,7 +51,6 @@ You can declare the schema for this like the following class definition::
 .. todo::
 
    - Codec
-   - CodecError, EncodeError, DecodeError
 
 """
 import collections
@@ -64,11 +63,12 @@ import xml.sax
 import xml.sax.handler
 import xml.sax.saxutils
 
-from .compat import UNICODE_BY_DEFAULT, string_type, text_type
+from .compat import UNICODE_BY_DEFAULT, string_type
 
-__all__ = ('Attribute', 'Child', 'CodecDescriptor', 'Content',
-           'ContentHandler', 'Descriptor', 'DescriptorConflictError',
-           'DocumentElement', 'Element', 'ElementList', 'IntegrityError',
+__all__ = ('Attribute', 'Child', 'CodecDescriptor', 'CodecError', 'Content',
+           'ContentHandler', 'DecodeError', 'Descriptor',
+           'DescriptorConflictError', 'DocumentElement', 'Element',
+           'ElementList', 'EncodeError', 'IntegrityError',
            'SchemaError', 'Text',
            'index_descriptors', 'inspect_attributes', 'inspect_child_tags',
            'inspect_content_tag', 'inspect_xmlns_set', 'read', 'validate',
@@ -88,6 +88,21 @@ class DescriptorConflictError(SchemaError, AttributeError):
 
 class IntegrityError(SchemaError, AttributeError):
     """Rise when an element is invalid according to the schema."""
+
+
+class CodecError(SchemaError, ValueError):
+    """Rise when encoding/decoding between Python values and XML data
+    goes wrong.
+
+    """
+
+
+class EncodeError(CodecError):
+    """Rise when encoding Python values into XML data goes wrong."""
+
+
+class DecodeError(CodecError):
+    """Rise when decoding XML data to Python values goes wrong."""
 
 
 class Descriptor(object):
@@ -1282,29 +1297,43 @@ def write(document, validate=True, indent='  ', newline='\n',
         attr_descriptors = sort(inspect_attributes(element_type).values(),
                                 key=operator.itemgetter(0))
         for attr, desc in attr_descriptors:
-            attr_value = desc.encode(getattr(element, attr, None),
-                                     element)
-            if attr_value is None:
+            raw_attr_value = getattr(element, attr, None)
+            encoded_attr_value = desc.encode(raw_attr_value, element)
+            if encoded_attr_value is None:
                 continue
+            elif not isinstance(encoded_attr_value, string_type):
+                raise EncodeError(
+                    '{0.__module__}.{0.__name__}.{1} attribute value {2!r} '
+                    'is incorrectly encoded to {3!r}'.format(
+                        element_type, attr, raw_attr_value, encoded_attr_value
+                    )
+                )
             yield ' '
             if desc.xmlns:
                 yield xmlns_alias[desc.xmlns]
                 yield ':'
             yield desc.name
             yield '='
-            yield encode(quoteattr(attr_value))
+            yield encode(quoteattr(encoded_attr_value))
         content = inspect_content_tag(element_type)
         children = inspect_child_tags(element_type)
         if content or children:
             assert not (content and children)
             yield '>'
             if content:
-                content_value = content[1].encode(
-                    getattr(element, content[0], None),
-                    element
-                )
-                if content_value is not None:
-                    yield encode(escape(content_value))
+                raw_content_value = getattr(element, content[0], None)
+                encoded_content_value = content[1].encode(raw_content_value,
+                                                          element)
+                if encoded_content_value is not None:
+                    if not isinstance(encoded_content_value, string_type):
+                        raise EncodeError(
+                            '{0.__module__}.{0.__name__}.{1} attribute value '
+                            '{2!r} is incorrectly encoded to {3!r}'.format(
+                                element_type, content[0],
+                                raw_content_value, encoded_content_value
+                            )
+                        )
+                    yield encode(escape(encoded_content_value))
             else:
                 children = sort(children.values(),
                                 key=operator.itemgetter(0))
@@ -1313,10 +1342,19 @@ def write(document, validate=True, indent='  ', newline='\n',
                     if not desc.multiple:
                         child_elements = [child_elements]
                     for child_element in child_elements:
-                        if isinstance(desc, Text):  # FIXME: remote type query
-                            child_element = desc.encode(child_element, element)
-                            if child_element is None:
+                        if isinstance(desc, Text):  # FIXME: remove type query
+                            encoded_child = desc.encode(child_element, element)
+                            if encoded_child is None:
                                 continue
+                            elif not isinstance(encoded_child, string_type):
+                                raise EncodeError(
+                                    '{0.__module__}.{0.__name__}.{1} attribute '
+                                    'value {2!r} is incorrectly encoded to '
+                                    '{3!r}'.format(element_type,
+                                                   attr,
+                                                   child_element,
+                                                   encoded_child)
+                                )
                             yield newline
                             for s in itertools.repeat(indent, depth + 1):
                                 yield s
@@ -1326,8 +1364,7 @@ def write(document, validate=True, indent='  ', newline='\n',
                                 yield ':'
                             yield desc.tag
                             yield '>'
-                            child_value = text_type(child_element)
-                            yield encode(escape(child_value))
+                            yield encode(escape(encoded_child))
                             yield '</'
                             if desc.xmlns:
                                 yield xmlns_alias[desc.xmlns]
