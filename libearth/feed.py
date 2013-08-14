@@ -23,8 +23,9 @@ class FeedTree():
 class FeedCategory(FeedTree, collections.MutableSequence):
     type = 'category'
 
-    def __init__(self, title):
+    def __init__(self, title, text=None):
         super(FeedCategory, self).__init__('category', title)
+        self.text = text
         self.children = []
 
         #for not allowing same feed on same category
