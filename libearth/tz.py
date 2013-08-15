@@ -19,7 +19,12 @@ __all__ = 'FixedOffset', 'Utc', 'now', 'utc'
 
 
 class Utc(datetime.tzinfo):
-    """UTC."""
+    """UTC.
+
+    In most cases, it doesn't need to be directly instantiated:
+    there's already the :const:`utc` value.
+
+    """
 
     def __init__(self):
         self.zero = datetime.timedelta(0)
@@ -39,7 +44,17 @@ class Utc(datetime.tzinfo):
 
 
 class FixedOffset(datetime.tzinfo):
-    """Fixed offset in minutes east from UTC."""
+    """Fixed offset in minutes east from UTC.
+
+    >>> kst = FixedOffset(9 * 60, name='Asia/Seoul')  # KST +09:00
+    >>> current = now()
+    >>> current
+    datetime.datetime(2013, 8, 15, 3, 18, 37, 404562, tzinfo=libearth.tz.Utc())
+    >>> current.astimezone(kst)
+    datetime.datetime(2013, 8, 15, 12, 18, 37, 404562,
+                      tzinfo=<libearth.tz.FixedOffset Asia/Seoul>)
+
+    """
 
     def __init__(self, offset, name=None):
         self.offset = datetime.timedelta(minutes=offset)
