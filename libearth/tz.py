@@ -15,7 +15,7 @@ Almost of this module is from the official documentation of
 """
 import datetime
 
-__all__ = 'FixedOffset', 'Utc'
+__all__ = 'FixedOffset', 'Utc', 'now', 'utc'
 
 
 class Utc(datetime.tzinfo):
@@ -65,3 +65,16 @@ try:
     utc = datetime.timezone.utc
 except AttributeError:
     utc = Utc()
+
+
+def now():
+    """Return the current :class:`~datetime.datetime` with the proper
+    :class:`~datetime.tzinfo` setting.
+
+    >>> now()
+    datetime.datetime(2013, 8, 15, 3, 17, 11, 892272, tzinfo=libearth.tz.Utc())
+    >>> now()
+    datetime.datetime(2013, 8, 15, 3, 17, 17, 532483, tzinfo=libearth.tz.Utc())
+
+    """
+    return datetime.datetime.utcnow().replace(tzinfo=utc)

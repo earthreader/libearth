@@ -1,6 +1,6 @@
 import datetime
 
-from libearth.tz import FixedOffset, utc
+from libearth.tz import FixedOffset, now, utc
 
 
 def test_utc():
@@ -28,3 +28,10 @@ def test_fixed_offset_name():
     assert tz.utcoffset(dt) == datetime.timedelta(hours=9)
     assert tz.dst(dt) == datetime.timedelta(0)
     assert tz.tzname(dt) == 'custom'
+
+
+def test_now():
+    before = datetime.datetime.utcnow().replace(tzinfo=utc)
+    actual = now()
+    after = datetime.datetime.utcnow().replace(tzinfo=utc)
+    assert before <= actual <= after
