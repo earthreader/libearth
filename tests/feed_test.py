@@ -158,6 +158,11 @@ def test_save_as_file(tmpdir):
     assert feeds_another.expansion_state == ['a', 'b', 'c', 'd']
     assert feeds_another[2].title == "newfeed"
 
+    assert feeds_another.window_top == 12
+    assert feeds_another.window_left == 34
+    assert feeds_another.window_bottom == 56
+    assert feeds_another.window_right == 78
+
 
 def test_same_feed_on_multi_category():
     feeds = FeedList(XML_DUPLICAED, is_xml_string=True)
