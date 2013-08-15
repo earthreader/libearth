@@ -30,23 +30,95 @@ def atom_get_feed_data(root):
     feed_data = {}
     required = ['id', 'title', 'updated']
     multiple = ['author', 'category', 'contributor', 'link']
+    optional = ['generator', 'icon', 'logo', 'rights', 'subtitle']
     for tag in multiple:
         feed_data[tag] = []
     _iter = root.iter() if sys.version_info >= (2, 7) else root.getiterator()
     data = next(_iter)
     while not data.tag == XMLNS_ATOM + 'entry':
         if data.tag == XMLNS_ATOM + 'id':
-            feed_data['id'] = atom_common_attribute(data, None)
+            feed_data['id'] = atom_get_common_attribute(data, None)
             feed_data['id']['uri'] = data.text
         elif data.tag == XMLNS_ATOM + 'title':
-            title_optional_attrib = [XMLNS_ATOM + 'type']
-            feed_data['title'] = atom_common_attribute(data,
-                                                       title_optional_attrib)
-            feed_data['title']['type'] = data.attrib['type']
+            title_optional_attribute = ['type']
+            feed_data['title'] = \
+                atom_get_common_attribute(data, title_optional_attribute)
             feed_data['title']['text'] = data.text
+            feed_data['title']['type'] = \
+                atom_get_optional_attribute(data, 'type')
+
         elif data.tag == XMLNS_ATOM + 'updated':
-            feed_data['updated'] = atom_common_attribute(data, None)
+            feed_data['updated'] = atom_get_common_attribute(data, None)
             feed_data['updated']['datetime'] = atom_date_time(data.text)
+        elif data.tag == XMLNS_ATOM + 'author':
+            author_tag = atom_get_common_attribute(data, None)
+            for child in data:
+                if child.tag == XMLNS_ATOM + 'name':
+                    author_tag['name'] = child.text
+                elif child.tag == XMLNS_ATOM + 'uri':
+                    author_tag['uri'] = child.text
+                elif child.tag == XMLNS_ATOM + 'email':
+                    author_tag['email'] = child.text
+            feed_data['author'].append(author_tag)
+        elif data.tag == XMLNS_ATOM + 'category':
+            category_required_attribute = ['term']
+            category_optional_attribute = ['scheme', 'label']
+            category_tag = \
+                atom_get_common_attribute(data,
+                                          category_required_attribute,
+                                          category_optional_attribute)
+            category_tag['term'] = atom_get_optional_attribute(data, 'term')
+            category_tag['scheme'] = \
+                atom_get_optional_attribute(data, 'scheme')
+            category_tag['label'] = atom_get_optional_attribute(data, 'label')
+            feed_data['category'].append(category_tag)
+        elif data.tag == XMLNS_ATOM + 'contributor':
+            contributor_tag = atom_get_common_attribute(data, None)
+            for child in data:
+                if child.tag == XMLNS_ATOM + 'name':
+                    contributor_tag['name'] = child.text
+                elif child.tag == XMLNS_ATOM + 'url':
+                    contributor_tag['uri'] = child.text
+                elif child.tag == XMLNS_ATOM + 'email':
+                    contributor_tag['email'] = child.text
+            feed_data['contributor'].append(author_tag)
+        elif data.tag == XMLNS_ATOM + 'link':
+            link_optional_attribute = ['href', 'rel', 'type', 'hreflang',
+                                       'title', 'length']
+            link_tag = atom_get_common_attribute(data, link_optional_attribute)
+            link_tag['href'] = atom_get_optional_attribute(data, 'href')
+            link_tag['rel'] = atom_get_optional_attribute(data, 'rel')
+            link_tag['type'] = atom_get_optional_attribute(data, 'type')
+            link_tag['hreflang'] = \
+                atom_get_optional_attribute(data, 'hreflang')
+            link_tag['title'] = atom_get_optional_attribute(data, 'title')
+            link_tag['length'] = atom_get_optional_attribute(data, 'length')
+            feed_data['link'].append(link_tag)
+        elif data.tag == XMLNS_ATOM + 'generator':
+            generator_optional_attribute = ['uri', 'version']
+            feed_data['generator'] = \
+                atom_get_common_attribute(data, generator_optional_attribute)
+            feed_data['generator']['text'] = data.text
+        elif data.tag == XMLNS_ATOM + 'icon':
+            feed_data['icon'] = atom_get_common_attribute(data, None)
+            feed_data['icon']['uri'] = data.text
+        elif data.tag == XMLNS_ATOM + 'logo':
+            feed_data['logo'] = atom_get_common_attribute(data, None)
+            feed_data['logo']['uri'] = data.text
+        elif data.tag == XMLNS_ATOM + 'rights':
+            rights_optional_attribute = ['type']
+            feed_data['rights'] = \
+                atom_get_common_attribute(data, rights_optional_attribute)
+            feed_data['rights']['text'] = data.text
+            feed_data['rights']['type'] = \
+                atom_get_optional_attribute(data, 'type')
+        elif data.tag == XMLNS_ATOM + 'subtitle':
+            subtitle_optional_attribute = ['type']
+            feed_data['subtitle'] = \
+                atom_get_common_attribute(data, subtitle_optional_attribute)
+            feed_data['subtitle']['text'] = data.text
+            feed_data['subtitle']['type'] = \
+                atom_get_optional_attribute(data, 'type')
         data = next(_iter)
     return feed_data
 
@@ -55,7 +127,12 @@ def atom_get_entry_data(entried):
     return
 
 
-def atom_common_attribute(data, *args):
+def atom_get_optional_attribute(data, attrib_name):
+    if attrib_name in data.attrib:
+        return data.attrib[attrib_name]
+
+
+def atom_get_common_attribute(data, *args):
     common_attribute = {}
     for attrib in data.attrib:
         if attrib == XMLNS_XML + 'base':
