@@ -98,11 +98,11 @@ class HeadElement(Element):
     owner_email = Text('ownerEmail')
     docs = Text('docs')
     expansion_state = Text('expansionState')
-    vert_scroll_state = Text('vertScrollState', decoder=int)
-    window_top = Text('windowTop', decoder=int)
-    window_bottom = Text('windowBottom', decoder=int)
-    window_left = Text('windowLeft', decoder=int)
-    window_right = Text('windowRight', decoder=int)
+    vert_scroll_state = Text('vertScrollState', decoder=int, encoder=str)
+    window_top = Text('windowTop', decoder=int, encoder=str)
+    window_bottom = Text('windowBottom', decoder=int, encoder=str)
+    window_left = Text('windowLeft', decoder=int, encoder=str)
+    window_right = Text('windowRight', decoder=int, encoder=str)
 
     @expansion_state.decoder
     def expansion_state(self, text):
@@ -167,13 +167,35 @@ class FeedList(object):
 
     def parse_doc(self):
         self.title = self.doc.head.title
+        self.owner_name = self.doc.head.owner_name
+        self.owner_email = self.doc.head.owner_email
+        self.docs = self.doc.head.docs
         self.expansion_state = self.doc.head.expansion_state
+        self.vert_scroll_state = self.doc.head.vert_scroll_state
+
+        self.window_top = self.doc.head.window_top
+        self.window_left = self.doc.head.window_left
+        self.window_bottom = self.doc.head.window_bottom
+        self.window_right = self.doc.head.window_right
+
+        self.date_created = self.doc.head.date_created
+        self.date_modified = self.doc.head.date_modified
+
         for outline in self.doc.body.outline:
             self.feedlist.append(self.convert_from_outline(outline))
 
     def save_file(self, filename=None):
         self.doc.head.title = self.title
+        self.doc.head.owner_name = self.owner_name
+        self.doc.head.owner_email = self.owner_email
+        self.doc.head.docs = self.docs
         self.doc.head.expansion_state = self.expansion_state
+        self.doc.head.vert_scroll_state = self.vert_scroll_state
+
+        self.doc.head.window_top = self.window_top
+        self.doc.head.window_left = self.window_left
+        self.doc.head.window_bottom = self.window_bottom
+        self.doc.head.window_right = self.window_right
 
         #TODO: Change doc.body here
         self.doc.body.outline[:] = []
