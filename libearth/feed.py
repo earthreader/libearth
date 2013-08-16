@@ -79,7 +79,7 @@ class Feed(FeedTree):
 
 
 class OutlineElement(Element):
-    text = Attribute('text')
+    text = Attribute('text', required=True)
     title = Attribute('title')
     type = Attribute('type')
     xml_url = Attribute('xmlUrl')
@@ -120,7 +120,10 @@ class HeadElement(Element):
         timezone_str = text[26:]
         matched = match(r'\+([0-9]{2})([0-9]{2})', timezone_str)
         if matched:
-            offset = FixedOffset(int(matched.group(1)) * 60 + int(matched.group(2)))
+            offset = FixedOffset(
+                int(matched.group(1)) * 60 +
+                int(matched.group(2))
+            )
             obj = obj.replace(tzinfo=offset)
 
         return obj
