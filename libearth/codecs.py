@@ -11,7 +11,7 @@ import re
 from .schema import Codec, DecodeError, EncodeError
 from .tz import FixedOffset, utc
 
-__all__ = 'Rfc3339',
+__all__ = 'Rfc3339', 'Rfc822', 'Integer'
 
 
 class Rfc3339(Codec):
@@ -101,3 +101,47 @@ class Rfc3339(Codec):
         if self.prefer_utc and tzinfo is not utc:
             dt = dt.astimezone(utc)
         return dt
+
+
+class Rfc822(Codec):
+    def encode(self, value):
+        if not isinstance(value, datetime.datetime):
+            raise EncodeError("Value must be instance of datetime.datetime")
+        res = value.strftime("%a, %d %b %Y %H:%M:%S ")
+        res += value.strftime("%Z").replace(":", "")
+        return res
+
+    def decode(self, text):
+        timestamp = text[:25]
+        timezone = text[26:]
+        try:
+            res = datetime.datetime.strptime(timestamp, "%a, %d %b %Y %H:%M:%S")
+            #FIXME: timezone like KST, UTC
+            matched = re.match(r'\+([0-9]{2})([0-9]{2})', timezone)
+            if matched:
+                offset = FixedOffset(
+                    int(matched.group(1)) * 60 +
+                    int(matched.group(2))
+                )
+                res = res.replace(tzinfo=offset)
+        except ValueError as e:
+            raise DecodeError(e)
+
+        return res
+
+
+class Integer(Codec):
+    PATTERN = re.compile("[0-9]+")
+
+    def encode(self, value):
+        if not isinstance(value, int):
+            raise EncodeError("Value type must be int")
+        if value is None:
+            return ""
+        else:
+            return str(value)
+
+    def decode(self, text):
+        if not self.PATTERN.match(text):
+            raise DecodeError("Invalid character on text")
+        return int(text)
