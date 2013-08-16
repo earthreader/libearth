@@ -1,10 +1,8 @@
-from pytest import mark, raises, skip
+from pytest import raises
 
-from libearth.compat import binary_type, text_type, xrange
-from libearth.feed import (AlreadyExistException, Feed, FeedList, OPMLDoc,
-                           SaveOPMLError)
-from libearth.schema import (Child, Content, DocumentElement, Element, Text,
-                             read)
+from libearth.compat import xrange
+from libearth.feed import AlreadyExistException, Feed, FeedList, OPMLDoc
+from libearth.schema import read
 
 
 def test_count_empty_list():

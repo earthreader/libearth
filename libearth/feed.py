@@ -3,14 +3,13 @@
 
 """
 
-from abc import ABCMeta, abstractmethod
-import collections
+from abc import ABCMeta
+from collections import MutableSequence
 from datetime import datetime
 
-from .compat import binary_type, text, text_type, xrange
-from .schema import (Attribute, Child, Content, DocumentElement, Element, Text,
+from .schema import (Attribute, Child, DocumentElement, Element, Text,
                      read, write)
-from . import tz
+from .tz import now
 
 
 class FeedTree():
@@ -21,7 +20,7 @@ class FeedTree():
         self.title = title
 
 
-class FeedCategory(FeedTree, collections.MutableSequence):
+class FeedCategory(FeedTree, MutableSequence):
     type = 'category'
 
     def __init__(self, title, text=None):
@@ -46,7 +45,7 @@ class FeedCategory(FeedTree, collections.MutableSequence):
         self.children.append(obj)
 
     def insert(self, index, value):
-        if not isinstance(obj, FeedTree):
+        if not isinstance(value, FeedTree):
             raise TypeError('class is must be instance of FeedTree')
 
         self.children.insert(index, value)
@@ -211,10 +210,10 @@ class FeedList(object):
         for feed in self.feedlist:
             self.doc.body.outline.append(self.convert_to_outline(feed))
 
-        now = tz.now().strftime('%a, %d %b %Y %H:%M:%S %Z')
-        self.doc.head.date_modified = now
+        timestamp = now().strftime('%a, %d %b %Y %H:%M:%S %Z')
+        self.doc.head.date_modified = timestamp
         if not self.doc.head.date_created:
-            self.doc.head.date_created = now
+            self.doc.head.date_created = timestamp
 
         try:
             filename = filename or self.path
@@ -263,7 +262,6 @@ class FeedList(object):
             res = FeedCategory(title)
 
             for outline in outline_obj.children:
-                feed = self.convert_from_outline(outline)
                 res.append(self.convert_from_outline(outline))
         else:
             type = outline_obj.type
