@@ -7,7 +7,7 @@ import re
 try:
     import urlparse
 except:
-    import urllib.urlparse as urlparrse
+    import urllib.parse as urlparse
 try:
     from lxml import etree
 except ImportError:
