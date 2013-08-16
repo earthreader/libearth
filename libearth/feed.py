@@ -10,6 +10,7 @@ from datetime import datetime
 from .compat import binary_type, text, text_type, xrange
 from .schema import (Attribute, Child, Content, DocumentElement, Element, Text,
                      read, write)
+from . import tz
 
 
 class FeedTree():
@@ -202,7 +203,7 @@ class FeedList(object):
         for feed in self.feedlist:
             self.doc.body.outline.append(self.convert_to_outline(feed))
 
-        now = datetime.now().strftime('%a, %d %b %Y %H:%M:%S %Z')
+        now = tz.now().strftime('%a, %d %b %Y %H:%M:%S %Z')
         self.doc.head.date_modified = now
         if not self.doc.head.date_created:
             self.doc.head.date_created = now
