@@ -3,14 +3,14 @@ from libearth.parser import FixedOffset, parse_atom
 
 
 atom_xml = """
-<feed xmlns="http://www.w3.org/2005/Atom" xmlns:test="http://test.xmlns.com">
+<feed xmlns="http://www.w3.org/2005/Atom">
     <title type="text">Atom Test</title>
-    <subtitle type = "text">Earth Reader</subtitle>
-    <id>http://vio.atomtest.com/feed/atom/</id>
+    <subtitle type="text">Earth Reader</subtitle>
+    <id>http://vio.atomtest.com/feed/atom</id>
     <updated>2013-08-19T07:49:20+07:00</updated>
     <link rel="alternate" type="text/html" href="http://vio.atomtest.com/" />
     <link rel="self" type="application/atom+xml"
-        href="http://vio.atomtest.com/feed/atom/" />
+        href="http://vio.atomtest.com/feed/atom" />
     <author>
         <name>vio</name>
         <email>vio.bo94@gmail.com</email>
@@ -24,6 +24,7 @@ atom_xml = """
     <logo>http://vio.atomtest.com/images/logo.jpg</logo>
     <rights>vio company all rights reserved</rights>
     <entry>
+        <id>one</id>
         <author>
             <name>vio</name>
         </author>
@@ -35,14 +36,22 @@ atom_xml = """
         <category scheme="http://vio.atomtest.com" term="Category Two" />
         <content>Hello World</content>
     </entry>
+    <entry xml:base="http://basetest.com/">
+        <id>two</id>
+        <author>
+            <name>kjwon</name>
+        </author>
+        <title>xml base test</title>
+        <updated>2013-08-17T03:28:11Z</updated>
+    </entry>
 </feed>
 """
 
 
 def test_atom_parser():
-    feed_data = parse_atom(atom_xml)
+    url = 'http://vio.atomtest.com/feed/atom'
+    feed_data = parse_atom(atom_xml, url)
     assert feed_data == {
-        'feed': {},
         'title': {
             'text': 'Atom Test',
             'type': 'text'
@@ -52,7 +61,7 @@ def test_atom_parser():
             'type': 'text'
         },
         'id': {
-            'uri': 'http://vio.atomtest.com/feed/atom/'
+            'uri': 'http://vio.atomtest.com/feed/atom'
         },
         'link': [
             {
@@ -64,7 +73,7 @@ def test_atom_parser():
                 'type': 'text/html',
             },
             {
-                'href': 'http://vio.atomtest.com/feed/atom/',
+                'href': 'http://vio.atomtest.com/feed/atom',
                 'hreflang': None,
                 'length': None,
                 'title': None,
@@ -111,6 +120,9 @@ def test_atom_parser():
         },
         'entry': [
             {
+                'id': {
+                    'uri': 'http://vio.atomtest.com/feed/one'
+                },
                 'author': [
                     {
                         'name': 'vio'
@@ -154,6 +166,26 @@ def test_atom_parser():
                 ],
                 'contributor': [],
 
+            },
+            {
+                'id': {
+                    'uri': 'http://basetest.com/two'
+                },
+                'author': [
+                    {
+                        'name': 'kjwon'
+                    }
+                ],
+                'title': {
+                    'text': 'xml base test',
+                    'type': None
+                },
+                'updated': {
+                    'datetime': datetime.datetime(2013, 8, 17, 3, 28, 11)
+                },
+                'category': [],
+                'contributor': [],
+                'link': []
             }
         ]
     }
