@@ -97,7 +97,6 @@ class HeadElement(Element):
 
     title = Text('title')
 
-    #FIXME: replace these two to Date
     date_created = Text('dateCreated')
     date_modified = Text('dateModified')
 
@@ -111,6 +110,26 @@ class HeadElement(Element):
     window_bottom = Text('windowBottom', decoder=int, encoder=integer_encoder)
     window_left = Text('windowLeft', decoder=int, encoder=integer_encoder)
     window_right = Text('windowRight', decoder=int, encoder=integer_encoder)
+
+    @date_created.decoder
+    def date_created(self, text):
+        #FIXME: timezone
+        obj = datetime.strptime(text[:25], "%a, %d %b %Y %H:%M:%S")
+        return obj
+
+    @date_created.encoder
+    def date_created(self, obj):
+        return obj.strftime("%a, %d %b %Y %H:%M:%S")
+
+    @date_modified.decoder
+    def date_modified(self, text):
+        #FIXME: timezone
+        obj = datetime.strptime(text[:25], "%a, %d %b %Y %H:%M:%S")
+        return obj
+
+    @date_modified.encoder
+    def date_modified(self, obj):
+        return obj.strftime("%a, %d %b %Y %H:%M:%S")
 
     @expansion_state.decoder
     def expansion_state(self, text):
@@ -210,7 +229,7 @@ class FeedList(object):
         for feed in self.feedlist:
             self.doc.body.outline.append(self.convert_to_outline(feed))
 
-        timestamp = now().strftime('%a, %d %b %Y %H:%M:%S %Z')
+        timestamp = now()
         self.doc.head.date_modified = timestamp
         if not self.doc.head.date_created:
             self.doc.head.date_created = timestamp

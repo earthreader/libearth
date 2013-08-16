@@ -1,3 +1,4 @@
+from datetime import datetime
 from pytest import raises
 
 from libearth.compat import xrange
@@ -30,7 +31,7 @@ XML = """<?xml version="1.0" encoding="ISO-8859-1"?>
 <opml version="2.0">
     <head>
         <title>EarthReader.opml</title>
-        <dateCreated>Sat, 18 Jun 2005 12:11:52 GMT</dateCreated>
+        <dateCreated>Sat, 18 Jun 2005 12:11:52 UTC</dateCreated>
         <ownerName>libearth</ownerName>
         <ownerEmail>earthreader@librelist.com</ownerEmail>
         <expansionState>a,b,c,d</expansionState>
@@ -51,7 +52,7 @@ XML_CATEGORY = """<?xml version="1.0" encoding="ISO-8859-1"?>
 <opml version="2.0">
     <head>
         <title>EarthReader.opml</title>
-        <dateCreated>Sat, 18 Jun 2005 12:11:52 GMT</dateCreated>
+        <dateCreated>Sat, 18 Jun 2005 12:11:52 UTC</dateCreated>
         <ownerName>libearth</ownerName>
         <ownerEmail>earthreader@librelist.com</ownerEmail>
         <expansionState>a,b,c,d</expansionState>
@@ -94,8 +95,10 @@ XML_DUPLICAED = """<?xml version="1.0" encoding="utf-8"?><opml version="1.1">
 
 def test_OPMLDocment():
     doc = read(OPMLDoc, XML)
+    expected_datetime = datetime(2005, 6, 18, 12, 11, 52)
+
     assert doc.head.title == "EarthReader.opml"
-    assert doc.head.date_created == "Sat, 18 Jun 2005 12:11:52 GMT"
+    assert doc.head.date_created == expected_datetime
     assert doc.head.date_modified is None
     assert doc.head.owner_name == "libearth"
     assert doc.head.expansion_state == ['a', 'b', 'c', 'd']
