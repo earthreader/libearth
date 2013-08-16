@@ -194,3 +194,50 @@ class Integer(Codec):
         if not self.PATTERN.match(text):
             raise DecodeError("Invalid character on text")
         return int(text)
+
+
+class Boolean(Codec):
+    """Codec to interpret between :class:`bool` and raw text
+    :param true: text to parse as True. "true" by default
+    :type true: :class:`str` or :class:`tuple`
+
+    :param false: text to parse as False. "false" by default
+    :type false: :class:`str` or :class:`tuple`
+
+    :param default_value: default value when cannot parse
+    :type default_value: :class:`bool` or :const:`None`
+    """
+    def __init__(self, true="true", false="false", default_value=None):
+        self.true = true
+        self.false = false
+        self.default_value = default_value
+
+    def encode(self, value):
+        if value is None:
+            value = self.default_value
+
+        true = (self.true if isinstance(self.true, string_type)
+                else self.true[0])
+        false = (self.false if isinstance(self.true, string_type)
+                 else self.false[0])
+
+        if value is True:
+            return true
+        elif value is False:
+            return false
+        else:
+            return None
+
+    def decode(self, text):
+        true = (self.true if not isinstance(self.true, string_type)
+                else [self.true])
+        false = (self.false if not isinstance(self.false, string_type)
+                 else [self.false])
+
+        if text in true:
+            value = True
+        elif text in false:
+            value = False
+        else:
+            value = None
+        return value
