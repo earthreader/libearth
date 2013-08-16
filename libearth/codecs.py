@@ -8,6 +8,7 @@ formats.
 import datetime
 import re
 
+from .compat import text_type
 from .schema import Codec, DecodeError, EncodeError
 from .tz import FixedOffset, utc
 
@@ -154,48 +155,48 @@ class Integer(Codec):
 
 
 class Boolean(Codec):
-    def __init__(self, is_truefalse=True, is_yn=True, is_onoff=True,
-                 default_value=None):
-        self.is_truefalse = is_truefalse
-        self.is_yn = is_yn
-        self.is_onoff = is_onoff
+    """Codec to interpret between :class:`bool` and raw text
+    :param true: text to parse as True. "true" by default
+    :type true: :class:`str` or :class:`tuple`
+
+    :param false: text to parse as False. "false" by default
+    :type false: :class:`str` or :class:`tuple`
+
+    :param default_value: default value when cannot parse
+    :type default_value: :class:`bool` or :const:`None`
+    """
+    def __init__(self, true="true", false="false", default_value=None):
+        self.true = true
+        self.false = false
         self.default_value = default_value
 
     def encode(self, value):
         if value is None:
             value = self.default_value
 
-        if self.is_truefalse:
-            res = "true" if value else "false"
-        elif self.is_yn:
-            res = "y" if value else "n"
-        elif self.is_onoff:
-            res = "on" if value else "off"
+        true = (self.true if isinstance(self.true, text_type)
+                else self.true[0])
+        false = (self.false if isinstance(self.true, text_type)
+                 else self.false[0])
 
-        return res
+        if value is True:
+            return true
+        elif value is False:
+            return false
+        else:
+            return None
+
 
     def decode(self, text):
-        value = None
-        text = text.lower()
-        if self.is_truefalse:
-            if text == "true":
-                value = True
-            elif text == "false":
-                value = False
+        true = (self.true if not isinstance(self.true, text_type)
+                else [self.true])
+        false = (self.false if not isinstance(self.false, text_type)
+                 else [self.false])
 
-        if self.is_yn:
-            if text == "y":
-                value = True
-            elif text == "n":
-                value = False
-
-        if self.is_onoff:
-            if text == "on":
-                value = True
-            elif text == "off":
-                value = False
-
-        if value is None:
-            value = self.default_value
-
+        if text in true:
+            value = True
+        elif text in false:
+            value = False
+        else:
+            value = None
         return value
