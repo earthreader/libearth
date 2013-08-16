@@ -89,6 +89,13 @@ class OutlineElement(Element):
 
 
 class HeadElement(Element):
+
+    def integer_encoder(obj):
+        if obj is None:
+            return ""
+        else:
+            return str(obj)
+
     title = Text('title')
 
     #FIXME: replace these two to Date
@@ -99,11 +106,12 @@ class HeadElement(Element):
     owner_email = Text('ownerEmail')
     docs = Text('docs')
     expansion_state = Text('expansionState')
-    vert_scroll_state = Text('vertScrollState', decoder=int, encoder=str)
-    window_top = Text('windowTop', decoder=int, encoder=str)
-    window_bottom = Text('windowBottom', decoder=int, encoder=str)
-    window_left = Text('windowLeft', decoder=int, encoder=str)
-    window_right = Text('windowRight', decoder=int, encoder=str)
+    vert_scroll_state = Text('vertScrollState', decoder=int,
+                             encoder=integer_encoder)
+    window_top = Text('windowTop', decoder=int, encoder=integer_encoder)
+    window_bottom = Text('windowBottom', decoder=int, encoder=integer_encoder)
+    window_left = Text('windowLeft', decoder=int, encoder=integer_encoder)
+    window_right = Text('windowRight', decoder=int, encoder=integer_encoder)
 
     @expansion_state.decoder
     def expansion_state(self, text):
