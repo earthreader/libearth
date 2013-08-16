@@ -188,7 +188,7 @@ class Integer(Codec):
         if value is None:
             return ""
         else:
-            return str(value)
+            return str(int(value))
 
     def decode(self, text):
         if not self.PATTERN.match(text):
