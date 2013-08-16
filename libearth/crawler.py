@@ -3,7 +3,6 @@
 
 """
 import re
-import xml.parsers.expat
 
 from .compat import PY3
 

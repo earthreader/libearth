@@ -1,4 +1,6 @@
-from libearth.parser import parse_atom
+import datetime
+from libearth.parser import FixedOffset, parse_atom
+
 
 atom_xml = """
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:test="http://test.xmlns.com">
@@ -39,26 +41,119 @@ atom_xml = """
 
 def test_atom_parser():
     feed_data = parse_atom(atom_xml)
-    assert feed_data['title']['text'] == 'Atom Test'
-    assert feed_data['title']['type'] == 'text'
-    assert feed_data['subtitle']['text'] == 'Earth Reader'
-    assert feed_data['subtitle']['type'] == 'text'
-    assert feed_data['id']['uri'] == 'http://vio.atomtest.com/feed/atom/'
-    assert feed_data['link'][0]['href'] == 'http://vio.atomtest.com/'
-    assert feed_data['link'][0]['rel'] == 'alternate'
-    assert feed_data['link'][0]['type'] == 'text/html'
-    assert feed_data['link'][1]['href'] == 'http://vio.atomtest.com/feed/atom/'
-    assert feed_data['link'][1]['rel'] == 'self'
-    assert feed_data['link'][1]['type'] == 'application/atom+xml'
-    assert feed_data['updated']['datetime'].isoformat() == \
-        '2013-08-19T07:49:20+07:00'
-    assert feed_data['author'][0]['name'] == 'vio'
-    assert feed_data['author'][0]['email'] == 'vio.bo94@gmail.com'
-    assert feed_data['category'][0]['term'] == 'Python'
-    assert feed_data['generator']['uri'] == 'http://wordpress.com/'
-    assert feed_data['generator']['text'] == 'WordPress.com'
-    assert feed_data['icon']['uri'] == \
-        'http://vio.atomtest.com/images/icon.jpg'
-    assert feed_data['logo']['uri'] == \
-        'http://vio.atomtest.com/images/logo.jpg'
-    assert feed_data['rights']['text'] == 'vio company all rights reserved'
+    assert feed_data == {
+        'feed': {},
+        'title': {
+            'text': 'Atom Test',
+            'type': 'text'
+        },
+        'subtitle': {
+            'text': 'Earth Reader',
+            'type': 'text'
+        },
+        'id': {
+            'uri': 'http://vio.atomtest.com/feed/atom/'
+        },
+        'link': [
+            {
+                'href': 'http://vio.atomtest.com/',
+                'hreflang': None,
+                'length': None,
+                'title': None,
+                'rel': 'alternate',
+                'type': 'text/html',
+            },
+            {
+                'href': 'http://vio.atomtest.com/feed/atom/',
+                'hreflang': None,
+                'length': None,
+                'title': None,
+                'rel': 'self',
+                'type': 'application/atom+xml'
+            }
+        ],
+        'updated': {
+            'datetime': datetime.datetime(2013, 8, 19, 7, 49, 20,
+                                          tzinfo=FixedOffset('+07:00'))
+        },
+        'author': [
+            {
+                'name': 'vio',
+                'email': 'vio.bo94@gmail.com'
+            }
+        ],
+        'contributor': [
+            {
+                'name': 'dahlia'
+            }
+        ],
+        'category': [
+            {
+                'term': 'Python',
+                'label': None,
+                'scheme': None
+            }
+        ],
+        'generator': {
+            'uri': 'http://wordpress.com/',
+            'text': 'WordPress.com',
+            'version': None
+        },
+        'icon': {
+            'uri': 'http://vio.atomtest.com/images/icon.jpg'
+        },
+        'logo': {
+            'uri': 'http://vio.atomtest.com/images/logo.jpg'
+        },
+        'rights': {
+            'text': 'vio company all rights reserved',
+            'type': None
+        },
+        'entry': [
+            {
+                'author': [
+                    {
+                        'name': 'vio'
+                    }
+                ],
+                'title': {
+                    'text': 'Title One',
+                    'type': None
+                },
+                'updated': {
+                    'datetime': datetime.datetime(2013, 8, 10, 15, 27, 4)
+                },
+                'published': {
+                    'datetime': datetime.datetime(2013, 8, 10, 15, 26, 15)
+                },
+                'category': [
+                    {
+                        'label': None,
+                        'term': 'Category One',
+                        'scheme': 'http://vio.atomtest.com'
+                    },
+                    {
+                        'label': None,
+                        'term': 'Category Two',
+                        'scheme': 'http://vio.atomtest.com'
+                    }
+                ],
+                'content': {
+                    'text': 'Hello World',
+                    'type': None
+                },
+                'link': [
+                    {
+                        'rel': 'self',
+                        'href': 'http://vio.atomtest.com/?p=12345',
+                        'hreflang': None,
+                        'title': None,
+                        'length': None,
+                        'type': None
+                    }
+                ],
+                'contributor': [],
+
+            }
+        ]
+    }
