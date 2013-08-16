@@ -1,8 +1,9 @@
 import datetime
 
-from pytest import mark
+from pytest import mark, raises
 
-from libearth.codecs import Rfc3339
+from libearth.codecs import Boolean, Integer, Rfc3339
+from libearth.schema import DecodeError, EncodeError
 from libearth.tz import FixedOffset, utc
 
 
@@ -35,3 +36,53 @@ def test_rfc3339_encode(rfc3339_string, dt):
     assert codec.encode(dt) == rfc3339_string
     assert (Rfc3339(prefer_utc=True).encode(dt) ==
             codec.encode(dt.astimezone(utc)))
+
+
+def test_integer():
+    codec = Integer()
+    assert codec.encode(42) == "42"
+    assert codec.decode("42") == 42
+
+
+def test_integer_raises():
+    codec = Integer()
+    with raises(EncodeError):
+        print(codec.encode("string"))
+    with raises(DecodeError):
+        print(codec.decode("aaa"))
+
+
+def test_boolean():
+    codec = Boolean(true="true", false="false", default_value=False)
+
+    assert codec.encode(True) is "true"
+    assert codec.encode(False) is "false"
+
+    assert codec.decode("true") is True
+    assert codec.decode("false") is False
+    assert codec.decode(None) is False
+
+    with raises(EncodeError):
+        print(codec.encode("string"))
+
+    with raises(DecodeError):
+        print(codec.decode("another"))
+
+
+def test_boolean_tuple():
+    true = ("true", "on", "yes")
+    false = ("false", "off", "no")
+
+    codec = Boolean(true=true, false=false, default_value=False)
+
+    assert codec.encode(True) in true
+    assert codec.encode(False) in false
+
+    assert codec.decode("on") is True
+    assert codec.decode("no") is False
+
+    with raises(EncodeError):
+        print(codec.encode(111))
+
+    with raises(DecodeError):
+        print(codec.decode("is one true?"))

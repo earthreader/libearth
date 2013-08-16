@@ -8,7 +8,7 @@ formats.
 import datetime
 import re
 
-from .compat import text_type
+from .compat import string_type
 from .schema import Codec, DecodeError, EncodeError
 from .tz import FixedOffset, utc
 
@@ -146,7 +146,7 @@ class Integer(Codec):
         if value is None:
             return ""
         else:
-            return str(value)
+            return str(int(value))
 
     def decode(self, text):
         if not self.PATTERN.match(text):
@@ -177,9 +177,9 @@ class Boolean(Codec):
         if not isinstance(value, bool) and value is not None:
             raise EncodeError("type of {0} must be bool".format(value))
 
-        true = (self.true if isinstance(self.true, text_type)
+        true = (self.true if isinstance(self.true, string_type)
                 else self.true[0])
-        false = (self.false if isinstance(self.true, text_type)
+        false = (self.false if isinstance(self.true, string_type)
                  else self.false[0])
 
         if value is True:
@@ -190,9 +190,9 @@ class Boolean(Codec):
             return None
 
     def decode(self, text):
-        true = (self.true if not isinstance(self.true, text_type)
+        true = (self.true if not isinstance(self.true, string_type)
                 else [self.true])
-        false = (self.false if not isinstance(self.false, text_type)
+        false = (self.false if not isinstance(self.false, string_type)
                  else [self.false])
 
         if text in true:
