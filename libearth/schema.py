@@ -48,10 +48,6 @@ You can declare the schema for this like the following class definition::
         url = Child('url', URL, multiple=True)
         dob = Child('dob', Date)
 
-.. todo::
-
-   - Codec
-
 """
 import collections
 import copy
@@ -65,8 +61,8 @@ import xml.sax.saxutils
 
 from .compat import UNICODE_BY_DEFAULT, string_type
 
-__all__ = ('Attribute', 'Child', 'CodecDescriptor', 'CodecError', 'Content',
-           'ContentHandler', 'DecodeError', 'Descriptor',
+__all__ = ('Attribute', 'Child', 'Codec', 'CodecDescriptor', 'CodecError',
+           'Content', 'ContentHandler', 'DecodeError', 'Descriptor',
            'DescriptorConflictError', 'DocumentElement', 'Element',
            'ElementList', 'EncodeError', 'IntegrityError',
            'SchemaError', 'Text',
@@ -307,6 +303,57 @@ class Child(Descriptor):
         content_desc.read(reserved_value, content)
 
 
+class Codec(object):
+    """Abstract base class for codecs to serialize Python values to be
+    stored in XML and deserialize XML texts to Python values.
+
+    In most cases encoding and decoding are implementation details of
+    *format* which is well-defined, so these two functions could be
+    paired.  The interface rely on that idea.
+
+    To implement a codec, you have to subclass :class:`Codec` and
+    override a pair of methods: :meth:`encode()` and :meth:`decode()`.
+
+    Codec objects are acceptable by :class:`Attribute`, :class:`Text`, and
+    :class:`Content` (all they subclass :class:`CodecDescriptor`).
+
+    """
+
+    def encode(self, value):
+        """Encode the given Python ``value`` into XML text.
+
+        :param value: Python value to encode
+        :returns: the encoded XML text
+        :rtype: :class:`str`
+        :raise EncodeError: when encoding the given ``value`` goes wrong
+
+        .. note::
+
+           Every :class:`Codec` subtype has to override this method.
+
+        """
+        cls = type(self)
+        raise NotImplementedError('{0.__module__}.{0.__name__}.encode() '
+                                  'is not implemented'.format(cls))
+
+    def decode(self, text):
+        """Decode the given XML ``text`` to Python value.
+
+        :param text: XML text to decode
+        :type text: :class:`str`
+        :returns: the decoded Python value
+        :raise DecodeError: when decoding the given XML ``text`` goes wrong
+
+        .. note::
+
+           Every :class:`Codec` subtype has to override this method.
+
+        """
+        cls = type(self)
+        raise NotImplementedError('{0.__module__}.{0.__name__}.decode() '
+                                  'is not implemented'.format(cls))
+
+
 # Semi-structured record type for only internal use.
 CodecFunction = collections.namedtuple('CodecFunction', 'function descriptor')
 
@@ -319,6 +366,13 @@ class CodecDescriptor(object):
     ``encoder`` and ``decoder`` functions for them.  It's used for encoding
     from Python values to XML string and decoding raw values from XML to
     natural Python representations.
+
+    It can take a ``codec``, or ``encode`` and ``decode`` separately.
+    (Of course they all can be present at a time.)  In most cases,
+    you'll need only ``codec`` parameter that encoder and decoder
+    are coupled::
+
+        Text('dob', Rfc3339(prefer_utc=True))
 
     Encoders can be specified using ``encoder`` parameter of descriptor's
     constructor, or :meth:`encoder()` decorator.
@@ -343,6 +397,12 @@ class CodecDescriptor(object):
             def format_version(self, value):
                 return tuple(map(int, value.split('.')))
 
+    :param codec: an optional codec object to use.  if it's callable and
+                  not an instance of :class:`Codec`, its return value will
+                  be used instead.  it means this can take class object of
+                  :class:`Codec` subtype that is not instantiated yet
+                  unless the constructor require any arguments
+    :type codec: :class:`Codec`, :class:`collections.Callable`
     :param encoder: an optional function that encodes Python value into
                     XML text value e.g. :func:`str()`.  the encoder function
                     has to take an argument
@@ -354,9 +414,17 @@ class CodecDescriptor(object):
 
     """
 
-    def __init__(self, encoder=None, decoder=None):
+    def __init__(self, codec=None, encoder=None, decoder=None):
         self.encoders = []
         self.decoders = []
+        if callable(codec) and not isinstance(codec, Codec):
+            codec = codec()
+        if codec is not None:
+            if not isinstance(codec, Codec):
+                raise TypeError('codec must be an instance of {0.__module__}.'
+                                '{0.__name__}, not {1!r}'.format(Codec, codec))
+            self.encoders.append(CodecFunction(codec.encode, descriptor=False))
+            self.decoders.append(CodecFunction(codec.decode, descriptor=False))
         if encoder is not None:
             if not callable(encoder):
                 raise TypeError('encoder must be callable, not ' +
@@ -522,6 +590,12 @@ class Text(Descriptor, CodecDescriptor):
 
     :param tag: the XML tag name
     :type tag: :class:`str`
+    :param codec: an optional codec object to use.  if it's callable and
+                  not an instance of :class:`Codec`, its return value will
+                  be used instead.  it means this can take class object of
+                  :class:`Codec` subtype that is not instantiated yet
+                  unless the constructor require any arguments
+    :type codec: :class:`Codec`, :class:`collections.Callable`
     :param xmlns: an optional XML namespace URI
     :type xmlns: :class:`str`
     :param required: whether the child is required or not.
@@ -543,11 +617,12 @@ class Text(Descriptor, CodecDescriptor):
 
     """
 
-    def __init__(self, tag, xmlns=None, required=False, multiple=False,
-                 encoder=None, decoder=None):
+    def __init__(self, tag, codec=None, xmlns=None, required=False,
+                 multiple=False, encoder=None, decoder=None):
         Descriptor.__init__(self, tag,
                             xmlns=xmlns, required=required, multiple=multiple)
-        CodecDescriptor.__init__(self, encoder=encoder, decoder=decoder)
+        CodecDescriptor.__init__(self, codec=codec,
+                                 encoder=encoder, decoder=decoder)
 
     def start_element(self, element, attribute):
         return element
@@ -565,6 +640,12 @@ class Attribute(CodecDescriptor):
 
     :param name: the XML attribute name
     :type name: :class:`str`
+    :param codec: an optional codec object to use.  if it's callable and
+                  not an instance of :class:`Codec`, its return value will
+                  be used instead.  it means this can take class object of
+                  :class:`Codec` subtype that is not instantiated yet
+                  unless the constructor require any arguments
+    :type codec: :class:`Codec`, :class:`collections.Callable`
     :param xmlns: an optional XML namespace URI
     :type xmlns: :class:`str`
     :param required: whether the child is required or not.
@@ -593,9 +674,11 @@ class Attribute(CodecDescriptor):
     #: (:class:`bool`) Whether it is required for the element.
     required = None
 
-    def __init__(self, name, xmlns=None, required=False,
+    def __init__(self, name, codec=None, xmlns=None, required=False,
                  encoder=None, decoder=None):
-        super(Attribute, self).__init__(encoder=encoder, decoder=decoder)
+        super(Attribute, self).__init__(codec=codec,
+                                        encoder=encoder,
+                                        decoder=decoder)
         self.name = name
         self.xmlns = xmlns
         self.key_pair = xmlns, name
@@ -610,6 +693,12 @@ class Attribute(CodecDescriptor):
 class Content(CodecDescriptor):
     """Declare possible text nodes as a descriptor.
 
+    :param codec: an optional codec object to use.  if it's callable and
+                  not an instance of :class:`Codec`, its return value will
+                  be used instead.  it means this can take class object of
+                  :class:`Codec` subtype that is not instantiated yet
+                  unless the constructor require any arguments
+    :type codec: :class:`Codec`, :class:`collections.Callable`
     :param encoder: an optional function that encodes Python value into
                     XML text value e.g. :func:`str()`.  the encoder function
                     has to take an argument
@@ -625,16 +714,17 @@ class Content(CodecDescriptor):
         if isinstance(obj, Element):
             if getattr(obj, '_root', None):
                 root = obj._root()
-                handler = root._handler
-                parser = root._parser
-                iterable = root._iterator
-                while (obj._content is None and
-                       (not handler.stack or handler.stack[-1])):
-                    try:
-                        parser.feed(next(iterable))
-                    except StopIteration:
-                        break
-            return obj._content or ''
+                parser = getattr(root, '_parser', None)
+                if parser:
+                    handler = root._handler
+                    iterable = root._iterator
+                    while (obj._content is None and
+                           (not handler.stack or handler.stack[-1])):
+                        try:
+                            parser.feed(next(iterable))
+                        except StopIteration:
+                            break
+            return obj._content
         return self
 
     def __set__(self, obj, value):
@@ -649,7 +739,8 @@ class Content(CodecDescriptor):
            Internal method.
 
         """
-        self.__set__(element, self.decode(value, element))
+        decoded = self.decode(value, element)
+        self.__set__(element, decoded)
 
 
 class Element(object):
@@ -679,8 +770,8 @@ class Element(object):
 
     def __init__(self, _parent=None, *args, **attributes):
         self._attrs = getattr(self, '_attrs', {})  # FIXME
-        self._content = None
-        self._data = {}
+        self._content = getattr(self, '_content', None)
+        self._data = getattr(self, '_data', {})
         if _parent is not None:
             self._parent = weakref.ref(_parent)
             self._root = _parent._root
