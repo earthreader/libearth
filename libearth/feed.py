@@ -6,10 +6,11 @@
 from abc import ABCMeta
 from collections import MutableSequence
 from datetime import datetime
+from re import match
 
 from .schema import (Attribute, Child, DocumentElement, Element, Text,
                      read, write)
-from .tz import now
+from .tz import FixedOffset, now
 
 
 class FeedTree():
@@ -102,6 +103,7 @@ class HeadElement(Element):
 
     owner_name = Text('ownerName')
     owner_email = Text('ownerEmail')
+    owner_id = Text('ownerId')
     docs = Text('docs')
     expansion_state = Text('expansionState')
     vert_scroll_state = Text('vertScrollState', decoder=int,
@@ -113,13 +115,21 @@ class HeadElement(Element):
 
     @date_created.decoder
     def date_created(self, text):
-        #FIXME: timezone
         obj = datetime.strptime(text[:25], "%a, %d %b %Y %H:%M:%S")
+        #FIXME: timezone
+        timezone_str = text[26:]
+        matched = match(r'\+([0-9]{2})([0-9]{2})', timezone_str)
+        if matched:
+            offset = FixedOffset(int(matched.group(1)) * 60 + int(matched.group(2)))
+            obj = obj.replace(tzinfo=offset)
+
         return obj
 
     @date_created.encoder
     def date_created(self, obj):
-        return obj.strftime("%a, %d %b %Y %H:%M:%S")
+        res = obj.strftime("%a, %d %b %Y %H:%M:%S ")
+        res += obj.strftime("%Z").replace(":", "")
+        return res
 
     @date_modified.decoder
     def date_modified(self, text):
@@ -129,7 +139,9 @@ class HeadElement(Element):
 
     @date_modified.encoder
     def date_modified(self, obj):
-        return obj.strftime("%a, %d %b %Y %H:%M:%S")
+        res = obj.strftime("%a, %d %b %Y %H:%M:%S ")
+        res += obj.strftime("%Z").replace(":", "")
+        return res
 
     @expansion_state.decoder
     def expansion_state(self, text):
@@ -164,8 +176,6 @@ class FeedList(object):
         """Initializer of Feed list
         when path is None, it doesn't save opml file. just use memory
         """
-        #TODO: same Feed on multiple category
-        #TODO: Only one feed on same category
 
         #default value
         self.title = "EarthReader"
@@ -196,6 +206,7 @@ class FeedList(object):
         self.title = self.doc.head.title
         self.owner_name = self.doc.head.owner_name
         self.owner_email = self.doc.head.owner_email
+        self.owner_id = self.doc.head.owner_id
         self.docs = self.doc.head.docs
         self.expansion_state = self.doc.head.expansion_state
         self.vert_scroll_state = self.doc.head.vert_scroll_state
@@ -215,6 +226,7 @@ class FeedList(object):
         self.doc.head.title = self.title
         self.doc.head.owner_name = self.owner_name
         self.doc.head.owner_email = self.owner_email
+        self.doc.head.owner_id = self.owner_id
         self.doc.head.docs = self.docs
         self.doc.head.expansion_state = self.expansion_state
         self.doc.head.vert_scroll_state = self.vert_scroll_state
