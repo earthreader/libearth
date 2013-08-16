@@ -5,12 +5,25 @@
 
 from abc import ABCMeta
 from collections import MutableSequence
-from datetime import datetime
-from re import match
 
-from .schema import (Attribute, Child, DocumentElement, Element, Text,
+from .codecs import Integer, Rfc822
+from .compat import text_type
+from .schema import (Attribute, Child, Codec, DocumentElement, Element, Text,
                      read, write)
-from .tz import FixedOffset, now
+from .tz import now
+
+
+class CommaSeparatedList(Codec):
+    def encode(self, value):
+        if isinstance(value, text_type):
+            res = value
+        else:
+            res = ",".join(value)
+        return res
+
+    def decode(self, text):
+        lst = [elem.strip() for elem in text.split(',')]
+        return lst
 
 
 class FeedTree():
@@ -89,74 +102,21 @@ class OutlineElement(Element):
 
 
 class HeadElement(Element):
-
-    def integer_encoder(obj):
-        if obj is None:
-            return ""
-        else:
-            return str(obj)
-
     title = Text('title')
 
-    date_created = Text('dateCreated')
-    date_modified = Text('dateModified')
+    date_created = Text('dateCreated', Rfc822)
+    date_modified = Text('dateModified', Rfc822)
 
     owner_name = Text('ownerName')
     owner_email = Text('ownerEmail')
     owner_id = Text('ownerId')
     docs = Text('docs')
-    expansion_state = Text('expansionState')
-    vert_scroll_state = Text('vertScrollState', decoder=int,
-                             encoder=integer_encoder)
-    window_top = Text('windowTop', decoder=int, encoder=integer_encoder)
-    window_bottom = Text('windowBottom', decoder=int, encoder=integer_encoder)
-    window_left = Text('windowLeft', decoder=int, encoder=integer_encoder)
-    window_right = Text('windowRight', decoder=int, encoder=integer_encoder)
-
-    @date_created.decoder
-    def date_created(self, text):
-        obj = datetime.strptime(text[:25], "%a, %d %b %Y %H:%M:%S")
-        #FIXME: timezone
-        timezone_str = text[26:]
-        matched = match(r'\+([0-9]{2})([0-9]{2})', timezone_str)
-        if matched:
-            offset = FixedOffset(
-                int(matched.group(1)) * 60 +
-                int(matched.group(2))
-            )
-            obj = obj.replace(tzinfo=offset)
-
-        return obj
-
-    @date_created.encoder
-    def date_created(self, obj):
-        res = obj.strftime("%a, %d %b %Y %H:%M:%S ")
-        res += obj.strftime("%Z").replace(":", "")
-        return res
-
-    @date_modified.decoder
-    def date_modified(self, text):
-        #FIXME: timezone
-        obj = datetime.strptime(text[:25], "%a, %d %b %Y %H:%M:%S")
-        return obj
-
-    @date_modified.encoder
-    def date_modified(self, obj):
-        res = obj.strftime("%a, %d %b %Y %H:%M:%S ")
-        res += obj.strftime("%Z").replace(":", "")
-        return res
-
-    @expansion_state.decoder
-    def expansion_state(self, text):
-        return text.split(',')
-
-    @expansion_state.encoder
-    def expansion_state(self, obj):
-        if not obj:
-            res = ""
-        else:
-            res = ','.join(obj)
-        return res
+    expansion_state = Text('expansionState', CommaSeparatedList)
+    vert_scroll_state = Text('vertScrollState', Integer)
+    window_top = Text('windowTop', Integer)
+    window_bottom = Text('windowBottom', Integer)
+    window_left = Text('windowLeft', Integer)
+    window_right = Text('windowRight', Integer)
 
 
 class BodyElement(Element):
