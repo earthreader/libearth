@@ -51,7 +51,7 @@ class FeedCategory(FeedTree, MutableSequence):
         super(FeedCategory, self).__init__('category', title)
         self.text = text
         self._type = type
-        self.text = text
+        self.text = text or title
         self.xml_url = xml_url
         self.html_url = html_url
         self.category = category
@@ -63,31 +63,46 @@ class FeedCategory(FeedTree, MutableSequence):
         #for not allowing same feed on same category
         self.urls = []
 
-    def append(self, obj):
-        if not isinstance(obj, FeedTree):
-            raise TypeError('class is must be instance of FeedTree')
-        if obj.type == 'feed':
-            if obj.xml_url in self.urls:
-                raise AlreadyExistException(
-                    "{0!r} is already here".format(obj)
-                )
-            else:
-                self.urls.append(obj.xml_url)
-
-        self.children.append(obj)
-
     def insert(self, index, value):
         if not isinstance(value, FeedTree):
             raise TypeError('class is must be instance of FeedTree')
         if value.type == 'feed':
             if value.xml_url in self.urls:
                 raise AlreadyExistException(
-                    "{0} is already here".format(value.title)
+                    "{0!r} is already here".format(value)
                 )
             else:
                 self.urls.append(value.xml_url)
+        elif value.type == 'category':
+            if value in self:
+                raise AlreadyExistException(
+                    "{0!r} is already here"
+                    .format(value)
+                )
+            elif self in value:
+                raise AlreadyExistException(
+                    "{0!r} contains me. circular referrence is not allowed"
+                    .format(value)
+                )
+            elif value is self:
+                raise AlreadyExistException(
+                    "{0!r} is me.".format(value)
+                )
 
         self.children.insert(index, value)
+
+    def __contains__(self, key):
+        if not isinstance(key, FeedTree):
+            raise TypeError("{0!r} must be instance of FeedTree".format(key))
+
+        if key in self.children:
+            return True
+        else:
+            for child in self.children:
+                if child.type == 'category' and key in child:
+                    return True
+
+            return False
 
     def __iter__(self):
         return iter(self.children)

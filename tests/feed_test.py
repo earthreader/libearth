@@ -165,3 +165,49 @@ def test_same_feed_on_multi_category():
     feeds = FeedList(XML_DUPLICAED, is_xml_string=True)
     feeds[0][0].xml_url = "changed"
     assert feeds[1][0].xml_url == "changed"
+
+
+def test_feedTree_in_category():
+    feed1 = Feed('rss2', 'newfeed', 'http://some.url/rss2')
+    feed2 = Feed('rss2', 'otherfeed', 'http://different.url/rss2')
+    feed3 = Feed('rss2', 'anotherfeed', 'http://another.url/rss2')
+
+    root = FeedCategory('root')
+    sub = FeedCategory('sub')
+    cate3 = FeedCategory('outer')
+
+    sub.append(feed2)
+
+    root.append(feed1)
+    root.append(sub)
+
+    assert feed1 in root
+    assert feed1 not in sub
+    assert feed2 in sub
+    assert feed2 in root
+    assert feed3 not in sub
+    assert feed3 not in sub
+
+    assert sub in root
+    assert cate3 not in root
+
+
+def test_circular_reference(tmpdir):
+    cate = FeedCategory('Root category')
+    subcate = FeedCategory('Sub category')
+    lastcate = FeedCategory('last category')
+
+    cate.append(subcate)
+    subcate.append(lastcate)
+    with raises(AlreadyExistException):
+        subcate.append(cate)
+    with raises(AlreadyExistException):
+        lastcate.append(cate)
+    with raises(AlreadyExistException):
+        subcate.append(subcate)
+    feeds = FeedList(XML, is_xml_string=True)
+    feeds.append(cate)
+
+    filename = tmpdir.join('feeds.opml').strpath
+    print(filename)
+    feeds.save_file(filename)
