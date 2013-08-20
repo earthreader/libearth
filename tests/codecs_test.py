@@ -1,9 +1,22 @@
 import datetime
 
-from pytest import mark
+from pytest import mark, raises
 
-from libearth.codecs import Rfc3339
+from libearth.codecs import Enum, Rfc3339
+from libearth.schema import DecodeError, EncodeError
 from libearth.tz import FixedOffset, utc
+
+
+def test_enum():
+    enum = Enum(['male', 'female'])
+    assert enum.encode('male') == 'male'
+    assert enum.encode('female') == 'female'
+    with raises(EncodeError):
+        enum.encode('invalid')
+    assert enum.decode('male') == 'male'
+    assert enum.decode('female') == 'female'
+    with raises(DecodeError):
+        enum.decode('invalid')
 
 
 sample_data = [
