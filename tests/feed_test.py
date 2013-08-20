@@ -1,8 +1,8 @@
 from datetime import datetime
 from pytest import raises
 
-from libearth.compat import xrange
-from libearth.feed import AlreadyExistException, Feed, FeedList, OPMLDoc
+from libearth.feed import (AlreadyExistException, Feed, FeedCategory, FeedList,
+                           OPMLDoc)
 from libearth.schema import read
 
 
@@ -13,10 +13,9 @@ def test_count_empty_list():
 
 def test_count_duplicated_url():
     feeds = FeedList()
+    feeds.add_feed('type', 'title', 'url')
     with raises(AlreadyExistException):
-        for i in xrange(30):
-            feeds.add_feed('type', 'title', 'url')
-
+        feeds.add_feed('type', 'title', 'url')
     assert len(feeds) == 1
 
 
@@ -110,7 +109,7 @@ def test_OPMLDocment():
 
 def test_file_not_found():
     with raises(IOError):
-        feeds = FeedList('this_file_must_be_not_found.ext')
+        FeedList('this_file_must_be_not_found.ext')
 
 
 def test_path_as_string():
@@ -121,11 +120,8 @@ def test_path_as_string():
 
 def test_feed_as_iterator():
     feeds = FeedList(XML, is_xml_string=True)
-    expected = ['CNET News.com', 'test.com']
-    for feed in feeds:
-        print(feed.title)
-        expected.remove(feed.title)
-    assert not expected
+    expected = set(['CNET News.com', 'test.com'])
+    assert set(f.title for f in feeds) == expected
 
 
 def test_feed_contains_category():

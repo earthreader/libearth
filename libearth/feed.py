@@ -3,7 +3,6 @@
 
 """
 
-from abc import ABCMeta
 from collections import MutableSequence
 
 from .codecs import Boolean, Integer, Rfc822
@@ -31,12 +30,16 @@ class CommaSeparatedList(Codec):
         return lst
 
 
-class FeedTree():
-    __metaclass__ = ABCMeta
+class FeedTree(object):
 
     def __init__(self, type, title):
         self.type = type
         self.title = title
+
+    def __repr__(self):
+        return '<{0.__module__}.{0.__name__} type={1!r} title={2!r}>'.format(
+            type(self), self.type, self.title
+        )
 
 
 class FeedCategory(FeedTree, MutableSequence):
@@ -66,7 +69,7 @@ class FeedCategory(FeedTree, MutableSequence):
         if obj.type == 'feed':
             if obj.xml_url in self.urls:
                 raise AlreadyExistException(
-                    "{0} is already here".format(obj.title)
+                    "{0!r} is already here".format(obj)
                 )
             else:
                 self.urls.append(obj.xml_url)
@@ -76,6 +79,13 @@ class FeedCategory(FeedTree, MutableSequence):
     def insert(self, index, value):
         if not isinstance(value, FeedTree):
             raise TypeError('class is must be instance of FeedTree')
+        if value.type == 'feed':
+            if value.xml_url in self.urls:
+                raise AlreadyExistException(
+                    "{0} is already here".format(value.title)
+                )
+            else:
+                self.urls.append(value.xml_url)
 
         self.children.insert(index, value)
 
@@ -152,7 +162,7 @@ class OPMLDoc(DocumentElement):
     body = Child('body', BodyElement)
 
 
-class FeedList(object):
+class FeedList(MutableSequence):
     """FeedList is Class for OPML file
     it has a dictionary named :var:`all_feeds` which have all :class:`Feed` for
     linked on multi :class:`FeedCategory`
@@ -246,16 +256,16 @@ class FeedList(object):
                               category=None, is_breakoint=None, created=None)
         self.feedlist.append(feed)
 
-    def append(self, feed):
+    def insert(self, index, feed):
         key = (feed.type, feed.title, feed.xml_url)
         if key in self.all_feeds:
             orig_feed = self.all_feeds.get(key)
-            self.feedlist.append(orig_feed)
+            self.feedlist.insert(index, orig_feed)
 
             orig_feed.html_url = feed.html_url
             orig_feed.text = feed.text
         else:
-            self.feedlist.append(feed)
+            self.feedlist.insert(index, feed)
 
     def make_feed(self, type, title, xml_url, html_url=None, text=None,
                   category=None, is_breakoint=None, created=None):
