@@ -30,6 +30,47 @@ def parse_atom(xml, feed_url):
     return feed_data
 
 
+def atom_parse_text_construct(data):
+    text = {}
+    text['type'] = atom_get_optional_attribute(data, 'type')
+    if text['type'] in (None, 'text', 'html'):
+        text['text'] = data.text
+    elif text['type'] == 'xhtml':
+        text['text'] = ''  # TODO
+    return text
+
+
+def atom_parse_person_construct(data, xml_base):
+    person = {}
+    xml_base = atom_get_xml_base(data, xml_base)
+    for child in data:
+        if child.tag == XMLNS_ATOM + 'name':
+            person['name'] = child.text
+        elif child.tag == XMLNS_ATOM + 'uri':
+            person['uri'] = urlparse.urljoin(xml_base, data.text)
+        elif child.tag == XMLNS_ATOM + 'email':
+            person['email'] = child.text
+    return person
+
+
+def atom_parse_date_construct(data):
+    date = {}
+    text = data.text
+    date_and_time = text[:19]
+    second_fraction_and_timezone = re.search('\.?([^\+\-Z]*)(.+)', text[19:])
+    datetime_object = datetime.datetime.strptime(date_and_time,
+                                                 '%Y-%m-%dT%H:%M:%S')
+    if second_fraction_and_timezone.group(1):
+        second_fraction = second_fraction_and_timezone.group(1)
+        microsecond = int(second_fraction)*pow(10, 6-len(second_fraction))
+        datetime_object = datetime_object.replace(microsecond=microsecond)
+    if not second_fraction_and_timezone.group(2).startswith('Z'):
+        offset = second_fraction_and_timezone.group(2)
+        datetime_object = datetime_object.replace(tzinfo=FixedOffset(offset))
+    date['datetime'] = datetime_object
+    return date
+
+
 def atom_get_feed_data(root, feed_url):
     feed_data = {}
     xml_base = feed_url
@@ -138,28 +179,17 @@ def atom_get_id_tag(data, xml_base):
 
 
 def atom_get_title_tag(data):
-    title_tag = {}
-    title_tag['text'] = data.text
-    title_tag['type'] = atom_get_optional_attribute(data, 'type')
+    title_tag = atom_parse_text_construct(data)
     return title_tag
 
 
 def atom_get_updated_tag(data):
-    updated_tag = {}
-    updated_tag['datetime'] = atom_date_time(data.text)
+    updated_tag = atom_parse_date_construct(data)
     return updated_tag
 
 
 def atom_get_author_tag(data, xml_base):
-    author_tag = {}
-    xml_base = atom_get_xml_base(data, xml_base)
-    for child in data:
-        if child.tag == XMLNS_ATOM + 'name':
-            author_tag['name'] = child.text
-        elif child.tag == XMLNS_ATOM + 'uri':
-            author_tag['uri'] = urlparse.urljoin(xml_base, data.text)
-        elif child.tag == XMLNS_ATOM + 'email':
-            author_tag['email'] = child.text
+    author_tag = atom_parse_person_construct(data, xml_base)
     return author_tag
 
 
@@ -172,15 +202,7 @@ def atom_get_category_tag(data):
 
 
 def atom_get_contributor_tag(data, xml_base):
-    contributor_tag = {}
-    xml_base = atom_get_xml_base(data, xml_base)
-    for child in data:
-        if child.tag == XMLNS_ATOM + 'name':
-            contributor_tag['name'] = child.text
-        elif child.tag == XMLNS_ATOM + 'url':
-            contributor_tag['uri'] = urlparse.urljoin(xml_base, child.text)
-        elif child.tag == XMLNS_ATOM + 'email':
-            contributor_tag['email'] = child.text
+    contributor_tag = atom_parse_person_construct(data, xml_base)
     return contributor_tag
 
 
@@ -220,16 +242,12 @@ def atom_get_logo_tag(data, xml_base):
 
 
 def atom_get_rights_tag(data):
-    rights_tag = {}
-    rights_tag['text'] = data.text
-    rights_tag['type'] = atom_get_optional_attribute(data, 'type')
+    rights_tag = atom_parse_text_construct(data)
     return rights_tag
 
 
 def atom_get_subtitle_tag(data):
-    subtitle_tag = {}
-    subtitle_tag['text'] = data.text
-    subtitle_tag['type'] = atom_get_optional_attribute(data, 'type')
+    subtitle_tag = atom_parse_text_construct(data)
     return subtitle_tag
 
 
@@ -241,8 +259,7 @@ def atom_get_content_tag(data):
 
 
 def atom_get_published_tag(data):
-    published_tag = {}
-    published_tag['datetime'] = atom_date_time(data.text)
+    published_tag = atom_parse_date_construct(data)
     return published_tag
 
 
@@ -286,8 +303,7 @@ def atom_get_source_tag(data_dump, xml_base):
 
 
 def atom_get_summary_tag(data):
-    summary_tag = {}
-    summary_tag['text'] = data.text
+    summary_tag = atom_parse_text_construct(text)
     return summary_tag
 
 
@@ -308,18 +324,3 @@ class FixedOffset(datetime.tzinfo):
 
     def dst(self, dt):
         return datetime.timedelta(0)
-
-
-def atom_date_time(text):
-    date_and_time = text[:19]
-    second_fraction_and_timezone = re.search('\.?([^\+\-Z]*)(.+)', text[19:])
-    datetime_object = datetime.datetime.strptime(date_and_time,
-                                                 '%Y-%m-%dT%H:%M:%S')
-    if second_fraction_and_timezone.group(1):
-        second_fraction = second_fraction_and_timezone.group(1)
-        microsecond = int(second_fraction)*pow(10, 6-len(second_fraction))
-        datetime_object = datetime_object.replace(microsecond=microsecond)
-    if not second_fraction_and_timezone.group(2).startswith('Z'):
-        offset = second_fraction_and_timezone.group(2)
-        datetime_object = datetime_object.replace(tzinfo=FixedOffset(offset))
-    return datetime_object
