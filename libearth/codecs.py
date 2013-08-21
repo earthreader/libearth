@@ -153,6 +153,10 @@ class Rfc3339(Codec):
 
 
 class Rfc822(Codec):
+    """Codec to encode/decode :class:`datetime.datetime` values to :rfc:`822`
+    format.
+
+    """
     def encode(self, value):
         if not isinstance(value, datetime.datetime):
             raise EncodeError("Value must be instance of datetime.datetime")
