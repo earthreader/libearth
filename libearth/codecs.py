@@ -105,6 +105,10 @@ class Rfc3339(Codec):
 
 
 class Rfc822(Codec):
+    """Codec to encode/decode :class:`datetime.datetime` values to :rfc:`822`
+    format.
+
+    """
     def encode(self, value):
         if value is None:
             return ""
