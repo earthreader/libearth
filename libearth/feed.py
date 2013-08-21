@@ -102,7 +102,7 @@ class FeedCategory(FeedTree, MutableSequence):
                 if child.type == 'category' and key in child:
                     return True
 
-            return False
+        return False
 
     def __iter__(self):
         return iter(self.children)
@@ -350,6 +350,9 @@ class FeedList(MutableSequence):
             res.html_url = feed_obj.html_url
 
         return res
+
+    def __contains__(self, key):
+        return key in self.feedlist
 
     def __len__(self):
         return len(self.feedlist)
