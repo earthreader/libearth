@@ -14,7 +14,7 @@ from .tz import now
 
 class CommaSeparatedList(Codec):
     """Codec to encode/decode comma seperated list.
-    It can be decode "a, b, c" and "a,b,c" to :class:`list` [a,b,c].
+    It can be decode ``"a, b, c"`` and ``"a,b,c"`` to ``['a','b','c']``.
     See :class:`.schema.Codec`
     """
     def encode(self, value):
@@ -153,8 +153,9 @@ class Feed(FeedTree):
     This class has attributes of `outline` element in OPML
 
     .. note::
-        `type` attribute is fixed to `rss`
-        if you want to get `type` attribute of outline, use `rsstype` instead.
+        :attr:`type` is fixed to `'rss'`
+        if you want to get `'type'` attribute of outline,
+        use :attr:`rsstype` instead.
     """
     def __init__(self, rsstype, title, xml_url, html_url=None, text=None,
                  category=None, is_breakpoint=None, created=None):
@@ -214,6 +215,7 @@ class FeedList(MutableSequence):
     """FeedList is Class for OPML file
     it has a dictionary named ``all_feeds`` which have all :class:`Feed` for
     linked on multi :class:`FeedCategory`
+
     ``all_feeds`` is hashed with tuple key: (type, title, xml_url)
     """
     def __init__(self, path=None, is_xml_string=False):
