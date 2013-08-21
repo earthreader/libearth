@@ -2,7 +2,7 @@ from datetime import datetime
 from pytest import raises
 
 from libearth.feed import (AlreadyExistException, Feed, FeedCategory, FeedList,
-                           OPMLDoc)
+                           OpmlDoc)
 from libearth.schema import read
 
 
@@ -92,8 +92,8 @@ XML_DUPLICAED = """<?xml version="1.0" encoding="utf-8"?><opml version="1.1">
 """
 
 
-def test_OPMLDocment():
-    doc = read(OPMLDoc, XML)
+def test_OpmlDocment():
+    doc = read(OpmlDoc, XML)
     expected_datetime = datetime(2005, 6, 18, 12, 11, 52)
 
     assert doc.head.title == "EarthReader.opml"

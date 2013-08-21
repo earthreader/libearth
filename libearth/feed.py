@@ -171,7 +171,7 @@ class BodyElement(Element):
     outline = Child('outline', OutlineElement, multiple=True)
 
 
-class OPMLDoc(DocumentElement):
+class OpmlDoc(DocumentElement):
     __tag__ = 'opml'
     head = Child('head', HeadElement)
     body = Child('body', BodyElement)
@@ -201,13 +201,13 @@ class FeedList(MutableSequence):
     def open_file(self, is_xml_string):
         if is_xml_string:
             xml = self.path
-            self.doc = read(OPMLDoc, xml)
+            self.doc = read(OpmlDoc, xml)
             self.parse_doc()
         else:
             try:
                 with open(self.path) as fp:
                     xml = fp.read()
-                    self.doc = read(OPMLDoc, xml)
+                    self.doc = read(OpmlDoc, xml)
             except IOError as e:
                 raise e
             else:
@@ -263,7 +263,7 @@ class FeedList(MutableSequence):
                 for chunk in write(self.doc):
                     fp.write(chunk)
         except Exception as e:
-            raise SaveOPMLError(e)
+            raise SaveOpmlError(e)
 
     def add_feed(self, type, title, xml_url, html_url=None, text=None,
                  category=None, is_breakoint=None, created=None):
@@ -375,6 +375,6 @@ class AlreadyExistException(Exception):
         super(AlreadyExistException, self).__init__(message)
 
 
-class SaveOPMLError(Exception):
+class SaveOpmlError(Exception):
     def __init__(self, message):
-        super(SaveOPMLError, self).__init__(message)
+        super(SaveOpmlError, self).__init__(message)
