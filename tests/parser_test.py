@@ -1,5 +1,6 @@
 import datetime
-from libearth.parser import FixedOffset, parse_atom
+from libearth.parser import parse_atom
+from libearth.tz import FixedOffset
 
 
 atom_xml = """
@@ -83,7 +84,7 @@ def test_atom_parser():
         ],
         'updated': {
             'datetime': datetime.datetime(2013, 8, 19, 7, 49, 20,
-                                          tzinfo=FixedOffset('+07:00'))
+                                          tzinfo=FixedOffset(420))
         },
         'author': [
             {

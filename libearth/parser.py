@@ -4,6 +4,9 @@
 """
 import datetime
 import re
+
+from .tz import FixedOffset
+
 try:
     import urlparse
 except:
@@ -65,7 +68,14 @@ def atom_parse_date_construct(data):
         microsecond = int(second_fraction)*pow(10, 6-len(second_fraction))
         datetime_object = datetime_object.replace(microsecond=microsecond)
     if not second_fraction_and_timezone.group(2).startswith('Z'):
-        offset = second_fraction_and_timezone.group(2)
+        dump = second_fraction_and_timezone.group(2)
+        sign = dump[0]
+        hours = dump[1:3]
+        minutes = dump[4:6]
+        if sign == '+':
+            offset = int(hours)*60+int(minutes)
+        else:
+            offset = int(hours)*60+int(minutes)*(-1)
         datetime_object = datetime_object.replace(tzinfo=FixedOffset(offset))
     date['datetime'] = datetime_object
     return date
@@ -305,22 +315,3 @@ def atom_get_source_tag(data_dump, xml_base):
 def atom_get_summary_tag(data):
     summary_tag = atom_parse_text_construct(text)
     return summary_tag
-
-
-class FixedOffset(datetime.tzinfo):
-
-    def __init__(self, offset):
-        self.sign = offset[0]
-        self.hours = offset[1:3]
-        self.minutes = offset[4:6]
-
-    def utcoffset(self, dt):
-        if self.sign == '+':
-            return datetime.timedelta(hours=int(self.hours),
-                                      minutes=int(self.minutes))
-        else:
-            return datetime.timedelta(hours=int(self.hours)*(-1),
-                                      minutes=int(self.minutes)*(-1))
-
-    def dst(self, dt):
-        return datetime.timedelta(0)
