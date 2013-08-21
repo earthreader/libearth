@@ -1,6 +1,13 @@
 """:mod:`libearth.crawler` --- Crawler
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+This module provides functions to crawl documents in given URL,
+and autodiscovery feed url in document.
+
+.. todo::
+
+    - function to check If-Modified-Since tag.
+
 """
 import re
 
@@ -25,16 +32,27 @@ except ImportError:
 
 
 def crawl(url):
+    """Crawl the document in given url.
+
+    """
     request = urllib2.Request(url)
     f = urllib2.urlopen(request)
     document = f.read()
     return document
 
 
-def auto_discovery(document, url=None):
-    """If given url is rss feed url, it returns the url instantly.
-    If given url is a url of web page, It find the site's RSS feed url
-    and return it
+def auto_discovery(document, url):
+    """If given url is feed url, it returns the url instantly.
+    Or if given url is a url of web page, It find the site's RSS feed url
+    and return it.
+    If autodiscovery failed, It raised :class:`FeedUrlNotFoundError`.
+
+    :param document: HTML, or XML strings.
+    :type document: :class:`str`
+    :param url: URL of the ``document``. If feed url is in HTML and represented 
+                in relative URL, this function joined it with the ``url`` and
+                return the result.
+    :type url: :class:`str`
 
     """
     document_type = get_document_type(document)
@@ -105,5 +123,8 @@ class AutoDiscovery(HTMLParser):
 
 
 class FeedUrlNotFoundError(Exception):
+    """Error raised when no feed url is found in html.
+
+    """
     def __init__(self, msg):
         self.msg = msg

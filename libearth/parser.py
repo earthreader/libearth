@@ -1,6 +1,14 @@
 """:mod:`libearth.parser` --- Parser
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Pasring RSS feed of RSS2.0 and Atom and translate into Atom. Atom specification
+is :rfc:`4287`
+
+.. todo::
+
+    - RSS2.0 Parser
+    - Parsing text construct which type is 'xhtml'
+
 """
 import datetime
 import re
@@ -25,6 +33,16 @@ XMLNS_XML = "{http://www.w3.org/XML/1998/namespace}"
 
 
 def parse_atom(xml, feed_url):
+    """Parsing function of Atom. This function parse the Atom XML and
+    return feed data.
+
+    :param xml: Target Atom XML to parse.
+    :type xml: :class:`str`
+    :param feed_url: Source of Atom XML. If xml:base is not defined in XML,
+                     it became default base url.
+    :type feed_url: :class:`str`
+
+    """
     root = etree.fromstring(xml)
     entries = root.findall(XMLNS_ATOM + 'entry')
     feed_data = atom_get_feed_data(root, feed_url)
