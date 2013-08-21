@@ -45,17 +45,12 @@ class FeedTree(object):
 class FeedCategory(FeedTree, MutableSequence):
     type = 'category'
 
-    def __init__(self, title, type=None, text=None, xml_url=None,
-                 html_url=None, category=None, is_breakpoint=None,
+    def __init__(self, title, type=None, text=None, category=None,
                  created=None):
         super(FeedCategory, self).__init__('category', title)
         self.text = text
         self._type = type
         self.text = text or title
-        self.xml_url = xml_url
-        self.html_url = html_url
-        self.category = category
-        self.is_breakpoint = is_breakpoint
         self.created = created
 
         self.children = []
@@ -272,7 +267,8 @@ class FeedList(MutableSequence):
         self.feedlist.append(feed)
 
     def insert(self, index, feed):
-        key = (feed.type, feed.title, feed.xml_url)
+        xml_url = feed.xml_url if hasattr(feed, 'xml_url') else None
+        key = (feed.type, feed.title, xml_url)
         if key in self.all_feeds:
             orig_feed = self.all_feeds.get(key)
             self.feedlist.insert(index, orig_feed)
