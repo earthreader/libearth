@@ -49,7 +49,7 @@ def auto_discovery(document, url):
 
     :param document: HTML, or XML strings.
     :type document: :class:`str`
-    :param url: URL of the ``document``. If feed url is in HTML and represented 
+    :param url: URL of the ``document``. If feed url is in HTML and represented
                 in relative URL, this function joined it with the ``url`` and
                 return the result.
     :type url: :class:`str`
