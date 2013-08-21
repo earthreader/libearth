@@ -13,6 +13,10 @@ from .tz import now
 
 
 class CommaSeparatedList(Codec):
+    """Codec to encode/decode comma seperated list.
+    It can be decode "a, b, c" and "a,b,c" to :class:`list` [a,b,c].
+    See :class:`.schema.Codec`
+    """
     def encode(self, value):
         if value is None:
             res = ""
@@ -31,7 +35,8 @@ class CommaSeparatedList(Codec):
 
 
 class FeedTree(object):
-
+    """Abstract base class to contain feed(s)
+    """
     def __init__(self, type, title):
         self.type = type
         self.title = title
@@ -43,6 +48,31 @@ class FeedTree(object):
 
 
 class FeedCategory(FeedTree, MutableSequence):
+    """FeedCategory
+
+    :type title: str
+    :param title: title for FeedCategory.
+                  it can be `text` attribute when ``text`` is None
+    :type type: str
+    :param type: `type` attribute for `outline` element.
+                 not used but OPML spec says `outline` element can has
+                 `type` attribute.
+    :type text: str
+    :param text: `text` attribute for `outline` element.
+                 when this parametre is None, it is set as ``title``
+    :type category: str
+    :param category: `category` attribute for `outline` element.
+                 not used but OPML spec says `outline` element can has
+                 `category` attribute.
+    :type is_breakpoint: str
+    :param is_breakpoint: `isBreakpoint` attribute for `outline` element.
+                 not used but OPML spec says `outline` element can has
+                 `isBreakpoint` attribute.
+    :type created: str
+    :param created: `created` attribute for `outline` element.
+                 not used but OPML spec says `outline` element can has
+                 `created` attribute.
+    """
     type = 'category'
 
     def __init__(self, title, type=None, text=None, category=None,
@@ -51,6 +81,7 @@ class FeedCategory(FeedTree, MutableSequence):
         self.text = text
         self._type = type
         self.text = text or title
+        #FIXME: created must be valid rfc822 string. so prefer use datetime
         self.created = created
 
         self.children = []
@@ -118,6 +149,13 @@ class FeedCategory(FeedTree, MutableSequence):
 
 
 class Feed(FeedTree):
+    """Typical feed class.
+    This class has attributes of `outline` element in OPML
+
+    .. note::
+        `type` attribute is fixed to `rss`
+        if you want to get `type` attribute of outline, use `rsstype` instead.
+    """
     def __init__(self, rsstype, title, xml_url, html_url=None, text=None,
                  category=None, is_breakpoint=None, created=None):
         super(Feed, self).__init__('feed', title)
@@ -174,9 +212,9 @@ class OpmlDoc(DocumentElement):
 
 class FeedList(MutableSequence):
     """FeedList is Class for OPML file
-    it has a dictionary named :var:`all_feeds` which have all :class:`Feed` for
+    it has a dictionary named ``all_feeds`` which have all :class:`Feed` for
     linked on multi :class:`FeedCategory`
-    :var:`all_feeds` is hashed with tuple key: (type, title, xml_url)
+    ``all_feeds`` is hashed with tuple key: (type, title, xml_url)
     """
     def __init__(self, path=None, is_xml_string=False):
         """Initializer of Feed list
