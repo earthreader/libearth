@@ -101,9 +101,7 @@ def atom_parse_date_construct(data):
 
 def atom_get_feed_data(root, feed_url):
     feed_data = {}
-    xml_base = feed_url
-    if XMLNS_XML + 'base' in root.attrib:
-        xml_base = root.attrib[XMLNS_XML + 'base']
+    xml_base = atom_get_xml_base(root, feed_url)
     multiple = ['author', 'category', 'contributor', 'link']
     for tag in multiple:
         feed_data[tag] = []
@@ -331,5 +329,123 @@ def atom_get_source_tag(data_dump, xml_base):
 
 
 def atom_get_summary_tag(data):
-    summary_tag = atom_parse_text_construct(text)
+    summary_tag = atom_parse_text_construct(data)
     return summary_tag
+
+
+def parse_rss(xml):
+    """Parse RSS2.0 XML and translate into Atom."""
+    root = etree.fromstring(xml)
+    channel = root.find('channel')
+    items = channel.findall('item')
+    feed_data = rss_get_channel_data(channel)
+    feed_data['entry'] = rss_get_item_data(items)
+    return feed_data
+
+
+def rss_get_channel_data(root):
+    feed_data = {}
+    multiple = ['category', 'contributor', 'link']
+    for tag in multiple:
+        feed_data[tag] = []
+    for data in root:
+        if data.tag == 'title':
+            feed_data['title'] = data.text
+        elif data.tag == 'link':
+            link = {}
+            link['href'] = data.text
+            link['rel'] = 'alternate'
+            link['type'] = 'text/html'
+            feed_data['link'].append(link)
+        elif data.tag == 'description':
+            subtitle = {}
+            subtitle['type'] = 'text'
+            subtitle['text'] = data.text
+            feed_data['subtitle'] = subtitle
+        elif data.tag == 'copyright':
+            rights = {}
+            rights['text'] = data.text
+            feed_data['rights'] = rights
+        elif data.tag == 'managingEditor':
+            contributor = {}
+            contributor['name'] = data.text
+            contributor['email'] = data.text
+            feed_data['contributor'].append(contributor)
+        elif data.tag == 'webMaster':
+            contributor = {}
+            contributor['name'] = data.text
+            contributor['email'] = data.text
+            feed_data['contributor'].append(contributor)
+        elif data.tag == 'pubDate':  # RSS2.0 Only
+            feed_data['pubDate'] = data.text
+        elif data.tag == 'lastBuildDate':
+            feed_data['updated'] = data.text
+        elif data.tag == 'category':
+            category = {}
+            category['term'] = data.text
+            feed_data['category'].append(category)
+        elif data.tag == 'generator':
+            feed_data['generator'] = {}
+            feed_data['generator']['text'] = data.text
+        elif data.tag == 'ttl':  # RSS2.0 Only
+            feed_data['ttl'] = data.text
+        elif data.tag == 'skipHours':  # RSS2.0 Only
+            feed_data['skipHours'] = data.text
+        elif data.tag == 'skipMinutes':  # RSS2.0 Only
+            feed_data['skipMinutes'] = data.text
+        elif data.tag == 'skipDays':  # RSS2.0 Only
+            feed_data['skipDays'] = data.text
+    return feed_data
+
+
+def rss_get_item_data(entries):
+    entries_data = []
+    multiple = ['category', 'link']
+    for entry in entries:
+        entry_data = {}
+        for tag in multiple:
+            entry_data[tag] = []
+        for data in entry:
+            if data.tag == 'title':
+                title = {}
+                title['text'] = data.text
+                title['type'] = 'text'
+                entry_data['title'] = title
+            elif data.tag == 'link':
+                link = {}
+                link['href'] = data.text
+                link['rel'] = 'alternate'
+                link['type'] = 'text/html'
+                entry_data['link'].append(link)
+            elif data.tag == 'description':
+                content = {}
+                content['type'] = 'text'
+                content['text'] = data.text
+                entry_data['content'] = content
+            elif data.tag == 'author':
+                author = {}
+                author['name'] = data.text
+                author['email'] = data.text
+                entry_data['author'] = author
+            elif data.tag == 'category':
+                category = {}
+                category['term'] = data.text
+                entry_data['category'].append(category)
+            elif data.tag == 'comments':
+                entry_data['comments'] = data.text
+            elif data.tag == 'enclosure':  # RSS2.0 Only
+                enclosure = {}
+                enclosure['type'] = atom_get_optional_attribute(data, 'type')
+                enclosure['url'] = atom_get_optional_attribute(data, 'url')
+                enclosure['length'] = \
+                    atom_get_optional_attribute(data, 'length')
+            elif data.tag == 'guid':
+                id = {}
+                id['uri'] = data.text
+                entry_data['id'] = id
+            elif data.tag == 'pubDate':
+                entry_data['published'] = data.text
+            elif data.tag == 'source':  # RSS2.0 Only
+                entry_data['source'] = data.text
+        entries_data.append(entry_data)
+    return entries_data

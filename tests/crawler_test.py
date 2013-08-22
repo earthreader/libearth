@@ -1,7 +1,5 @@
 import httpretty
-from libearth.crawler import (FeedUrlNotFoundError, auto_discovery, crawl,
-                              get_document_type)
-from libearth.parser import parse_atom
+from libearth.crawler import (auto_discovery, crawl, get_document_type)
 
 atom_blog = """
 <html>
@@ -47,7 +45,7 @@ def test_rss_version_two():
     document = crawl(url)
     document_type = get_document_type(document)
     assert document_type == 'not feed'
-    feed_url = auto_discovery(document)
+    feed_url = auto_discovery(document, url)
     assert feed_url == 'http://feeds.feedburner.com/CodeMetaphor'
     feed_xml = crawl(feed_url)
     feed_type = get_document_type(feed_xml)

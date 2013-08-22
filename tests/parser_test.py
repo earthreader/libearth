@@ -1,5 +1,5 @@
 import datetime
-from libearth.parser import parse_atom
+from libearth.parser import parse_atom, parse_rss
 from libearth.tz import FixedOffset
 
 
@@ -187,6 +187,103 @@ def test_atom_parser():
                 'category': [],
                 'contributor': [],
                 'link': []
+            }
+        ]
+    }
+
+
+rss_xml = """
+<rss version="2.0">
+<channel>
+    <title>Vio Blog</title>
+    <link>http://vioblog.com</link>
+    <description>earthreader</description>
+    <rights>Copyright2013, Vio</rights>
+    <managingEditor>vio.bo94@gmail.com</managingEditor>
+    <webMaster>vio.bo94@gmail.com</webMaster>
+    <pubDate>Sat, 17 Sep 2002 00:00:01 GMT</pubDate>
+    <lastBuildDate>Sat, 07 Sep 2002 00:00:01 GMT</lastBuildDate>
+    <category>Python</category>
+    <ttl>10</ttl>
+    <item>
+        <title>test one</title>
+        <link>http://vioblog.com/12</link>
+        <description>This is the content</description>
+        <author>vio.bo94@gmail.com</author>
+        <category>RSS</category>
+        <guid>http://vioblog.com/12</guid>
+        <pubDate>Sat, 07 Sep 2002 00:00:01 GMT</pubDate>
+        <source>http://vioblog.com</source>
+    </item>
+</channel>
+</rss>
+"""
+
+
+def test_rss_parser():
+    feed_data = parse_rss(rss_xml)
+    assert feed_data == {
+        'title': 'Vio Blog',
+        'link': [
+            {
+                'href': 'http://vioblog.com',
+                'rel': 'alternate',
+                'type': 'text/html'
+            }
+        ],
+        'subtitle': {
+            'type': 'text',
+            'text': 'earthreader'
+        },
+        'contributor': [
+            {
+                'name': 'vio.bo94@gmail.com',
+                'email': 'vio.bo94@gmail.com'
+            },
+            {
+                'name': 'vio.bo94@gmail.com',
+                'email': 'vio.bo94@gmail.com'
+            }
+        ],
+        'category': [
+            {
+                'term': 'Python'
+            }
+        ],
+        'pubDate': 'Sat, 17 Sep 2002 00:00:01 GMT',
+        'updated': 'Sat, 07 Sep 2002 00:00:01 GMT',
+        'ttl': '10',
+        'entry': [
+            {
+                'title': {
+                    'type': 'text',
+                    'text': 'test one'
+                },
+                'link': [
+                    {
+                        'href': 'http://vioblog.com/12',
+                        'rel': 'alternate',
+                        'type': 'text/html'
+                    }
+                ],
+                'content': {
+                    'type': 'text',
+                    'text': 'This is the content'
+                },
+                'author': {
+                    'name': 'vio.bo94@gmail.com',
+                    'email': 'vio.bo94@gmail.com'
+                },
+                'category': [
+                    {
+                        'term': 'RSS'
+                    }
+                ],
+                'id': {
+                    'uri': 'http://vioblog.com/12'
+                },
+                'published': 'Sat, 07 Sep 2002 00:00:01 GMT',
+                'source': 'http://vioblog.com'
             }
         ]
     }
