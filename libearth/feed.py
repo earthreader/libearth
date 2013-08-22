@@ -59,7 +59,7 @@ class FeedCategory(FeedTree, MutableSequence):
                  `type` attribute.
     :type text: str
     :param text: `text` attribute for `outline` element.
-                 when this parametre is None, it is set as ``title``
+                 when this parametre is None, it is set as :arg:`title`
     :type category: str
     :param category: `category` attribute for `outline` element.
                  not used but OPML spec says `outline` element can has
@@ -68,10 +68,8 @@ class FeedCategory(FeedTree, MutableSequence):
     :param is_breakpoint: `isBreakpoint` attribute for `outline` element.
                  not used but OPML spec says `outline` element can has
                  `isBreakpoint` attribute.
-    :type created: str
+    :type created: datetime
     :param created: `created` attribute for `outline` element.
-                 not used but OPML spec says `outline` element can has
-                 `created` attribute.
     """
     type = 'category'
 
@@ -156,6 +154,25 @@ class Feed(FeedTree):
         :attr:`type` is fixed to `'rss'`
         if you want to get `'type'` attribute of outline,
         use :attr:`rsstype` instead.
+
+    :type rsstype: str
+    :param rsstype: ``type`` attribute of ``outline`` element
+    :type title: str
+    :param title: ``title`` attribute of ``outline`` element
+    :type xml_url: str
+    :param xml_url: ``xmlUrl`` attribute of ``outline`` element
+    :type html_url: str
+    :param html_url: ``htmlUrl`` attribute of ``outline`` element
+    :type text: str
+    :param text: ``text`` attribute of ``outline`` element.
+                 If it is :const:`None`, set as :arg:`title`
+    :type category: str
+    :param category: ``category`` attribute of ``outline`` element
+    :type is_breakpoint: str
+    :param is_breakpoint: ``isBreakpoint`` attribute of ``outline`` element
+    :type created: datetime.datetime
+    :param created: ``created`` attribute of ``outline`` element.
+                    It is valid RFC822 format.
     """
     def __init__(self, rsstype, title, xml_url, html_url=None, text=None,
                  category=None, is_breakpoint=None, created=None):
@@ -171,6 +188,8 @@ class Feed(FeedTree):
 
 
 class OutlineElement(Element):
+    """Class for ``outline`` element of OPML document.
+    """
     text = Attribute('text', required=True)
     title = Attribute('title')
     type = Attribute('type')
@@ -184,6 +203,8 @@ class OutlineElement(Element):
 
 
 class HeadElement(Element):
+    """Class for ``head`` element of OPML document.
+    """
     title = Text('title')
 
     date_created = Text('dateCreated', Rfc822)
@@ -202,6 +223,9 @@ class HeadElement(Element):
 
 
 class BodyElement(Element):
+    """Class for ``body`` element of OPML document.
+    It contains :class:`OutlineElement` as children to :var:`outline`
+    """
     outline = Child('outline', OutlineElement, multiple=True)
 
 
@@ -269,6 +293,9 @@ class FeedList(MutableSequence):
             self.feedlist.append(self.convert_from_outline(outline))
 
     def save_file(self, filename=None):
+        """Save to OPML format.
+        When ``filename`` is :const:`None`, use filename used for constructor.
+        """
         self.doc.head.title = self.title
         self.doc.head.owner_name = self.owner_name
         self.doc.head.owner_email = self.owner_email
@@ -282,7 +309,6 @@ class FeedList(MutableSequence):
         self.doc.head.window_bottom = self.window_bottom
         self.doc.head.window_right = self.window_right
 
-        #TODO: Change doc.body here
         self.doc.body.outline[:] = []
         for feed in self.feedlist:
             self.doc.body.outline.append(self.convert_to_outline(feed))
