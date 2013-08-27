@@ -1,4 +1,5 @@
 import datetime
+import httpretty
 from libearth.parser import parse_atom, parse_rss
 from libearth.tz import FixedOffset
 
@@ -210,6 +211,12 @@ rss_xml = """
         <link>http://vioblog.com/12</link>
         <description>This is the content</description>
         <author>vio.bo94@gmail.com</author>
+        <enclosure url="http://vioblog.com/mp/a.mp3" type="audio/mpeg">
+            enclosure test
+        </enclosure>
+        <source url="http://sourcetest.com/rss.xml">
+            Source Test
+        </source>
         <category>RSS</category>
         <guid>http://vioblog.com/12</guid>
         <pubDate>Sat, 07 Sep 2002 00:00:01 GMT</pubDate>
@@ -217,9 +224,24 @@ rss_xml = """
 </channel>
 </rss>
 """
+rss_source_xml = """
+<rss version="2.0">
+    <channel>
+        <title>Source Test</title>
+        <link>http://sourcetest.com/</link>
+        <description>for source tag test</description>
+        <item>
+            <title>It will not be parsed</title>
+        </item>
+    </channel>
+</rss>
+"""
 
 
+@httpretty.activate
 def test_rss_parser():
+    httpretty.register_uri(httpretty.GET, "http://sourcetest.com/rss.xml",
+                           body=rss_source_xml)
     feed_data, data_for_crawl = parse_rss(rss_xml)
     assert feed_data == {
         'title': 'Vio Blog',
@@ -228,7 +250,7 @@ def test_rss_parser():
                 'href': 'http://vioblog.com',
                 'rel': 'alternate',
                 'type': 'text/html'
-            }
+            },
         ],
         'subtitle': {
             'type': 'text',
@@ -261,6 +283,10 @@ def test_rss_parser():
                         'href': 'http://vioblog.com/12',
                         'rel': 'alternate',
                         'type': 'text/html'
+                    },
+                    {
+                        'href': 'http://vioblog.com/mp/a.mp3',
+                        'type': 'audio/mpeg'
                     }
                 ],
                 'content': {
@@ -280,6 +306,22 @@ def test_rss_parser():
                     'uri': 'http://vioblog.com/12'
                 },
                 'published': 'Sat, 07 Sep 2002 00:00:01 GMT',
+                'source': {
+                    'title': 'Source Test',
+                    'link': [
+                        {
+                            'rel': 'alternate',
+                            'href': 'http://sourcetest.com/',
+                            'type': 'text/html'
+                        }
+                    ],
+                    'subtitle': {
+                        'type': 'text',
+                        'text': 'for source tag test'
+                    },
+                    'category': [],
+                    'contributor': []
+                }
             }
         ]
     }

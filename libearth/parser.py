@@ -449,6 +449,7 @@ def rss_get_item_data(entries):
             elif data.tag == 'pubDate':
                 entry_data['published'] = data.text
             elif data.tag == 'source':
+                source = {}
                 url = get_tag_attribute(data, 'url')
                 xml = crawl(url)
                 doc_type = get_document_type(xml)
@@ -456,6 +457,6 @@ def rss_get_item_data(entries):
                     source = parse_atom(xml, url, False)
                 elif doc_type == 'rss2.0':
                     source, _ = parse_rss(xml, False)
-                return source
+                entry_data['source'] = source
         entries_data.append(entry_data)
     return entries_data

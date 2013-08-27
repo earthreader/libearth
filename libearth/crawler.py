@@ -72,6 +72,7 @@ def get_document_type(document):
     try:
         root = etree.fromstring(document)
     except:
+        print 'here'
         return 'not feed'
     if re.search('feed', root.tag):
         return 'atom'
