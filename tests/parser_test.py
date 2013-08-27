@@ -213,7 +213,6 @@ rss_xml = """
         <category>RSS</category>
         <guid>http://vioblog.com/12</guid>
         <pubDate>Sat, 07 Sep 2002 00:00:01 GMT</pubDate>
-        <source>http://vioblog.com</source>
     </item>
 </channel>
 </rss>
@@ -221,7 +220,7 @@ rss_xml = """
 
 
 def test_rss_parser():
-    feed_data = parse_rss(rss_xml)
+    feed_data, data_for_crawl = parse_rss(rss_xml)
     assert feed_data == {
         'title': 'Vio Blog',
         'link': [
@@ -250,9 +249,7 @@ def test_rss_parser():
                 'term': 'Python'
             }
         ],
-        'pubDate': 'Sat, 17 Sep 2002 00:00:01 GMT',
-        'updated': 'Sat, 07 Sep 2002 00:00:01 GMT',
-        'ttl': '10',
+        'updated': 'Sat, 17 Sep 2002 00:00:01 GMT',
         'entry': [
             {
                 'title': {
@@ -283,7 +280,10 @@ def test_rss_parser():
                     'uri': 'http://vioblog.com/12'
                 },
                 'published': 'Sat, 07 Sep 2002 00:00:01 GMT',
-                'source': 'http://vioblog.com'
             }
         ]
+    }
+    assert data_for_crawl == {
+        'lastBuildDate': 'Sat, 07 Sep 2002 00:00:01 GMT',
+        'ttl': '10',
     }

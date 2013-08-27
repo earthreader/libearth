@@ -14,7 +14,7 @@ import datetime
 import re
 
 from .tz import FixedOffset
-
+from .crawler import crawl, get_document_type
 try:
     import urlparse
 except:
@@ -32,7 +32,7 @@ XMLNS_ATOM = '{http://www.w3.org/2005/Atom}'
 XMLNS_XML = "{http://www.w3.org/XML/1998/namespace}"
 
 
-def parse_atom(xml, feed_url):
+def parse_atom(xml, feed_url, parse_entry=True):
     """Parsing function of Atom. This function parse the Atom XML and
     return feed data.
 
@@ -46,14 +46,15 @@ def parse_atom(xml, feed_url):
     root = etree.fromstring(xml)
     entries = root.findall(XMLNS_ATOM + 'entry')
     feed_data = atom_get_feed_data(root, feed_url)
-    entries_data = atom_get_entry_data(entries, feed_url)
-    feed_data['entry'] = entries_data
+    if parse_entry:
+        entries_data = atom_get_entry_data(entries, feed_url)
+        feed_data['entry'] = entries_data
     return feed_data
 
 
 def atom_parse_text_construct(data):
     text = {}
-    text['type'] = atom_get_optional_attribute(data, 'type')
+    text['type'] = get_tag_attribute(data, 'type')
     if text['type'] in (None, 'text', 'html'):
         text['text'] = data.text
     elif text['type'] == 'xhtml':
@@ -182,7 +183,7 @@ def atom_get_entry_data(entries, feed_url):
     return entries_data
 
 
-def atom_get_optional_attribute(data, attrib_name, xml_base=None):
+def get_tag_attribute(data, attrib_name, xml_base=None):
     iri = ['href', 'src', 'uri']
     if attrib_name in iri:
         return urlparse.urljoin(xml_base, data.attrib[attrib_name])
@@ -221,9 +222,9 @@ def atom_get_author_tag(data, xml_base):
 
 def atom_get_category_tag(data):
     category_tag = {}
-    category_tag['term'] = atom_get_optional_attribute(data, 'term')
-    category_tag['scheme'] = atom_get_optional_attribute(data, 'scheme')
-    category_tag['label'] = atom_get_optional_attribute(data, 'label')
+    category_tag['term'] = get_tag_attribute(data, 'term')
+    category_tag['scheme'] = get_tag_attribute(data, 'scheme')
+    category_tag['label'] = get_tag_attribute(data, 'label')
     return category_tag
 
 
@@ -235,12 +236,12 @@ def atom_get_contributor_tag(data, xml_base):
 def atom_get_link_tag(data, xml_base):
     link_tag = {}
     xml_base = atom_get_xml_base(data, xml_base)
-    link_tag['href'] = atom_get_optional_attribute(data, 'href', xml_base)
-    link_tag['rel'] = atom_get_optional_attribute(data, 'rel')
-    link_tag['type'] = atom_get_optional_attribute(data, 'type')
-    link_tag['hreflang'] = atom_get_optional_attribute(data, 'hreflang')
-    link_tag['title'] = atom_get_optional_attribute(data, 'title')
-    link_tag['length'] = atom_get_optional_attribute(data, 'length')
+    link_tag['href'] = get_tag_attribute(data, 'href', xml_base)
+    link_tag['rel'] = get_tag_attribute(data, 'rel')
+    link_tag['type'] = get_tag_attribute(data, 'type')
+    link_tag['hreflang'] = get_tag_attribute(data, 'hreflang')
+    link_tag['title'] = get_tag_attribute(data, 'title')
+    link_tag['length'] = get_tag_attribute(data, 'length')
     return link_tag
 
 
@@ -248,8 +249,8 @@ def atom_get_generator_tag(data, xml_base):
     generator_tag = {}
     xml_base = atom_get_xml_base(data, xml_base)
     generator_tag['text'] = data.text
-    generator_tag['uri'] = atom_get_optional_attribute(data, 'uri', xml_base)
-    generator_tag['version'] = atom_get_optional_attribute(data, 'version')
+    generator_tag['uri'] = get_tag_attribute(data, 'uri', xml_base)
+    generator_tag['version'] = get_tag_attribute(data, 'version')
     return generator_tag
 
 
@@ -280,7 +281,7 @@ def atom_get_subtitle_tag(data):
 def atom_get_content_tag(data):
     content_tag = {}
     content_tag['text'] = data.text
-    content_tag['type'] = atom_get_optional_attribute(data, 'type')
+    content_tag['type'] = get_tag_attribute(data, 'type')
     return content_tag
 
 
@@ -333,18 +334,20 @@ def atom_get_summary_tag(data):
     return summary_tag
 
 
-def parse_rss(xml):
+def parse_rss(xml, parse_item=True):
     """Parse RSS2.0 XML and translate into Atom."""
     root = etree.fromstring(xml)
     channel = root.find('channel')
     items = channel.findall('item')
-    feed_data = rss_get_channel_data(channel)
-    feed_data['entry'] = rss_get_item_data(items)
-    return feed_data
+    feed_data, data_for_crawl = rss_get_channel_data(channel)
+    if parse_item:
+        feed_data['entry'] = rss_get_item_data(items)
+    return feed_data, data_for_crawl
 
 
 def rss_get_channel_data(root):
     feed_data = {}
+    data_for_crawl = {}
     multiple = ['category', 'contributor', 'link']
     for tag in multiple:
         feed_data[tag] = []
@@ -376,9 +379,7 @@ def rss_get_channel_data(root):
             contributor['name'] = data.text
             contributor['email'] = data.text
             feed_data['contributor'].append(contributor)
-        elif data.tag == 'pubDate':  # RSS2.0 Only
-            feed_data['pubDate'] = data.text
-        elif data.tag == 'lastBuildDate':
+        elif data.tag == 'pubDate':
             feed_data['updated'] = data.text
         elif data.tag == 'category':
             category = {}
@@ -387,15 +388,18 @@ def rss_get_channel_data(root):
         elif data.tag == 'generator':
             feed_data['generator'] = {}
             feed_data['generator']['text'] = data.text
-        elif data.tag == 'ttl':  # RSS2.0 Only
-            feed_data['ttl'] = data.text
-        elif data.tag == 'skipHours':  # RSS2.0 Only
-            feed_data['skipHours'] = data.text
-        elif data.tag == 'skipMinutes':  # RSS2.0 Only
-            feed_data['skipMinutes'] = data.text
-        elif data.tag == 'skipDays':  # RSS2.0 Only
-            feed_data['skipDays'] = data.text
-    return feed_data
+        elif data.tag == 'lastBuildDate':
+            data_for_crawl['lastBuildDate'] = data.text
+
+        elif data.tag == 'ttl':
+            data_for_crawl['ttl'] = data.text
+        elif data.tag == 'skipHours':
+            data_for_crawl['skipHours'] = data.text
+        elif data.tag == 'skipMinutes':
+            data_for_crawl['skipMinutes'] = data.text
+        elif data.tag == 'skipDays':
+            data_for_crawl['skipDays'] = data.text
+    return feed_data, data_for_crawl
 
 
 def rss_get_item_data(entries):
@@ -433,19 +437,25 @@ def rss_get_item_data(entries):
                 entry_data['category'].append(category)
             elif data.tag == 'comments':
                 entry_data['comments'] = data.text
-            elif data.tag == 'enclosure':  # RSS2.0 Only
-                enclosure = {}
-                enclosure['type'] = atom_get_optional_attribute(data, 'type')
-                enclosure['url'] = atom_get_optional_attribute(data, 'url')
-                enclosure['length'] = \
-                    atom_get_optional_attribute(data, 'length')
+            elif data.tag == 'enclosure':
+                link = {}
+                link['type'] = get_tag_attribute(data, 'type')
+                link['href'] = get_tag_attribute(data, 'url')
+                entry_data['link'].append(link)
             elif data.tag == 'guid':
                 id = {}
                 id['uri'] = data.text
                 entry_data['id'] = id
             elif data.tag == 'pubDate':
                 entry_data['published'] = data.text
-            elif data.tag == 'source':  # RSS2.0 Only
-                entry_data['source'] = data.text
+            elif data.tag == 'source':
+                url = get_tag_attribute(data, 'url')
+                xml = crawl(url)
+                doc_type = get_document_type(xml)
+                if doc_type == 'atom':
+                    source = parse_atom(xml, url, False)
+                elif doc_type == 'rss2.0':
+                    source, _ = parse_rss(xml, False)
+                return source
         entries_data.append(entry_data)
     return entries_data
