@@ -18,7 +18,8 @@ from .codecs import Enum
 from .compat import UNICODE_BY_DEFAULT, text_type
 from .schema import Attribute, Content, Element, Text as TextChild
 
-__all__ = 'ATOM_XMLNS', 'Link', 'MarkupTagCleaner', 'Person', 'Text'
+__all__ = ('ATOM_XMLNS', 'Category', 'Link', 'MarkupTagCleaner', 'Person',
+           'Text')
 
 
 #: (:class:`str`) The XML namespace name used for Atom (:rfc:`4287`).
@@ -192,3 +193,43 @@ class Link(Element):
                                              self.relation, self.mimetype,
                                              self.language, self.title,
                                              self.byte_size)
+
+
+class Category(Element):
+    """Category element defined in :rfc:`4287#section-4.2.2` (section 4.2.2)."""
+
+    #: (:class:`str`) The required machine-readable identifier string of
+    #: the cateogry.  It corresponds to ``term`` attribute of
+    #: :rfc:`4287#section-4.2.2.1` (section 4.2.2.1).
+    term = Attribute('term', required=True)
+
+    #: (:class:`str`) The URI that identifies a categorization scheme.
+    #: It corresponds to ``scheme`` attribute of :rfc:`4287#section-4.2.2.2`
+    #: (section 4.2.2.2).
+    #:
+    #: .. seealso::
+    #:
+    #:    - `Tag Scheme?`__ by Tim Bray
+    #:    - `Representing tags in Atom`__ by Edward O'Connor
+    #:
+    #:    __ http://www.tbray.org/ongoing/When/200x/2007/02/01/Tag-Scheme
+    #:    __ http://edward.oconnor.cx/2007/02/representing-tags-in-atom
+    scheme_uri = Attribute('scheme')
+
+    #: (:class:`str`) The optional human-readable label for display in
+    #: end-user applications.  It corresponds to ``label`` attribute of
+    #: :rfc:`4287#section-4.2.2.3` (section 4.2.2.3).
+    label = Attribute('label')
+
+    def __unicode__(self):
+        return self.label or self.term
+
+    if UNICODE_BY_DEFAULT:
+        __str__ = __unicode__
+    else:
+        __str__ = lambda self: unicode(self).encode('utf-8')
+
+    def __repr__(self):
+        return ('{0.__module__}.{0.__name__}(term={1!r}, scheme_uri={2!r}'
+                ', label={3!r})').format(type(self), self.term,
+                                         self.scheme_uri, self.label)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from libearth.compat import text_type
-from libearth.feed import Link, MarkupTagCleaner, Person, Text
+from libearth.feed import Category, Link, MarkupTagCleaner, Person, Text
 
 
 def u(text):
@@ -94,3 +94,8 @@ def test_link_html():
         '<link rel="alternate" type="text/html" hreflang="en" '
         'href="http://dahlia.kr/" title="Hong Minhee\'s website">'
     )
+
+
+def test_category_str():
+    assert text_type(Category(term='python')) == 'python'
+    assert text_type(Category(term='python', label='Python')) == 'Python'
