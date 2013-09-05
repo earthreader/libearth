@@ -18,7 +18,7 @@ from .codecs import Enum
 from .compat import UNICODE_BY_DEFAULT, text_type
 from .schema import Attribute, Content, Element, Text as TextChild
 
-__all__ = 'ATOM_XMLNS', 'MarkupTagCleaner', 'Person', 'Text'
+__all__ = 'ATOM_XMLNS', 'Link', 'MarkupTagCleaner', 'Person', 'Text'
 
 
 #: (:class:`str`) The XML namespace name used for Atom (:rfc:`4287`).
@@ -130,3 +130,65 @@ class Person(Element):
         return ('{0.__module__}.{0.__name__}(name={1!r}, uri={2!r}'
                 ', email={3!r})').format(type(self), self.name, self.uri,
                                          self.email)
+
+
+class Link(Element):
+    """Link element defined in :rfc:`4287#section-4.2.7` (section 4.2.7)."""
+
+    #: (:class:`str`) The link's required URI.  It corresponds to ``href``
+    #: attribute of :rfc:`4287#section-4.2.7.1` (section 4.2.7.1).
+    uri = Attribute('href', required=True)
+
+    #: (:class:`str`) The relation type of the link.  It corresponds to
+    #: ``rel`` attribute of :rfc:`4287#section-4.2.7.2` (section 4.2.7.2).
+    relation = Attribute('rel')  # TODO: default should be 'alternate'
+
+    #: (:class:`str`) The optional hint for the MIME media type of the linked
+    #: content.  It corresponds to ``type`` attribute of
+    #: :rfc:`4287#section-4.2.7.3` (section 4.2.7.3).
+    mimetype = Attribute('type')
+
+    #: (:class:`str`) The language of the linked content.  It corresponds
+    #: to ``hreflang`` attribute of :rfc:`4287#section-4.2.7.4` (section
+    #: 4.2.7.4).
+    language = Attribute('hreflang')
+
+    #: (:class:`str`) The title of the linked resource.  It corresponds to
+    #: ``title`` attribute of :rfc:`4287#section-4.2.7.5` (section 4.2.7.5).
+    title = Attribute('title')
+
+    #: (:class:`numbers.Integral`) The optional hint for the length of
+    #: the linked content in octets.  It corresponds to ``length`` attribute
+    #: of :rfc:`4287#section-4.2.7.6` (section 4.2.7.6).
+    byte_size = Attribute('length')
+
+    def __unicode__(self):
+        return self.uri
+
+    if UNICODE_BY_DEFAULT:
+        __str__ = __unicode__
+    else:
+        __str__ = lambda self: unicode(self).encode('utf-8')
+
+    def __html__(self):
+        mapping = [
+            ('rel', self.relation),
+            ('type', self.mimetype),
+            ('hreflang', self.language),
+            ('href', self.uri),
+            ('title', self.title)
+        ]
+        return text_type('<link{0}>').format(
+            text_type('').join(
+                text_type(' {0}="{1}"').format(attr, value)
+                for attr, value in mapping if value
+            )
+        )
+
+    def __repr__(self):
+        return ('{0.__module__}.{0.__name__}(uri={1!r}, relation={2!r}'
+                ', mimetype={3!r}, language={4!r}, title={5!r}'
+                ', byte_size={6!r})').format(type(self), self.uri,
+                                             self.relation, self.mimetype,
+                                             self.language, self.title,
+                                             self.byte_size)

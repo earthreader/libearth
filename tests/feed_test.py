@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from libearth.compat import text_type
-from libearth.feed import MarkupTagCleaner, Person, Text
+from libearth.feed import Link, MarkupTagCleaner, Person, Text
 
 
 def u(text):
@@ -64,3 +64,33 @@ def test_person_html():
         uri='http://dahlia.kr/',
         email=email
     ).__html__()
+
+
+def test_link_str():
+    link = Link(
+        uri='http://dahlia.kr/',
+        relation='alternate',
+        mimetype='text/html',
+        title="Hong Minhee's website"
+    )
+    assert text_type(link) == 'http://dahlia.kr/'
+
+
+def test_link_html():
+    link = Link(
+        uri='http://dahlia.kr/',
+        relation='alternate',
+    )
+    assert link.__html__() == '<link rel="alternate" href="http://dahlia.kr/">'
+    link = Link(
+        uri='http://dahlia.kr/',
+        relation='alternate',
+        mimetype='text/html',
+        title="Hong Minhee's website",
+        language='en'
+    )
+    assert (
+        link.__html__() ==
+        '<link rel="alternate" type="text/html" hreflang="en" '
+        'href="http://dahlia.kr/" title="Hong Minhee\'s website">'
+    )
