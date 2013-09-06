@@ -252,6 +252,18 @@ class FeedList(MutableSequence):
 
         #default value
         self.title = "EarthReader"
+        self.owner_name = "EarthReader"
+        self.owner_email = "earthreader@librelist.com"
+        self.owner_id = "earthreader.org"
+        self.docs = "http://dev.opml.org/spec2.html"
+        self.expansion_state = []
+        self.vert_scroll_state = 0
+        self.window_top = 0
+        self.window_left = 0
+        self.window_bottom = 0
+        self.window_right = 0
+        self.date_created = 0
+        self.date_modified = 0
 
         self.path = path
         self.feedlist = FeedCategory(self.title)
