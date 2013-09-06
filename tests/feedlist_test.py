@@ -4,6 +4,7 @@ from pytest import raises
 from libearth.feedlist import (AlreadyExistException, Feed, FeedCategory,
                                FeedList, OpmlDoc)
 from libearth.schema import read
+from libearth.tz import utc
 
 
 def test_count_empty_list():
@@ -94,7 +95,7 @@ XML_DUPLICAED = """<?xml version="1.0" encoding="utf-8"?><opml version="1.1">
 
 def test_OpmlDocment():
     doc = read(OpmlDoc, XML)
-    expected_datetime = datetime(2005, 6, 18, 12, 11, 52)
+    expected_datetime = datetime(2005, 6, 18, 12, 11, 52, tzinfo=utc)
 
     assert doc.head.title == "EarthReader.opml"
     assert doc.head.date_created == expected_datetime
