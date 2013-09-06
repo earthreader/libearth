@@ -803,8 +803,6 @@ def test_content_encode_error():
 class IntPair(Codec):
 
     def encode(self, value):
-        if value is None:
-            return
         a, b = value
         return '{0},{1}'.format(a, b)
 
@@ -848,3 +846,29 @@ def test_content_codec():
     assert tree.text == '5,6'
     doc2 = read(ContentCodecTestDoc, [xml.etree.ElementTree.tostring(tree)])
     assert doc2.c == (5, 6)
+
+
+def test_read_none_attribute():
+    doc = read(CodecTestDoc, '<codec-test><text>1,2</text></codec-test>')
+    assert doc.attr is None
+    assert doc.text == (1, 2)
+
+
+def test_read_none_text():
+    doc = read(CodecTestDoc, '<codec-test attr="1,2"></codec-test>')
+    assert doc.attr == (1, 2)
+    assert doc.text is None
+
+
+def test_write_none_attribute():
+    doc = CodecTestDoc(attr=None, text=(1, 2))
+    tree = etree_fromstringlist(write(doc))
+    assert tree.find('text').text == '1,2'
+    assert 'attr' not in tree.attrib
+
+
+def test_write_none_text():
+    doc = CodecTestDoc(attr=(1, 2), text=None)
+    tree = etree_fromstringlist(write(doc))
+    assert tree.find('text') is None
+    assert tree.attrib['attr'] == '1,2'

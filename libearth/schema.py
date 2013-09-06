@@ -1391,6 +1391,8 @@ def write(document, validate=True, indent='  ', newline='\n',
                                 key=operator.itemgetter(0))
         for attr, desc in attr_descriptors:
             raw_attr_value = getattr(element, attr, None)
+            if raw_attr_value is None:
+                continue
             encoded_attr_value = desc.encode(raw_attr_value, element)
             if encoded_attr_value is None:
                 continue
@@ -1436,6 +1438,8 @@ def write(document, validate=True, indent='  ', newline='\n',
                         child_elements = [child_elements]
                     for child_element in child_elements:
                         if isinstance(desc, Text):  # FIXME: remove type query
+                            if child_element is None:
+                                continue
                             encoded_child = desc.encode(child_element, element)
                             if encoded_child is None:
                                 continue
