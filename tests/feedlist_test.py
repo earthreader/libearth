@@ -30,7 +30,7 @@ XML = """<?xml version="1.0" encoding="ISO-8859-1"?>
 <opml version="2.0">
     <head>
         <title>EarthReader.opml</title>
-        <dateCreated>Sat, 18 Jun 2005 12:11:52 UTC</dateCreated>
+        <dateCreated>Sat, 18 Jun 2005 12:11:52 +0000</dateCreated>
         <ownerName>libearth</ownerName>
         <ownerEmail>earthreader@librelist.com</ownerEmail>
         <expansionState>a,b,c,d</expansionState>
@@ -51,7 +51,7 @@ XML_CATEGORY = """<?xml version="1.0" encoding="ISO-8859-1"?>
 <opml version="2.0">
     <head>
         <title>EarthReader.opml</title>
-        <dateCreated>Sat, 18 Jun 2005 12:11:52 UTC</dateCreated>
+        <dateCreated>Sat, 18 Jun 2005 12:11:52 +0000</dateCreated>
         <ownerName>libearth</ownerName>
         <ownerEmail>earthreader@librelist.com</ownerEmail>
         <expansionState>a,b,c,d</expansionState>
