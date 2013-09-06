@@ -13,7 +13,7 @@ from .compat import string_type
 from .schema import Codec, DecodeError, EncodeError
 from .tz import FixedOffset, utc
 
-__all__ = 'Enum', 'Rfc3339', 'Rfc822', 'Integer'
+__all__ = 'Enum', 'Boolean', 'Rfc3339', 'Rfc822', 'Integer'
 
 
 class Enum(Codec):
@@ -158,6 +158,9 @@ class Rfc822(Codec):
 
     """
     def encode(self, value):
+        if value is None:
+            return ""
+
         if not isinstance(value, datetime.datetime):
             raise EncodeError("Value must be instance of datetime.datetime")
         res = value.strftime("%a, %d %b %Y %H:%M:%S ")
@@ -165,6 +168,9 @@ class Rfc822(Codec):
         return res
 
     def decode(self, text):
+        if not text:
+            return None
+
         timestamp = text[:25]
         timezone = text[26:]
         try:
