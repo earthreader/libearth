@@ -216,6 +216,9 @@ class Boolean(Codec):
         if value is None:
             value = self.default_value
 
+        if not isinstance(value, bool) and value is not None:
+            raise EncodeError("type of {0} must be bool".format(value))
+
         true = (self.true if isinstance(self.true, string_type)
                 else self.true[0])
         false = (self.false if isinstance(self.true, string_type)
@@ -238,6 +241,8 @@ class Boolean(Codec):
             value = True
         elif text in false:
             value = False
+        elif not text:
+            value = self.default_value
         else:
-            value = None
+            raise DecodeError('invalid string')
         return value
