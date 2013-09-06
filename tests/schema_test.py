@@ -5,8 +5,8 @@ import xml.etree.ElementTree
 from pytest import fixture, mark, raises
 
 from libearth.compat import text, text_type
-from libearth.schema import (Attribute, Child, Content, DescriptorConflictError,
-                             DocumentElement,
+from libearth.schema import (Attribute, Child, Codec, Content,
+                             DescriptorConflictError, DocumentElement,
                              Element, EncodeError, IntegrityError, Text,
                              index_descriptors,
                              inspect_attributes, inspect_child_tags,
@@ -798,3 +798,53 @@ def test_content_encode_error():
     with raises(EncodeError):
         for _ in write(doc):
             pass
+
+
+class IntPair(Codec):
+
+    def encode(self, value):
+        if value is None:
+            return
+        a, b = value
+        return '{0},{1}'.format(a, b)
+
+    def decode(self, text):
+        a, b = text.split(',')
+        return int(a), int(b)
+
+
+class CodecTestDoc(DocumentElement):
+
+    __tag__ = 'codec-test'
+    attr = Attribute('attr', IntPair)
+    text = Text('text', IntPair)
+
+
+def test_attribute_codec():
+    doc = CodecTestDoc(attr=(1, 2))
+    tree = etree_fromstringlist(write(doc))
+    assert tree.attrib['attr'] == '1,2'
+    doc2 = read(CodecTestDoc, [xml.etree.ElementTree.tostring(tree)])
+    assert doc2.attr == (1, 2)
+
+
+def test_text_codec():
+    doc = CodecTestDoc(text=(3, 4))
+    tree = etree_fromstringlist(write(doc))
+    assert tree.find('text').text == '3,4'
+    doc2 = read(CodecTestDoc, [xml.etree.ElementTree.tostring(tree)])
+    assert doc2.text == (3, 4)
+
+
+class ContentCodecTestDoc(DocumentElement):
+
+    __tag__ = 'content-codec-test'
+    c = Content(IntPair)
+
+
+def test_content_codec():
+    doc = ContentCodecTestDoc(c=(5, 6))
+    tree = etree_fromstringlist(write(doc))
+    assert tree.text == '5,6'
+    doc2 = read(ContentCodecTestDoc, [xml.etree.ElementTree.tostring(tree)])
+    assert doc2.c == (5, 6)
