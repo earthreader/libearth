@@ -11,7 +11,7 @@ import re
 from .schema import Codec, DecodeError, EncodeError
 from .tz import FixedOffset, utc
 
-__all__ = 'Rfc3339', 'Rfc822', 'Integer'
+__all__ = 'Boolean', 'Rfc3339', 'Rfc822', 'Integer'
 
 
 class Rfc3339(Codec):
@@ -105,6 +105,9 @@ class Rfc3339(Codec):
 
 class Rfc822(Codec):
     def encode(self, value):
+        if value is None:
+            return ""
+
         if not isinstance(value, datetime.datetime):
             raise EncodeError("Value must be instance of datetime.datetime")
         res = value.strftime("%a, %d %b %Y %H:%M:%S ")
@@ -112,6 +115,9 @@ class Rfc822(Codec):
         return res
 
     def decode(self, text):
+        if not text:
+            return None
+
         timestamp = text[:25]
         timezone = text[26:]
         try:
@@ -145,3 +151,51 @@ class Integer(Codec):
         if not self.PATTERN.match(text):
             raise DecodeError("Invalid character on text")
         return int(text)
+
+
+class Boolean(Codec):
+    def __init__(self, is_truefalse=True, is_yn=True, is_onoff=True,
+                 default_value=None):
+        self.is_truefalse = is_truefalse
+        self.is_yn = is_yn
+        self.is_onoff = is_onoff
+        self.default_value = default_value
+
+    def encode(self, value):
+        if value is None:
+            value = self.default_value
+
+        if self.is_truefalse:
+            res = "true" if value else "false"
+        elif self.is_yn:
+            res = "y" if value else "n"
+        elif self.is_onoff:
+            res = "on" if value else "off"
+
+        return res
+
+    def decode(self, text):
+        value = None
+        text = text.lower()
+        if self.is_truefalse:
+            if text == "true":
+                value = True
+            elif text == "false":
+                value = False
+
+        if self.is_yn:
+            if text == "y":
+                value = True
+            elif text == "n":
+                value = False
+
+        if self.is_onoff:
+            if text == "on":
+                value = True
+            elif text == "off":
+                value = False
+
+        if value is None:
+            value = self.default_value
+
+        return value
