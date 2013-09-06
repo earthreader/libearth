@@ -2,7 +2,7 @@ import datetime
 
 from pytest import mark, raises
 
-from libearth.codecs import Enum, Boolean, Integer, Rfc3339
+from libearth.codecs import Enum, Boolean, Integer, Rfc3339, Rfc822
 from libearth.schema import DecodeError, EncodeError
 from libearth.tz import FixedOffset, utc
 
@@ -48,6 +48,33 @@ def test_rfc3339_encode(rfc3339_string, dt):
     assert codec.encode(dt) == rfc3339_string
     assert (Rfc3339(prefer_utc=True).encode(dt) ==
             codec.encode(dt.astimezone(utc)))
+
+
+def test_rfc822():
+    codec = Rfc822()
+
+    kst_string = 'Sat, 07 Sep 2013 01:20:43 +0900'
+    kst_datetime = datetime.datetime(2013, 9, 7, 1, 20, 43,
+                                     tzinfo=FixedOffset(9 * 60))
+
+    assert codec.decode(kst_string) == kst_datetime
+    assert codec.encode(kst_datetime) == kst_string
+
+
+def test_rfc822_raise():
+    codec = Rfc822()
+
+    datetime_not_contains_tzinfo = datetime.datetime.now()
+    not_valid_rfc822_string = 'Sat, 07 Sep 2013 01:20:43'
+
+    with raises(EncodeError):
+        codec.encode("it is not datetime.datetime object")
+
+    with raises(EncodeError):
+        codec.encode(datetime_not_contains_tzinfo)
+
+    with raises(DecodeError):
+        codec.decode(not_valid_rfc822_string)
 
 
 def test_integer():

@@ -10,7 +10,7 @@ install:
 script:
 - python -mlibearth.version
 - py.test --cov libearth --durations=20
-- if [ `python -c 'from platform import *; print python_implementation()'` != 'PyPy' ]; then pep8; fi
+- if [ `python -c 'from platform import *; print(python_implementation())'` != 'PyPy' ]; then pep8; fi
 - python docs/coverage.py
 after_success:
 - coveralls
