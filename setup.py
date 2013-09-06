@@ -43,5 +43,23 @@ setup(
     license='MIT License',
     packages=find_packages(exclude=['tests']),
     tests_require=['pytest >= 2.3.0'],
-    cmdclass={'test': pytest}
+    cmdclass={'test': pytest},
+    classifiers=[
+        'Development Status :: 1 - Planning',  # FIXME
+        'Intended Audience :: Developers',
+        'Intended Audience :: End Users/Desktop',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.2',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
+        'Programming Language :: Python :: Implementation :: Stackless',
+        'Topic :: Communications',
+        'Topic :: Internet :: WWW/HTTP :: Indexing/Search',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Text Processing :: Markup :: XML'
+    ]
 )
