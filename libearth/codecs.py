@@ -174,8 +174,6 @@ class Rfc822(Codec):
                 )
             )
 
-        if not isinstance(value, datetime.datetime):
-            raise EncodeError("Value must be instance of datetime.datetime")
         res = value.strftime("%a, %d %b %Y %H:%M:%S ")
         res += value.strftime("%Z").replace(":", "")
         return res
