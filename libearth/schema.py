@@ -879,7 +879,8 @@ class ElementList(collections.MutableSequence):
             return True
         stack = handler.stack
         top = element._stack_top
-        return len(stack) < top or stack[top - 1].reserved_value is not parent
+        return (len(stack) < top or
+                top > 0 and stack[top - 1].reserved_value is not parent)
 
     def consume_index(self, index):
         if isinstance(index, slice):
