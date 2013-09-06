@@ -154,8 +154,8 @@ class Rfc3339(Codec):
 
 
 class Rfc822(Codec):
-    """Codec to encode/decode :class:`datetime.datetime` values to :rfc:`822`
-    format.
+    """Codec to encode/decode :class:`datetime.datetime` values to/from
+    :rfc:`822` format.
 
     """
 
@@ -202,6 +202,7 @@ class Rfc822(Codec):
 
 
 class Integer(Codec):
+    """Codec to encode and decode integer numbers."""
 
     def encode(self, value):
         if not isinstance(value, numbers.Integral):
@@ -216,14 +217,15 @@ class Integer(Codec):
 
 
 class Boolean(Codec):
-    """Codec to interpret between :class:`bool` and raw text
+    """Codec to interpret boolean representation in strings e.g. ``'true'``,
+    ``'no'``, and encode :class:`bool` values back to string.
 
-    :param true: text to parse as True. "true" by default
+    :param true: text to parse as :const:`True`.  ``'true'`` by default
     :type true: :class:`str`, :class:`tuple`
-    :param false: text to parse as False. "false" by default
+    :param false: text to parse as :const:`False`.  ``'false'`` by default
     :type false: :class:`str`, :class:`tuple`
-    :param default_value: default value when cannot parse
-    :type default_value: :class:`bool`, :const:`None`
+    :param default_value: default value when it cannot be parsed
+    :type default_value: :class:`bool`
 
     """
 
