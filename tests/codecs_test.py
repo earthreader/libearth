@@ -61,13 +61,6 @@ def test_rfc822():
     assert codec.encode(kst_datetime) == kst_string
 
 
-def test_rfc822_None():
-    codec = Rfc822()
-
-    assert codec.encode(None) == ""
-    assert codec.decode(None) is None
-
-
 def test_rfc822_raise():
     codec = Rfc822()
 

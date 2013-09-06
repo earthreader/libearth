@@ -159,9 +159,6 @@ class Rfc822(Codec):
     """
 
     def encode(self, value):
-        if value is None:
-            return ""
-
         if not isinstance(value, datetime.datetime):
             raise EncodeError(
                 '{0.__module__}.{0.__name__} accepts only datetime.datetime '
@@ -180,9 +177,6 @@ class Rfc822(Codec):
         return res
 
     def decode(self, text):
-        if not text:
-            return None
-
         timestamp = text[:25]
         timezone = text[26:]
         try:
@@ -213,10 +207,7 @@ class Integer(Codec):
     def encode(self, value):
         if not isinstance(value, int):
             raise EncodeError("Value type must be int")
-        if value is None:
-            return ""
-        else:
-            return str(int(value))
+        return str(int(value))
 
     def decode(self, text):
         if not self.PATTERN.match(text):
