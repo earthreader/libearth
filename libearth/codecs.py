@@ -13,7 +13,7 @@ from .compat import string_type
 from .schema import Codec, DecodeError, EncodeError
 from .tz import FixedOffset, utc
 
-__all__ = 'Enum', 'Rfc3339', 'Rfc822', 'Integer'
+__all__ = 'Enum', 'Boolean', 'Rfc3339', 'Rfc822', 'Integer'
 
 
 class Enum(Codec):
@@ -158,13 +158,30 @@ class Rfc822(Codec):
 
     """
     def encode(self, value):
+        if value is None:
+            return ""
+
         if not isinstance(value, datetime.datetime):
-            raise EncodeError("Value must be instance of datetime.datetime")
+            raise EncodeError(
+                '{0.__module__}.{0.__name__} accepts only datetime.datetime '
+                'value, not {1!r}'.format(type(self), value)
+            )
+        elif value.tzinfo is None:
+            raise EncodeError(
+                '{0.__module__}.{0.__name__} does not accept naive datetime.'
+                'datetime value, but {1!r} lacks tzinfo attribute'.format(
+                    type(self), value
+                )
+            )
+
         res = value.strftime("%a, %d %b %Y %H:%M:%S ")
         res += value.strftime("%Z").replace(":", "")
         return res
 
     def decode(self, text):
+        if not text:
+            return None
+
         timestamp = text[:25]
         timezone = text[26:]
         try:
@@ -177,6 +194,11 @@ class Rfc822(Codec):
                     int(matched.group(2))
                 )
                 res = res.replace(tzinfo=offset)
+            else:
+                raise DecodeError(
+                    'given argument was not valid RFC822 string. '
+                    'it needs tzinfo'
+                )
         except ValueError as e:
             raise DecodeError(e)
 
