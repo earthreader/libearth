@@ -1,4 +1,4 @@
-""":mod:`libearth.feed` --- Feed list
+""":mod:`libearth.feedlist` --- Feed list
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 """

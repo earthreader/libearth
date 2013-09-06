@@ -1,8 +1,8 @@
 from datetime import datetime
 from pytest import raises
 
-from libearth.feed import (AlreadyExistException, Feed, FeedCategory, FeedList,
-                           OpmlDoc)
+from libearth.feedlist import (AlreadyExistException, Feed, FeedCategory,
+                               FeedList, OpmlDoc)
 from libearth.schema import read
 
 

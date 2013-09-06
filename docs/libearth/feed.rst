@@ -1,3 +1,0 @@
-
-.. automodule:: libearth.feed
-   :members:
