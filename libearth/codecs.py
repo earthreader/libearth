@@ -13,7 +13,7 @@ from .compat import string_type
 from .schema import Codec, DecodeError, EncodeError
 from .tz import FixedOffset, utc
 
-__all__ = 'Enum', 'Boolean', 'Rfc3339', 'Rfc822', 'Integer'
+__all__ = 'Boolean', 'Enum', 'Integer', 'Rfc3339', 'Rfc822'
 
 
 class Enum(Codec):
@@ -157,6 +157,7 @@ class Rfc822(Codec):
     format.
 
     """
+
     def encode(self, value):
         if value is None:
             return ""
@@ -206,6 +207,7 @@ class Rfc822(Codec):
 
 
 class Integer(Codec):
+
     PATTERN = re.compile("[0-9]+")
 
     def encode(self, value):
@@ -224,15 +226,16 @@ class Integer(Codec):
 
 class Boolean(Codec):
     """Codec to interpret between :class:`bool` and raw text
+
     :param true: text to parse as True. "true" by default
-    :type true: :class:`str` or :class:`tuple`
-
+    :type true: :class:`str`, :class:`tuple`
     :param false: text to parse as False. "false" by default
-    :type false: :class:`str` or :class:`tuple`
-
+    :type false: :class:`str`, :class:`tuple`
     :param default_value: default value when cannot parse
-    :type default_value: :class:`bool` or :const:`None`
+    :type default_value: :class:`bool`, :const:`None`
+
     """
+
     def __init__(self, true="true", false="false", default_value=None):
         self.true = true
         self.false = false
