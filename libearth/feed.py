@@ -238,7 +238,7 @@ class FeedList(object):
                 for chunk in write(self.doc):
                     fp.write(chunk)
         except Exception as e:
-            raise SaveOPMLError(e.message)
+            raise SaveOPMLError(e)
 
     def add_feed(self, type, title, xml_url, html_url=None, text=None,
                  category=None, is_breakoint=None, created=None):
