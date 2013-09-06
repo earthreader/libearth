@@ -7,6 +7,7 @@ formats.
 """
 import collections
 import datetime
+import numbers
 import re
 
 from .compat import string_type
@@ -202,17 +203,16 @@ class Rfc822(Codec):
 
 class Integer(Codec):
 
-    PATTERN = re.compile("[0-9]+")
-
     def encode(self, value):
-        if not isinstance(value, int):
-            raise EncodeError("Value type must be int")
+        if not isinstance(value, numbers.Integral):
+            raise EncodeError('expected integer, not ' + repr(value))
         return str(int(value))
 
     def decode(self, text):
-        if not self.PATTERN.match(text):
-            raise DecodeError("Invalid character on text")
-        return int(text)
+        try:
+            return int(text)
+        except ValueError as e:
+            raise DecodeError(str(e))
 
 
 class Boolean(Codec):
