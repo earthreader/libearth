@@ -6,7 +6,7 @@
 from abc import ABCMeta
 from collections import MutableSequence
 
-from .codecs import Integer, Rfc822
+from .codecs import Boolean, Integer, Rfc822
 from .compat import text_type
 from .schema import (Attribute, Child, Codec, DocumentElement, Element, Text,
                      read, write)
@@ -15,14 +15,19 @@ from .tz import now
 
 class CommaSeparatedList(Codec):
     def encode(self, value):
-        if isinstance(value, text_type):
+        if value is None:
+            res = ""
+        elif isinstance(value, text_type):
             res = value
         else:
             res = ",".join(value)
         return res
 
     def decode(self, text):
-        lst = [elem.strip() for elem in text.split(',')]
+        if text is None:
+            lst = []
+        else:
+            lst = [elem.strip() for elem in text.split(',')]
         return lst
 
 
@@ -37,9 +42,19 @@ class FeedTree():
 class FeedCategory(FeedTree, MutableSequence):
     type = 'category'
 
-    def __init__(self, title, text=None):
+    def __init__(self, title, type=None, text=None, xml_url=None,
+                 html_url=None, category=None, is_breakpoint=None,
+                 created=None):
         super(FeedCategory, self).__init__('category', title)
         self.text = text
+        self._type = type
+        self.text = text
+        self.xml_url = xml_url
+        self.html_url = html_url
+        self.category = category
+        self.is_breakpoint = is_breakpoint
+        self.created = created
+
         self.children = []
 
         #for not allowing same feed on same category
@@ -83,12 +98,17 @@ class FeedCategory(FeedTree, MutableSequence):
 
 
 class Feed(FeedTree):
-    def __init__(self, rsstype, title, xml_url, html_url=None, text=None):
+    def __init__(self, rsstype, title, xml_url, html_url=None, text=None,
+                 category=None, is_breakpoint=None, created=None):
         super(Feed, self).__init__('feed', title)
         self.rsstype = rsstype
         self.xml_url = xml_url
         self.html_url = html_url
         self.text = text or title
+
+        self.category = category
+        self.is_breakpoint = is_breakpoint
+        self.created = created
 
 
 class OutlineElement(Element):
@@ -97,6 +117,9 @@ class OutlineElement(Element):
     type = Attribute('type')
     xml_url = Attribute('xmlUrl')
     html_url = Attribute('htmlUrl')
+    category = Attribute('category', CommaSeparatedList)
+    is_breakpoint = Attribute('isBreakpoint', Boolean)
+    created = Attribute('created', Rfc822)
 
     children = Child('outline', 'OutlineElement', multiple=True)
 
@@ -217,8 +240,10 @@ class FeedList(object):
         except Exception as e:
             raise SaveOPMLError(e.message)
 
-    def add_feed(self, type, title, xml_url, html_url=None, text=None):
-        feed = self.make_feed(type, title, xml_url, html_url, text)
+    def add_feed(self, type, title, xml_url, html_url=None, text=None,
+                 category=None, is_breakoint=None, created=None):
+        feed = self.make_feed(type, title, xml_url, html_url, text,
+                              category=None, is_breakoint=None, created=None)
         self.feedlist.append(feed)
 
     def append(self, feed):
@@ -232,7 +257,8 @@ class FeedList(object):
         else:
             self.feedlist.append(feed)
 
-    def make_feed(self, type, title, xml_url, html_url=None, text=None):
+    def make_feed(self, type, title, xml_url, html_url=None, text=None,
+                  category=None, is_breakoint=None, created=None):
         """pick from all_feeds or make feed for multiple linking"""
 
         text = text or title
@@ -244,7 +270,8 @@ class FeedList(object):
             feed.html_url = html_url
             feed.text = text
         else:
-            feed = Feed(type, title, xml_url, html_url, text)
+            feed = Feed(type, title, xml_url, html_url, text, category=None,
+                        is_breakpoint=None, created=None)
             self.all_feeds[key] = feed
 
         return feed
@@ -252,6 +279,13 @@ class FeedList(object):
     def convert_from_outline(self, outline_obj):
         if outline_obj.children:
             title = outline_obj.title or outline_obj.text
+            type = outline_obj.type
+            text = outline_obj.text
+            xml_url = outline_obj.xml_url
+            html_url = outline_obj.html_url
+            category = outline_obj.category
+            is_breakpoint = outline_obj.is_breakpoint
+            created = outline_obj.created
 
             res = FeedCategory(title)
 
@@ -264,7 +298,12 @@ class FeedList(object):
             html_url = outline_obj.html_url
             text = outline_obj.text
 
-            res = self.make_feed(type, title, xml_url, html_url, text)
+            category = outline_obj.category
+            is_breakpoint = outline_obj.is_breakpoint
+            created = outline_obj.created
+
+            res = self.make_feed(type, title, xml_url, html_url, text,
+                                 category, is_breakpoint, created)
 
         return res
 
