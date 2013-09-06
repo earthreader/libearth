@@ -13,7 +13,7 @@ from .compat import string_type
 from .schema import Codec, DecodeError, EncodeError
 from .tz import FixedOffset, utc
 
-__all__ = 'Enum', 'Rfc3339'
+__all__ = 'Enum', 'Rfc3339', 'Rfc822', 'Integer'
 
 
 class Enum(Codec):
@@ -150,3 +150,103 @@ class Rfc3339(Codec):
         if self.prefer_utc and tzinfo is not utc:
             dt = dt.astimezone(utc)
         return dt
+
+
+class Rfc822(Codec):
+    """Codec to encode/decode :class:`datetime.datetime` values to :rfc:`822`
+    format.
+
+    """
+    def encode(self, value):
+        if not isinstance(value, datetime.datetime):
+            raise EncodeError("Value must be instance of datetime.datetime")
+        res = value.strftime("%a, %d %b %Y %H:%M:%S ")
+        res += value.strftime("%Z").replace(":", "")
+        return res
+
+    def decode(self, text):
+        timestamp = text[:25]
+        timezone = text[26:]
+        try:
+            res = datetime.datetime.strptime(timestamp, "%a, %d %b %Y %H:%M:%S")
+            #FIXME: timezone like KST, UTC
+            matched = re.match(r'\+([0-9]{2})([0-9]{2})', timezone)
+            if matched:
+                offset = FixedOffset(
+                    int(matched.group(1)) * 60 +
+                    int(matched.group(2))
+                )
+                res = res.replace(tzinfo=offset)
+        except ValueError as e:
+            raise DecodeError(e)
+
+        return res
+
+
+class Integer(Codec):
+    PATTERN = re.compile("[0-9]+")
+
+    def encode(self, value):
+        if not isinstance(value, int):
+            raise EncodeError("Value type must be int")
+        if value is None:
+            return ""
+        else:
+            return str(int(value))
+
+    def decode(self, text):
+        if not self.PATTERN.match(text):
+            raise DecodeError("Invalid character on text")
+        return int(text)
+
+
+class Boolean(Codec):
+    """Codec to interpret between :class:`bool` and raw text
+    :param true: text to parse as True. "true" by default
+    :type true: :class:`str` or :class:`tuple`
+
+    :param false: text to parse as False. "false" by default
+    :type false: :class:`str` or :class:`tuple`
+
+    :param default_value: default value when cannot parse
+    :type default_value: :class:`bool` or :const:`None`
+    """
+    def __init__(self, true="true", false="false", default_value=None):
+        self.true = true
+        self.false = false
+        self.default_value = default_value
+
+    def encode(self, value):
+        if value is None:
+            value = self.default_value
+
+        if not isinstance(value, bool) and value is not None:
+            raise EncodeError("type of {0} must be bool".format(value))
+
+        true = (self.true if isinstance(self.true, string_type)
+                else self.true[0])
+        false = (self.false if isinstance(self.true, string_type)
+                 else self.false[0])
+
+        if value is True:
+            return true
+        elif value is False:
+            return false
+        else:
+            return None
+
+    def decode(self, text):
+        true = (self.true if not isinstance(self.true, string_type)
+                else [self.true])
+        false = (self.false if not isinstance(self.false, string_type)
+                 else [self.false])
+
+        if text in true:
+            value = True
+        elif text in false:
+            value = False
+        elif not text:
+            value = self.default_value
+        else:
+            raise DecodeError('invalid string')
+        return value
