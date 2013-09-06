@@ -162,6 +162,19 @@ class Rfc822(Codec):
             return ""
 
         if not isinstance(value, datetime.datetime):
+            raise EncodeError(
+                '{0.__module__}.{0.__name__} accepts only datetime.datetime '
+                'value, not {1!r}'.format(type(self), value)
+            )
+        elif value.tzinfo is None:
+            raise EncodeError(
+                '{0.__module__}.{0.__name__} does not accept naive datetime.'
+                'datetime value, but {1!r} lacks tzinfo attribute'.format(
+                    type(self), value
+                )
+            )
+
+        if not isinstance(value, datetime.datetime):
             raise EncodeError("Value must be instance of datetime.datetime")
         res = value.strftime("%a, %d %b %Y %H:%M:%S ")
         res += value.strftime("%Z").replace(":", "")
@@ -183,6 +196,11 @@ class Rfc822(Codec):
                     int(matched.group(2))
                 )
                 res = res.replace(tzinfo=offset)
+            else:
+                raise DecodeError(
+                    'given argument was not valid RFC822 string. '
+                    'it needs tzinfo'
+                )
         except ValueError as e:
             raise DecodeError(e)
 

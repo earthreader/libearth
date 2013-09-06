@@ -71,11 +71,17 @@ def test_rfc822_None():
 def test_rfc822_raise():
     codec = Rfc822()
 
+    datetime_not_contains_tzinfo = datetime.datetime.now()
+    not_valid_rfc822_string = 'Sat, 07 Sep 2013 01:20:43'
+
     with raises(EncodeError):
         codec.encode("it is not datetime.datetime object")
 
+    with raises(EncodeError):
+        codec.encode(datetime_not_contains_tzinfo)
+
     with raises(DecodeError):
-        codec.decode("not valid Rfc822 string")
+        codec.decode(not_valid_rfc822_string)
 
 
 def test_integer():
