@@ -44,9 +44,7 @@ class Enum(Codec):
         self.values = values
 
     def encode(self, value):
-        if value is None:
-            return
-        elif not isinstance(value, string_type):
+        if not isinstance(value, string_type):
             raise EncodeError('expected a string, not ' + repr(value))
         elif value not in self.values:
             raise EncodeError(
@@ -58,7 +56,7 @@ class Enum(Codec):
         return value
 
     def decode(self, text):
-        if not (text is None or text in self.values):
+        if text not in self.values:
             raise DecodeError('expected one of ' +
                               ', '.join(repr(v) for v in self.values))
         return text
