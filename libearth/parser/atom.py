@@ -1,9 +1,7 @@
-
-""":mod:`libearth.parser` --- Parser
+""":mod:`libearth.parser.atom` --- Atom parser
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Pasring RSS feed of RSS2.0 and Atom and translate into Atom. Atom specification
-is :rfc:`4287`
+Parsing Atom feed. Atom specification is :rfc:`4287`
 
 .. todo::
 
@@ -15,7 +13,9 @@ import datetime
 import re
 
 from .common import get_tag_attribute
+from libearth.codecs import Rfc3339
 from libearth.tz import FixedOffset
+
 try:
     import urlparse
 except:
@@ -74,31 +74,6 @@ def atom_parse_person_construct(data, xml_base):
         elif child.tag == '{' + XMLNS_ATOM + '}' + 'email':
             person['email'] = child.text
     return person
-
-
-def atom_parse_date_construct(data):
-    date = {}
-    text = data.text
-    date_and_time = text[:19]
-    second_fraction_and_timezone = re.search('\.?([^\+\-Z]*)(.+)', text[19:])
-    datetime_object = datetime.datetime.strptime(date_and_time,
-                                                 '%Y-%m-%dT%H:%M:%S')
-    if second_fraction_and_timezone.group(1):
-        second_fraction = second_fraction_and_timezone.group(1)
-        microsecond = int(second_fraction)*pow(10, 6-len(second_fraction))
-        datetime_object = datetime_object.replace(microsecond=microsecond)
-    if not second_fraction_and_timezone.group(2).startswith('Z'):
-        dump = second_fraction_and_timezone.group(2)
-        sign = dump[0]
-        hours = dump[1:3]
-        minutes = dump[4:6]
-        if sign == '+':
-            offset = int(hours)*60+int(minutes)
-        else:
-            offset = int(hours)*60+int(minutes)*(-1)
-        datetime_object = datetime_object.replace(tzinfo=FixedOffset(offset))
-    date['datetime'] = datetime_object
-    return date
 
 
 def atom_get_feed_data(root, feed_url):
@@ -204,7 +179,7 @@ def atom_get_title_tag(data):
 
 
 def atom_get_updated_tag(data):
-    updated_tag = atom_parse_date_construct(data)
+    updated_tag = Rfc3339().decode(data.text)
     return updated_tag
 
 
@@ -280,7 +255,7 @@ def atom_get_content_tag(data):
 
 
 def atom_get_published_tag(data):
-    published_tag = atom_parse_date_construct(data)
+    published_tag = Rfc3339().decode(data.text)
     return published_tag
 
 

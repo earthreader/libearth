@@ -2,13 +2,16 @@
 .. automodule:: libearth
    
    .. toctree::
-      :maxdepth: 2
+      :maxdepth: 3
 
       libearth/codecs
       libearth/compat
       libearth/crawler
       libearth/feed
-      libearth/parser
+      libearth/parser/atom
+      libearth/parser/common
+      libearth/parser/heuristic
+      libearth/parser/rss
       libearth/repository
       libearth/schema
       libearth/session

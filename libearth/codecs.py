@@ -168,7 +168,8 @@ class Rfc822(Codec):
         timestamp = text[:25]
         timezone = text[26:]
         try:
-            res = datetime.datetime.strptime(timestamp, "%a, %d %b %Y %H:%M:%S")
+            res = datetime.datetime.strptime(timestamp,
+                                             "%a, %d %b %Y %H:%M:%S")
             #FIXME: timezone like KST, UTC
             matched = re.match(r'\+([0-9]{2})([0-9]{2})', timezone)
             if matched:

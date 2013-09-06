@@ -1,4 +1,5 @@
 from libearth.compat import PY3
+from libearth.codecs import Rfc822
 from .common import get_tag_attribute
 
 if PY3:
@@ -61,7 +62,7 @@ def rss_get_channel_data(root):
             contributor['email'] = data.text
             feed_data['contributor'].append(contributor)
         elif data.tag == 'pubDate':
-            feed_data['updated'] = data.text
+            feed_data['updated'] = Rfc822().decode(data.text)
         elif data.tag == 'category':
             category = {}
             category['term'] = data.text
@@ -70,7 +71,7 @@ def rss_get_channel_data(root):
             feed_data['generator'] = {}
             feed_data['generator']['text'] = data.text
         elif data.tag == 'lastBuildDate':
-            data_for_crawl['lastBuildDate'] = data.text
+            data_for_crawl['lastBuildDate'] = Rfc822().decode(data.text)
 
         elif data.tag == 'ttl':
             data_for_crawl['ttl'] = data.text
@@ -128,7 +129,7 @@ def rss_get_item_data(entries):
                 id['uri'] = data.text
                 entry_data['id'] = id
             elif data.tag == 'pubDate':
-                entry_data['published'] = data.text
+                entry_data['published'] = Rfc822().decode(data.text)
             elif data.tag == 'source':
                 from .heuristic import get_document_type, get_parser
                 source = {}

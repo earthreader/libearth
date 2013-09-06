@@ -1,7 +1,7 @@
 import datetime
 import httpretty
 from libearth.parser import atom, rss2
-from libearth.tz import FixedOffset
+from libearth.tz import FixedOffset, utc
 
 
 atom_xml = """
@@ -83,10 +83,8 @@ def test_atom_parser():
                 'type': 'application/atom+xml'
             }
         ],
-        'updated': {
-            'datetime': datetime.datetime(2013, 8, 19, 7, 49, 20,
-                                          tzinfo=FixedOffset(420))
-        },
+        'updated': datetime.datetime(2013, 8, 19, 7, 49, 20,
+                                     tzinfo=FixedOffset(420)),
         'author': [
             {
                 'name': 'vio',
@@ -134,12 +132,10 @@ def test_atom_parser():
                     'text': 'Title One',
                     'type': None
                 },
-                'updated': {
-                    'datetime': datetime.datetime(2013, 8, 10, 15, 27, 4)
-                },
-                'published': {
-                    'datetime': datetime.datetime(2013, 8, 10, 15, 26, 15)
-                },
+                'updated': datetime.datetime(2013, 8, 10, 15,
+                                             27, 4, tzinfo=utc),
+                'published': datetime.datetime(2013, 8, 10, 15, 26, 15,
+                                               tzinfo=utc),
                 'category': [
                     {
                         'label': None,
@@ -183,9 +179,8 @@ def test_atom_parser():
                     'text': 'xml base test',
                     'type': None
                 },
-                'updated': {
-                    'datetime': datetime.datetime(2013, 8, 17, 3, 28, 11)
-                },
+                'updated': datetime.datetime(2013, 8, 17, 3, 28, 11,
+                                             tzinfo=utc),
                 'category': [],
                 'contributor': [],
                 'link': []
@@ -272,7 +267,7 @@ def test_rss_parser():
                 'term': 'Python'
             }
         ],
-        'updated': 'Sat, 17 Sep 2002 00:00:01 GMT',
+        'updated': datetime.datetime(2002, 9, 17, 0, 0, 1),
         'entry': [
             {
                 'title': {
@@ -306,7 +301,7 @@ def test_rss_parser():
                 'id': {
                     'uri': 'http://vioblog.com/12'
                 },
-                'published': 'Sat, 07 Sep 2002 00:00:01 GMT',
+                'published': datetime.datetime(2002, 9, 7, 0, 0, 1),
                 'source': {
                     'title': 'Source Test',
                     'link': [
@@ -327,6 +322,6 @@ def test_rss_parser():
         ]
     }
     assert data_for_crawl == {
-        'lastBuildDate': 'Sat, 07 Sep 2002 00:00:01 GMT',
+        'lastBuildDate': datetime.datetime(2002, 9, 7, 0, 0, 1),
         'ttl': '10',
     }
