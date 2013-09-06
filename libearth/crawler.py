@@ -6,39 +6,20 @@ and autodiscovery feed url in document.
 
 .. todo::
 
-    - function to check If-Modified-Since tag.
+   - function to check If-Modified-Since tag.
 
 """
 import re
 
 from .compat import PY3
+from .parser.heuristic import get_document_type
 
 if PY3:
-    import urllib.request as urllib2
     import urllib.parse as urlparse
     from html.parser import HTMLParser
 else:
-    import urllib2
     import urlparse
     from HTMLParser import HTMLParser
-
-try:
-    from lxml import etree
-except ImportError:
-    try:
-        from xml.etree import cElementTree as etree
-    except ImportError:
-        from xml.etree import ElementTree as etree
-
-
-def crawl(url):
-    """Crawl the document in given url.
-
-    """
-    request = urllib2.Request(url)
-    f = urllib2.urlopen(request)
-    document = f.read()
-    return document
 
 
 def auto_discovery(document, url):
@@ -66,22 +47,6 @@ def auto_discovery(document, url):
         return rss_url
     else:
         return url
-
-
-def get_document_type(document):
-    try:
-        root = etree.fromstring(document)
-    except:
-        print 'here'
-        return 'not feed'
-    if re.search('feed', root.tag):
-        return 'atom'
-    elif root.tag == 'rss':
-        return 'rss2.0'
-    elif re.search('RDF', root.tag):
-        return 'rss1.0'
-    else:
-        return 'not feed'
 
 
 RSS_TYPE = 'application/rss+xml'

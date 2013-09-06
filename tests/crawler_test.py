@@ -1,5 +1,12 @@
 import httpretty
-from libearth.crawler import (auto_discovery, crawl, get_document_type)
+
+from libearth.compat import PY3
+from libearth.crawler import (auto_discovery, get_document_type)
+
+if PY3:
+    import urllib.request as urllib2
+else:
+    import urllib2
 
 
 def test_get_document_type():
@@ -42,12 +49,16 @@ def test_rss_version_two():
                            body=rss_blog)
     httpretty.register_uri(httpretty.GET, "http://vio.rsstest.com/feed/rss/",
                            body=rss_xml)
-    document = crawl(url)
+    request = urllib2.Request(url)
+    f = urllib2.urlopen(request)
+    document = f.read()
     document_type = get_document_type(document)
     assert document_type == 'not feed'
     feed_url = auto_discovery(document, url)
     assert feed_url == 'http://vio.rsstest.com/feed/rss/'
-    feed_xml = crawl(feed_url)
+    request = urllib2.Request(feed_url)
+    f = urllib2.urlopen(request)
+    feed_xml = f.read()
     feed_type = get_document_type(feed_xml)
     assert feed_type == 'rss2.0'
 
@@ -92,11 +103,15 @@ def test_rss_atom():
                            body=atom_blog)
     httpretty.register_uri(httpretty.GET, "http://vio.atomtest.com/feed/atom/",
                            body=atom_xml)
-    document = crawl(url)
+    request = urllib2.Request(url)
+    f = urllib2.urlopen(request)
+    document = f.read()
     document_type = get_document_type(document)
     assert document_type == 'not feed'
     feed_url = auto_discovery(document, url)
     assert feed_url == 'http://vio.atomtest.com/feed/atom/'
-    feed_xml = crawl(feed_url)
+    request = urllib2.Request(feed_url)
+    f = urllib2.urlopen(request)
+    feed_xml = f.read()
     feed_type = get_document_type(feed_xml)
     assert feed_type == 'atom'

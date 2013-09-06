@@ -1,6 +1,6 @@
 import datetime
 import httpretty
-from libearth.parser import parse_atom, parse_rss
+from libearth.parser import atom, rss2
 from libearth.tz import FixedOffset
 
 
@@ -52,7 +52,7 @@ atom_xml = """
 
 def test_atom_parser():
     url = 'http://vio.atomtest.com/feed/atom'
-    feed_data = parse_atom(atom_xml, url)
+    feed_data, _ = atom.parse_atom(atom_xml, url)
     assert feed_data == {
         'title': {
             'text': 'Atom Test',
@@ -154,7 +154,8 @@ def test_atom_parser():
                 ],
                 'content': {
                     'text': 'Hello World',
-                    'type': None
+                    'type': None,
+                    'src': None
                 },
                 'link': [
                     {
@@ -242,7 +243,7 @@ rss_source_xml = """
 def test_rss_parser():
     httpretty.register_uri(httpretty.GET, "http://sourcetest.com/rss.xml",
                            body=rss_source_xml)
-    feed_data, data_for_crawl = parse_rss(rss_xml)
+    feed_data, data_for_crawl = rss2.parse_rss(rss_xml)
     assert feed_data == {
         'title': 'Vio Blog',
         'link': [
