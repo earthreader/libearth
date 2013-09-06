@@ -5,7 +5,6 @@ Parsing Atom feed. Atom specification is :rfc:`4287`
 
 .. todo::
 
-   - RSS2.0 Parser
    - Parsing text construct which type is 'xhtml'
 
 """
@@ -37,11 +36,18 @@ def parse_atom(xml, feed_url, parse_entry=True):
     """Parsing function of Atom. This function parse the Atom XML and
     return feed data.
 
-    :param xml: Target Atom XML to parse.
+    :param xml: target atom xml to parse.
     :type xml: :class:`str`
-    :param feed_url: Source of Atom XML. If xml:base is not defined in XML,
+    :param feed_url: source of atom xml. if xml:base is not defined in xml,
                      it became default base url.
     :type feed_url: :class:`str`
+    :param parse_entry: whether to parse inner items as well.
+                        it's useful to ignore items when retrieve
+                        ``<source>`` in rss 2.0.  :const:`True` by default.
+    :type parse_item: :class:`bool`
+
+    :returns: feed data parsed from xml.
+    :rtype: :class:`dict`
 
     """
     root = etree.fromstring(xml)

@@ -1,3 +1,11 @@
+""":mod:`libearth.parser.heuristic` --- Guessing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Get any XML and guess the type of XML.
+
+"""
+
+
 import re
 
 try:
@@ -13,6 +21,12 @@ from .rss2 import parse_rss
 
 
 def get_document_type(document):
+    """Get any document and guess the type of XML
+
+    :param document: document to guess
+    :type document: :class:`str`
+
+    """
     try:
         root = etree.fromstring(document)
     except:
@@ -28,6 +42,14 @@ def get_document_type(document):
 
 
 def get_parser(document_type):
+    """return appropriate parser for specific feed.
+
+    :param document_type: type of feed
+    :type document_type: :class:`str`
+    :returns: appropriate parser funcion
+    :rtype: :class:`collections.Callable`
+
+    """
     if document_type == 'atom':
         return parse_atom
     elif document_type == 'rss2.0':

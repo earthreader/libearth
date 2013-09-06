@@ -11,7 +11,7 @@
       libearth/parser/atom
       libearth/parser/common
       libearth/parser/heuristic
-      libearth/parser/rss
+      libearth/parser/rss2
       libearth/repository
       libearth/schema
       libearth/session

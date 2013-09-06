@@ -1,3 +1,9 @@
+""":mod:`libearth.parser.rss2` --- RSS 2.0 parser
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Parsing RSS 2.0 feed.
+
+"""
 from libearth.compat import PY3
 from libearth.codecs import Rfc822
 from .common import get_tag_attribute
@@ -17,7 +23,17 @@ except ImportError:
 
 
 def parse_rss(xml, parse_item=True):
-    """Parse RSS2.0 XML and translate into Atom."""
+    """Parse RSS 2.0 XML.
+
+    :param xml: target rss 2.0 xml to parse
+    :type xml: :class:`str`
+    :param parse_item: whether to parse inner items as well.
+                       it's useful to ignore items when retrieve
+                       ``<source>``.  :const:`True` by default.
+    :type parse_item: :class:`bool`
+    :returns: feed data parsed from xml.
+
+    """
     root = etree.fromstring(xml)
     channel = root.find('channel')
     items = channel.findall('item')

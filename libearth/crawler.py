@@ -34,6 +34,8 @@ def auto_discovery(document, url):
                 in relative URL, this function joined it with the ``url`` and
                 return the result.
     :type url: :class:`str`
+    :returns: feed url
+    :rtype: :class:`str`
 
     """
     document_type = get_document_type(document)
