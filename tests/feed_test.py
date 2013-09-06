@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+from pytest import raises
+
 from libearth.compat import text_type
-from libearth.feed import Category, Link, MarkupTagCleaner, Person, Text
+from libearth.feed import (Category, Content, Link, MarkupTagCleaner, Person,
+                           Text)
 
 
 def u(text):
@@ -99,3 +102,21 @@ def test_link_html():
 def test_category_str():
     assert text_type(Category(term='python')) == 'python'
     assert text_type(Category(term='python', label='Python')) == 'Python'
+
+
+def test_content_mimetype():
+    assert Content(type='text', value='Hello').mimetype == 'text/plain'
+    assert Content(type='html', value='Hello').mimetype == 'text/html'
+    assert Content(type='text/xml', value='<a>Hello</a>').mimetype == 'text/xml'
+    assert Content(mimetype='text/plain', value='Hello').type == 'text'
+    assert Content(mimetype='text/html', value='Hello').type == 'html'
+    assert Content(mimetype='text/xml', value='<a>Hello</a>').type == 'text/xml'
+
+
+def test_content_invalid_mimetype():
+    with raises(ValueError):
+        Content(mimetype='invalid/mime/type')
+    with raises(ValueError):
+        Content(mimetype='invalidmimetype')
+    with raises(ValueError):
+        Content(mimetype='invalid/(mimetype)')

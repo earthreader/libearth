@@ -13,13 +13,14 @@ try:
     import HTMLParser
 except ImportError:
     from html import parser as HTMLParser
+import re
 
 from .codecs import Enum
 from .compat import UNICODE_BY_DEFAULT, text_type
 from .schema import Attribute, Content, Element, Text as TextChild
 
-__all__ = ('ATOM_XMLNS', 'Category', 'Link', 'MarkupTagCleaner', 'Person',
-           'Text')
+__all__ = ('ATOM_XMLNS', 'Category', 'Content', 'Link', 'MarkupTagCleaner',
+           'Person', 'Text')
 
 
 #: (:class:`str`) The XML namespace name used for Atom (:rfc:`4287`).
@@ -233,3 +234,65 @@ class Category(Element):
         return ('{0.__module__}.{0.__name__}(term={1!r}, scheme_uri={2!r}'
                 ', label={3!r})').format(type(self), self.term,
                                          self.scheme_uri, self.label)
+
+
+class Content(Text):
+    """Content construct defined in :rfc:`4287#section-4.1.3`
+    (section 4.1.3).
+
+    """
+
+    #: (:class:`collections.Mapping`) The mapping of :attr:`type` string
+    #: (e.g. ``'text'``) to the corresponding MIME type
+    #: (e.g. :mimetype:`text/plain`).
+    TYPE_MIMETYPE_MAP = {
+        'text': 'text/plain',
+        'html': 'text/html',
+        'xhtml': 'application/xhtml+xml'
+    }
+
+    #: (:class:`re.RegexObject`) The regular expression pattern that matches
+    #: with valid MIME type strings.
+    MIMETYPE_PATTERN = re.compile(r'''
+        ^
+        (?P<type> [A-Za-z0-9!#$&.+^_-]{1,127} )
+        /
+        (?P<subtype> [A-Za-z0-9!#$&.+^_-]{1,127} )
+        $
+    ''', re.VERBOSE)
+
+    #: (:class:`str`) An optional remote content URI to retrieve the content.
+    source_uri = Attribute('src')
+
+    @property
+    def mimetype(self):
+        """(:class:`str`) The mimetype of the content."""
+        try:
+            mimetype = self.TYPE_MIMETYPE_MAP[self.type]
+        except KeyError:
+            mimetype = self.type
+        if self.MIMETYPE_PATTERN.match(mimetype):
+            return mimetype
+        raise ValueError(repr(mimetype) + ' is invalid mimetype')
+
+    @mimetype.setter
+    def mimetype(self, mimetype):
+        match = self.MIMETYPE_PATTERN.match(mimetype)
+        if not match:
+            raise ValueError(repr(mimetype) + ' is invalid mimetype')
+        if match.group('type') == 'text':
+            subtype = match.group('subtype')
+            if subtype == 'plain':
+                self.type = 'text'
+                return
+            elif subtype == 'html':
+                self.type = 'html'
+                return
+        self.type = mimetype
+
+    def __repr__(self):
+        if not self.source_uri:
+            return super(Content, self).__repr__()
+        format_string = ('{0.__module__}.{0.__name__}'
+                         '(mimetype={1!r}, source_uri={2!r})')
+        return format_string.format(type(self), self.mimetype, self.source_uri)

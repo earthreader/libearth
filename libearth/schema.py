@@ -778,7 +778,8 @@ class Element(object):
             if hasattr(self._root(), '_handler'):
                 self._stack_top = len(self._root()._handler.stack)
         cls = type(self)
-        acceptable_desc_types = Descriptor, Content, Attribute  # FIXME
+        acceptable_desc_types = Descriptor, Content, Attribute, property
+        # FIXME: ^-- hardcoded type list
         for attr_name, attr_value in attributes.items():
             if isinstance(getattr(cls, attr_name, None), acceptable_desc_types):
                 setattr(self, attr_name, attr_value)
