@@ -5,6 +5,7 @@ This module provides commonly used codecs to parse RSS-related standard
 formats.
 
 """
+import collections
 import datetime
 import re
 
@@ -12,7 +13,54 @@ from .compat import string_type
 from .schema import Codec, DecodeError, EncodeError
 from .tz import FixedOffset, utc
 
-__all__ = 'Boolean', 'Rfc3339', 'Rfc822', 'Integer'
+__all__ = 'Enum', 'Rfc3339', 'Rfc822', 'Integer'
+
+
+class Enum(Codec):
+    """Codec that accepts only predefined fixed types of values::
+
+        gender = Enum(['male', 'female'])
+
+    Actually it doesn't any encoding nor decoding, but it simply *validates*
+    all values from XML and Python both.
+
+    Note that values have to consist of only strings.
+
+    :param values: any iterable that yields all possible values
+    :type values: :class:`collections.Iterable`
+
+    """
+
+    def __init__(self, values):
+        if not isinstance(values, collections.Iterable):
+            raise TypeError('enum values must be iterable, not ' +
+                            repr(values))
+        values = frozenset(values)
+        for v in values:
+            if not isinstance(v, string_type):
+                raise TypeError('enum values must be strings, not ' +
+                                repr(v))
+        self.values = values
+
+    def encode(self, value):
+        if value is None:
+            return
+        elif not isinstance(value, string_type):
+            raise EncodeError('expected a string, not ' + repr(value))
+        elif value not in self.values:
+            raise EncodeError(
+                '{0!r} is an invalid value; choose one of {1}'.format(
+                    value,
+                    ', '.join(repr(v) for v in self.values)
+                )
+            )
+        return value
+
+    def decode(self, text):
+        if not (text is None or text in self.values):
+            raise DecodeError('expected one of ' +
+                              ', '.join(repr(v) for v in self.values))
+        return text
 
 
 class Rfc3339(Codec):
