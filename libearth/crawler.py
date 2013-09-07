@@ -6,7 +6,7 @@ and autodiscovery feed url in document.
 
 .. todo::
 
-   - function to check If-Modified-Since tag.
+   - function to check :mailheader:`If-Modified-Since` tag.
 
 """
 import re
@@ -23,23 +23,25 @@ else:
 
 
 def auto_discovery(document, url):
-    """If given url is feed url, it returns the url instantly.
-    Or if given url is a url of web page, It find the site's RSS feed url
-    and return it.
-    If autodiscovery failed, It raised :class:`FeedUrlNotFoundError`.
+    """If the given url refers an actual feed, it returns the given url
+    without any change.
 
-    :param document: HTML, or XML strings.
+    If the given url is a url of an ordinary web page
+    (i.e. :mimetype:`text/html`), it finds the url of the corresponding feed.
+    If autodiscovery failed, it raise :exc:`FeedUrlNotFoundError`.
+
+    :param document: html, or xml strings
     :type document: :class:`str`
-    :param url: URL of the ``document``. If feed url is in HTML and represented
-                in relative URL, this function joined it with the ``url`` and
-                return the result.
+    :param url: the url used to retrieve the ``document``.
+                if feed url is in html and represented in relative url,
+                it will be rebuilt on top of the ``url``
     :type url: :class:`str`
     :returns: feed url
     :rtype: :class:`str`
 
     """
     document_type = get_document_type(document)
-    if document_type == 'not feed':
+    if document_type is None:
         parser = AutoDiscovery()
         rss_url = parser.find_feed_url(document)
         if rss_url is None:
@@ -51,11 +53,15 @@ def auto_discovery(document, url):
         return url
 
 
+#: (:class:`str`) The MIME type of RSS 2.0 format.
 RSS_TYPE = 'application/rss+xml'
+
+#: (:class:`str`) The MIME type of Atom format.
 ATOM_TYPE = 'application/atom+xml'
 
 
 class AutoDiscovery(HTMLParser):
+    """Parse the given HTML and try finding the actual feed url from it."""
 
     feed_url = None
 
@@ -91,8 +97,7 @@ class AutoDiscovery(HTMLParser):
 
 
 class FeedUrlNotFoundError(Exception):
-    """Error raised when no feed url is found in html.
+    """Exception raised when feed url cannot be found in html."""
 
-    """
     def __init__(self, msg):
         self.msg = msg

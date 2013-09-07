@@ -6,7 +6,6 @@ Parsing RSS 2.0 feed.
 """
 from libearth.compat import PY3
 from libearth.codecs import Rfc822
-from .common import get_tag_attribute
 
 if PY3:
     import urllib.request as urllib2
@@ -137,8 +136,8 @@ def rss_get_item_data(entries):
                 entry_data['comments'] = data.text
             elif data.tag == 'enclosure':
                 link = {}
-                link['type'] = get_tag_attribute(data, 'type')
-                link['href'] = get_tag_attribute(data, 'url')
+                link['type'] = data.get('type')
+                link['href'] = data.get('url')
                 entry_data['link'].append(link)
             elif data.tag == 'guid':
                 id = {}
@@ -149,7 +148,7 @@ def rss_get_item_data(entries):
             elif data.tag == 'source':
                 from .heuristic import get_document_type, get_parser
                 source = {}
-                url = get_tag_attribute(data, 'url')
+                url = data.get('url')
                 request = urllib2.Request(url)
                 f = urllib2.urlopen(request)
                 xml = f.read()
