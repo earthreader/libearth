@@ -675,7 +675,7 @@ class Attribute(CodecDescriptor):
     required = None
 
     def __init__(self, name, codec=None, xmlns=None, required=False,
-                 encoder=None, decoder=None):
+                 default=None, encoder=None, decoder=None):
         super(Attribute, self).__init__(codec=codec,
                                         encoder=encoder,
                                         decoder=decoder)
@@ -683,10 +683,11 @@ class Attribute(CodecDescriptor):
         self.xmlns = xmlns
         self.key_pair = xmlns, name
         self.required = bool(required)
+        self.default = default
 
     def __get__(self, obj, cls=None):
         if isinstance(obj, Element):
-            return obj._attrs.get(self)
+            return obj._attrs.setdefault(self, self.default)
         return self
 
 

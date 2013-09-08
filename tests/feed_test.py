@@ -151,10 +151,10 @@ def test_entry_read():
                                                  tzinfo=utc)
     assert isinstance(entry.links[0], Link)
     assert entry.links[0].uri == 'http://example.org/2003/12/13/atom03'
-    # FIXME: assert entry.links[0].relation == 'alternate'
+    assert entry.links[0].relation == 'alternate'
     assert len(entry.links) == 1
     assert isinstance(entry.summary, Text)
-    # FIXME: assert entry.summary.type == 'text'
+    assert entry.summary.type == 'text'
     assert entry.summary.value == 'Some text.'
     assert isinstance(entry.categories[0], Category)
     assert entry.categories[0].term == 'technology'

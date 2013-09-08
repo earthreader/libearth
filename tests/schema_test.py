@@ -872,3 +872,23 @@ def test_write_none_text():
     tree = etree_fromstringlist(write(doc))
     assert tree.find('text') is None
     assert tree.attrib['attr'] == '1,2'
+
+
+class DefaultAttrTestDoc(DocumentElement):
+
+    __tag__ = 'default-attr-test'
+    default_attr = Attribute('default-attr', IntPair, default=(0, 0))
+
+
+def test_attribute_default():
+    present = DefaultAttrTestDoc(default_attr=(1, 2))
+    assert present.default_attr == (1, 2)
+    lack = DefaultAttrTestDoc()
+    assert lack.default_attr == (0, 0)
+    present = read(
+        DefaultAttrTestDoc,
+        ['<default-attr-test default-attr="1,2" />']
+    )
+    assert present.default_attr == (1, 2)
+    lack = read(DefaultAttrTestDoc, ['<default-attr-test />'])
+    assert lack.default_attr == (0, 0)
