@@ -382,6 +382,19 @@ class Metadata(Element):
     #: element of :rfc:`4287#section-4.2.10` (section 4.2.10).
     rights = Child('rights', Text, xmlns=ATOM_XMLNS)
 
+    def __unicode__(self):
+        return unicode(self.title)
+
+    def __str__(self):
+        return str(self.title)
+
+    def __repr__(self):
+        return '<{0.__module__}.{0.__name__} {1} {2!r}>'.format(
+            type(self),
+            self.id,
+            str(self.title)
+        )
+
 
 class Source(Metadata):
     """All metadata for :class:`Feed` excepting :attr:`Feed.entries`.
@@ -439,12 +452,3 @@ class Entry(DocumentElement, Metadata):
     #: It corresponds to ``atom:source`` element of :rfc:`4287#section-4.2.10`
     #: (section 4.2.10).
     source = Child('source', Source, xmlns=ATOM_XMLNS)
-
-    def __unicode__(self):
-        return unicode(self.title)
-
-    def __str__(self):
-        return str(self.title)
-
-    def __repr__(self):
-        return '<{0.__module__}.{0.__name__} {1}>'.format(type(self), self.id)
