@@ -303,8 +303,13 @@ class Generator(Element):
 
     """
 
+    #: (:class:`str`) A URI that represents something relavent to the agent.
     uri = Attribute('uri')
+
+    #: (:class:`str`) The version of the generating agent.
     version = Attribute('version')
+
+    #: (:class:`str`) The human-readable name for the generating agent.
     value = ContentValue()
 
     def __unicode__(self):
@@ -403,9 +408,9 @@ class Source(Metadata):
 
     """
 
-    #: Identify the agent used to generate a feed, for debugging and
-    #: other purposes.  It's corresponds to ``atom:generator`` element
-    #: of :rfc:`4287#section-4.2.4` (section 4.2.4).
+    #: (:class:`Generator`) Identify the agent used to generate a feed,
+    #: for debugging and other purposes.  It's corresponds to
+    #: ``atom:generator`` element of :rfc:`4287#section-4.2.4` (section 4.2.4).
     generator = Child('generator', Generator, xmlns=ATOM_XMLNS)
 
 
