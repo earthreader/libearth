@@ -17,10 +17,10 @@ import re
 
 from .codecs import Enum, Rfc3339
 from .compat import UNICODE_BY_DEFAULT, text_type
-from .schema import (Attribute, Child, Content, DocumentElement, Element,
-                     Text as TextChild)
+from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
+                     Element, Text as TextChild)
 
-__all__ = ('ATOM_XMLNS', 'Category', 'Content', 'Entry', 'Link',
+__all__ = ('ATOM_XMLNS', 'Category', 'Content', 'Entry', 'Generator', 'Link',
            'MarkupTagCleaner', 'Metadata', 'Person', 'Source', 'Text')
 
 
@@ -63,7 +63,7 @@ class Text(Element):
     #: :rfc:`4287#section-3.1.1.1` (section 3.1.1.1) if :attr:`type` is
     #: ``'text'``, and :rfc:`4287#section-3.1.1.2` (section 3.1.1.2) if
     #: :attr:`type` is ``'html'``.
-    value = Content()
+    value = ContentValue()
 
     def __unicode__(self):
         if self.type == 'html':
@@ -296,6 +296,40 @@ class Content(Text):
         return format_string.format(type(self), self.mimetype, self.source_uri)
 
 
+class Generator(Element):
+    """Identify the agent used to generate a feed, for debugging and
+    other purposes.  It's corresponds to ``atom:generator`` element
+    of :rfc:`4287#section-4.2.4` (section 4.2.4).
+
+    """
+
+    uri = Attribute('uri')
+    version = Attribute('version')
+    value = ContentValue()
+
+    def __unicode__(self):
+        if self.version:
+            return '{0} {1}'.format(self.value, self.version)
+        return self.value
+
+    if UNICODE_BY_DEFAULT:
+        __str__ = __unicode__
+    else:
+        __str__ = lambda self: unicode(self).encode('utf-8')
+
+    def __html__(self):
+        label = cgi.escape(self.value)
+        if self.version:
+            label = '{0} {1}'.format(label, cgi.escape(self.version))
+        if self.uri:
+            return '<a href="{0}">{1}</a>'.format(cgi.escape(self.uri), label)
+        return label
+
+    def __repr__(self):
+        return '{0.__module__}.{0.__name__}(value={1!r}, version={2!r}, uri=' \
+               '{3!r})'.format(type(self), self.value, self.version, self.uri)
+
+
 class Metadata(Element):
     """Common metadata shared by :class:`Source`, :class:`Entry`, and
     :class:`Feed`.
@@ -354,11 +388,12 @@ class Source(Metadata):
     It corresponds to ``atom:source`` element of :rfc:`4287#section-4.2.10`
     (section 4.2.10).
 
-    .. todo::
-
-       Implement metadata for feed as well.
-
     """
+
+    #: Identify the agent used to generate a feed, for debugging and
+    #: other purposes.  It's corresponds to ``atom:generator`` element
+    #: of :rfc:`4287#section-4.2.4` (section 4.2.4).
+    generator = Child('generator', Generator, xmlns=ATOM_XMLNS)
 
 
 class Entry(DocumentElement, Metadata):

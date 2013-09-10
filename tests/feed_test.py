@@ -4,8 +4,8 @@ import datetime
 from pytest import raises
 
 from libearth.compat import text_type
-from libearth.feed import (Category, Content, Entry, Link, MarkupTagCleaner,
-                           Person, Text)
+from libearth.feed import (Category, Content, Entry, Generator, Link,
+                           MarkupTagCleaner, Person, Text)
 from libearth.schema import read
 from libearth.tz import utc
 
@@ -124,6 +124,36 @@ def test_content_invalid_mimetype():
         Content(mimetype='invalidmimetype')
     with raises(ValueError):
         Content(mimetype='invalid/(mimetype)')
+
+
+def test_generator_str():
+    assert text_type(Generator(value='Earth Reader')) == 'Earth Reader'
+    assert text_type(Generator(value='Earth Reader',
+                     uri='http://earthreader.github.io/')) == 'Earth Reader'
+    assert (text_type(Generator(value='Earth Reader', version='1.0')) ==
+            'Earth Reader 1.0')
+    assert text_type(Generator(value='Earth Reader',
+                     version='1.0',
+                     uri='http://earthreader.github.io/')) == 'Earth Reader 1.0'
+
+
+def test_generator_html():
+    assert Generator(value='Earth Reader').__html__() == 'Earth Reader'
+    assert Generator(value='<escape test>').__html__() == '&lt;escape test&gt;'
+    html = Generator(
+        value='Earth Reader',
+        uri='http://earthreader.github.io/'
+    ).__html__()
+    assert html == '<a href="http://earthreader.github.io/">Earth Reader</a>'
+    assert (Generator(value='Earth Reader', version='1.0').__html__() ==
+            'Earth Reader 1.0')
+    html = Generator(
+        value='Earth Reader',
+        version='1.0',
+        uri='http://earthreader.github.io/'
+    ).__html__()
+    assert (html ==
+            '<a href="http://earthreader.github.io/">Earth Reader 1.0</a>')
 
 
 def test_entry_read():
