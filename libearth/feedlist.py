@@ -96,34 +96,34 @@ class FeedCategory(FeedTree, MutableSequence):
 
     def insert(self, index, value):
         if not isinstance(value, FeedTree):
-            raise TypeError('class is must be instance of FeedTree')
+            raise TypeError('expected an instance of {0.__module__}.'
+                            '{0.__name__}, not {1!r}'.format(FeedTree, value))
         if value.type == 'feed':
             if value.xml_url in self.urls:
                 raise AlreadyExistException(
-                    "{0!r} is already here".format(value)
+                    '{0!r} is already added'.format(value)
                 )
             else:
                 self.urls.append(value.xml_url)
         elif value.type == 'category':
             if value in self:
                 raise AlreadyExistException(
-                    "{0!r} is already here".format(value)
+                    '{0!r} is already added'.format(value)
                 )
             elif self in value:
                 raise AlreadyExistException(
-                    "{0!r} contains me. circular referrence is not allowed"
-                    .format(value)
+                    '{0!r} already contains {1!r}; '
+                    'circular reference is not allowed'.format(value, self)
                 )
             elif value is self:
-                raise AlreadyExistException(
-                    "{0!r} is me.".format(value)
-                )
+                raise AlreadyExistException('cannot contain itself')
 
         self.children.insert(index, value)
 
     def __contains__(self, key):
         if not isinstance(key, FeedTree):
-            raise TypeError("{0!r} must be instance of FeedTree".format(key))
+            raise TypeError('key has to be an instance of {0.__module__}.'
+                            '{0.__name__}, not {1!r}'.format(FeedTree, key))
         if key in self.children:
             return True
         for child in self.children:
@@ -142,7 +142,8 @@ class FeedCategory(FeedTree, MutableSequence):
 
     def __setitem__(self, index, value):
         if not isinstance(value, FeedTree):
-            raise TypeError('class is must be instance of FeedTree')
+            raise TypeError('value must be an instance of {0.__module__}.'
+                            '{0.__name__}, not {1!r}'.format(FeedTree, value))
         self.children[index] = value
 
     def __delitem__(self, index):
