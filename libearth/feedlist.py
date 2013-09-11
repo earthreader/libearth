@@ -452,11 +452,9 @@ class FeedList(MutableSequence):
 
 class AlreadyExistException(Exception):
 
-    def __init__(self, message):
-        super(AlreadyExistException, self).__init__(message)
+    pass
 
 
 class SaveOpmlError(Exception):
 
-    def __init__(self, message):
-        super(SaveOpmlError, self).__init__(message)
+    pass
