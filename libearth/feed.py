@@ -20,8 +20,8 @@ from .compat import UNICODE_BY_DEFAULT, text_type
 from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
                      Element, Text as TextChild)
 
-__all__ = ('ATOM_XMLNS', 'Category', 'Content', 'Entry', 'Generator', 'Link',
-           'MarkupTagCleaner', 'Metadata', 'Person', 'Source', 'Text')
+__all__ = ('ATOM_XMLNS', 'Category', 'Content', 'Entry', 'Feed', 'Generator',
+           'Link', 'MarkupTagCleaner', 'Metadata', 'Person', 'Source', 'Text')
 
 
 #: (:class:`str`) The XML namespace name used for Atom (:rfc:`4287`).
@@ -65,6 +65,12 @@ class Text(Element):
     #: :attr:`type` is ``'html'``.
     value = ContentValue()
 
+    def __eq__(self, other):
+        return self.type == other.type and self.value == other.value
+
+    def __ne__(self, other):
+        return not (self == other)
+
     def __unicode__(self):
         if self.type == 'html':
             return MarkupTagCleaner.clean(self.value)
@@ -104,6 +110,14 @@ class Person(Element):
     #: It corresponds to ``atom:email`` element of :rfc:`4287#section-3.2.3`
     #: (section 3.2.3).
     email = TextChild('email', xmlns=ATOM_XMLNS)
+
+    def __eq__(self, other):
+        return (self.name == other.name and
+                self.uri == other.uri and
+                self.email == other.email)
+
+    def __ne__(self, other):
+        return not (self == other)
 
     def __unicode__(self):
         ref = self.uri or self.email
@@ -161,6 +175,17 @@ class Link(Element):
     #: the linked content in octets.  It corresponds to ``length`` attribute
     #: of :rfc:`4287#section-4.2.7.6` (section 4.2.7.6).
     byte_size = Attribute('length')
+
+    def __eq__(self, other):
+        return (self.uri == other.uri and
+                self.relation == other.relation and
+                self.mimetype == other.mimetype and
+                self.language == other.language and
+                self.title == other.title and
+                self.byte_size == other.byte_size)
+
+    def __ne__(self, other):
+        return not (self == other)
 
     def __unicode__(self):
         return self.uri
@@ -288,6 +313,15 @@ class Content(Text):
                 return
         self.type = mimetype
 
+    def __eq__(self, other):
+        if self.source_uri:
+            return (self.mimetype == other.mimetype and
+                    self.source_uri == other.source_uri)
+        return self.mimetype == other.mimetype and self.value == other.value
+
+    def __ne__(self, other):
+        return not (self == other)
+
     def __repr__(self):
         if not self.source_uri:
             return super(Content, self).__repr__()
@@ -351,7 +385,7 @@ class Metadata(Element):
     #: (section 4.2.14).
     title = TextChild('title', xmlns=ATOM_XMLNS, required=True)
 
-    #: (:class:`collections.Seqeuence`) The list of :class:`Link` objects
+    #: (:class:`collections.MutableSequence`) The list of :class:`Link` objects
     #: that define a reference from an entry or feed to a web resource.
     #: It corresponds to ``atom:link`` element of :rfc:`4287#section-4.2.7`
     #: (section 4.2.7).
@@ -365,20 +399,20 @@ class Metadata(Element):
     #: (section 4.2.15).
     updated_at = TextChild('updated', Rfc3339, xmlns=ATOM_XMLNS, required=True)
 
-    #: (:class:`collections.Seqeuence`) The list of :class:`Person` objects
-    #: which indicates the author of the entry or feed.  It corresponds to
-    #: ``atom:author`` element of :rfc:`4287#section-4.2.1` (section 4.2.1).
+    #: (:class:`collections.MutableSequence`) The list of :class:`Person`
+    #: objects which indicates the author of the entry or feed.  It corresponds
+    #: to ``atom:author`` element of :rfc:`4287#section-4.2.1` (section 4.2.1).
     authors = Child('author', Person, xmlns=ATOM_XMLNS, multiple=True)
 
-    #: (:class:`collections.Seqeuence`) The list of :class:`Person` objects
-    #: which indicates a person or other entity who contributed to the entry
-    #: or feed.  It corresponds to ``atom:contributor`` element  of
+    #: (:class:`collections.MutableSequence`) The list of :class:`Person`
+    #: objects which indicates a person or other entity who contributed to
+    #: the entry or feed.  It corresponds to ``atom:contributor`` element  of
     #: :rfc:`4287#section-4.2.3` (section 4.2.3).
     contributors = Child('contributor', Person, xmlns=ATOM_XMLNS, multiple=True)
 
-    #: (:class:`collections.Sequence`) The list of :class:`Category` objects
-    #: that conveys information about categories associated with an entry or
-    #: feed.  It corresponds to ``atom:category`` element of
+    #: (:class:`collections.MutableSequence`) The list of :class:`Category`
+    #: objects that conveys information about categories associated with
+    #: an entry or feed.  It corresponds to ``atom:category`` element of
     #: :rfc:`4287#section-4.2.2` (section 4.2.2).
     categories = Child('category', Category, xmlns=ATOM_XMLNS, multiple=True)
 
@@ -472,3 +506,23 @@ class Entry(DocumentElement, Metadata):
     #: It corresponds to ``atom:source`` element of :rfc:`4287#section-4.2.10`
     #: (section 4.2.10).
     source = Child('source', Source, xmlns=ATOM_XMLNS)
+
+
+class Feed(DocumentElement, Source):
+    """Atom feed document, acting as a container for metadata and data
+    associated with the feed.
+
+    It corresponds to ``atom:feed`` element of :rfc:`4287#section-4.1.1`
+    (section 4.1.1).
+
+    """
+
+    __tag__ = 'feed'
+    __xmlns__ = ATOM_XMLNS
+
+    #: (:class:`collections.MutableSequence`) The list of :class:`Entry` objects
+    #: that represent an individual entry, acting as a container for metadata
+    #: and data associated with the entry.
+    #: It corresponds to ``atom:entry`` element of :rfc:`4287#section-4.1.2`
+    #: (section 4.1.2).
+    entries = Child('entry', Entry, xmlns=ATOM_XMLNS, multiple=True)
