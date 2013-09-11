@@ -12,6 +12,7 @@
       libearth/parser/common
       libearth/parser/heuristic
       libearth/parser/rss2
+      libearth/feedlist
       libearth/repository
       libearth/schema
       libearth/session

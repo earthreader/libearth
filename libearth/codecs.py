@@ -157,6 +157,45 @@ class Rfc822(Codec):
 
     """
 
+    TIMEZONES = {
+        'UT': FixedOffset(0 * 60),
+        'UTC': FixedOffset(0 * 60),
+        'GMT': FixedOffset(0 * 60),
+        "EST": FixedOffset(-5 * 60),
+        "EDT": FixedOffset(-4 * 60),
+        "CST": FixedOffset(-6 * 60),
+        "CDT": FixedOffset(-5 * 60),
+        "MST": FixedOffset(-7 * 60),
+        "MDT": FixedOffset(-6 * 60),
+        "PST": FixedOffset(-8 * 60),
+
+        "1A": FixedOffset(-1 * 60),
+        "1B": FixedOffset(-2 * 60),
+        "1C": FixedOffset(-3 * 60),
+        "1D": FixedOffset(-4 * 60),
+        "1E": FixedOffset(-5 * 60),
+        "1F": FixedOffset(-6 * 60),
+        "1G": FixedOffset(-7 * 60),
+        "1H": FixedOffset(-8 * 60),
+        "1I": FixedOffset(-9 * 60),
+        "1K": FixedOffset(-10 * 60),
+        "1L": FixedOffset(-11 * 60),
+        "1M": FixedOffset(-12 * 60),
+        "1N": FixedOffset(1 * 60),
+        "1O": FixedOffset(2 * 60),
+        "1P": FixedOffset(3 * 60),
+        "1Q": FixedOffset(4 * 60),
+        "1R": FixedOffset(5 * 60),
+        "1S": FixedOffset(6 * 60),
+        "1T": FixedOffset(7 * 60),
+        "1U": FixedOffset(8 * 60),
+        "1V": FixedOffset(9 * 60),
+        "1W": FixedOffset(10 * 60),
+        "1X": FixedOffset(11 * 60),
+        "1Y": FixedOffset(12 * 60),
+        "1Z": FixedOffset(0 * 60),
+    }
+
     def encode(self, value):
         if not isinstance(value, datetime.datetime):
             raise EncodeError(
@@ -172,16 +211,14 @@ class Rfc822(Codec):
             )
 
         res = value.strftime("%a, %d %b %Y %H:%M:%S ")
-        res += value.strftime("%Z").replace(":", "")
+        res += value.strftime("%z").replace(":", "")
         return res
 
     def decode(self, text):
         timestamp = text[:25]
         timezone = text[26:]
         try:
-            res = datetime.datetime.strptime(timestamp,
-                                             "%a, %d %b %Y %H:%M:%S")
-            #FIXME: timezone like KST, UTC
+            res = datetime.datetime.strptime(timestamp, "%a, %d %b %Y %H:%M:%S")
             matched = re.match(r'\+([0-9]{2})([0-9]{2})', timezone)
             if matched:
                 offset = FixedOffset(
@@ -189,6 +226,8 @@ class Rfc822(Codec):
                     int(matched.group(2))
                 )
                 res = res.replace(tzinfo=offset)
+            elif timezone in self.TIMEZONES:
+                res.replace(tzinfo=self.TIMEZONES[timezone])
             else:
                 raise DecodeError(
                     'given argument was not valid RFC822 string. '
