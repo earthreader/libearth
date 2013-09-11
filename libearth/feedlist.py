@@ -285,14 +285,10 @@ class FeedList(MutableSequence):
             self.doc = read(OpmlDoc, xml)
             self.parse_doc()
         else:
-            try:
-                with open(self.path) as fp:
-                    xml = fp.read()
-                    self.doc = read(OpmlDoc, xml)
-            except IOError as e:
-                raise e
-            else:
-                self.parse_doc()
+            with open(self.path) as fp:
+                xml = fp.read()
+                self.doc = read(OpmlDoc, xml)
+            self.parse_doc()
 
     def parse_doc(self):
         self.title = self.doc.head.title
