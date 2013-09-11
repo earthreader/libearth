@@ -408,10 +408,25 @@ class Source(Metadata):
 
     """
 
+    #: (:class:`Text`) A text that conveys a human-readable description or
+    #: subtitle for a feed.  It corresponds to ``atom:subtitle`` element of
+    #: :rfc:`4287#section-4.2.12` (section 4.2.12).
+    subtitle = Child('subtitle', Text, xmlns=ATOM_XMLNS)
+
     #: (:class:`Generator`) Identify the agent used to generate a feed,
-    #: for debugging and other purposes.  It's corresponds to
+    #: for debugging and other purposes.  It corresponds to
     #: ``atom:generator`` element of :rfc:`4287#section-4.2.4` (section 4.2.4).
     generator = Child('generator', Generator, xmlns=ATOM_XMLNS)
+
+    #: (:class:`str`) URI that identifies an image that provides visual
+    #: identification for a feed.  It corresponds to ``atom:logo`` element
+    #: of :rfc:`4287#section-4.2.8` (section 4.2.8).
+    logo = TextChild('logo', xmlns=ATOM_XMLNS)
+
+    #: (:class:`str`) URI that identifies an image that provides iconic
+    #: visual identification for a feed.  It corresponds to ``atom:icon`
+    #: element of :rfc:`4287#section-4.2.5` (section 4.2.5).
+    icon = TextChild('icon', xmlns=ATOM_XMLNS)
 
 
 class Entry(DocumentElement, Metadata):

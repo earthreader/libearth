@@ -5,7 +5,7 @@ from pytest import raises
 
 from libearth.compat import text_type
 from libearth.feed import (Category, Content, Entry, Generator, Link,
-                           MarkupTagCleaner, Person, Text)
+                           MarkupTagCleaner, Person, Source, Text)
 from libearth.schema import read
 from libearth.tz import utc
 
@@ -198,3 +198,34 @@ def test_entry_read():
 
 def test_entry_str():
     assert text_type(Entry(title='Title desu')) == 'Title desu'
+
+
+def test_source():
+    entry = read(Entry, ['''
+        <entry xmlns="http://www.w3.org/2005/Atom">
+            <source>
+                <title>Source of all knowledge</title>
+                <id>urn:uuid:28213c50-f84c-11d9-8cd6-0800200c9a66</id>
+                <updated>2003-12-13T17:46:27Z</updated>
+                <category term="technology"/>
+                <category term="business"/>
+            </source>
+            <title>Atom-Powered Robots Run Amok</title>
+            <link href="http://example.org/2003/12/13/atom03"/>
+            <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+            <updated>2003-12-13T18:30:02Z</updated>
+            <summary>Some text.</summary>
+        </entry>
+    '''])
+    source = entry.source
+    assert isinstance(source, Source)
+    assert source.title == 'Source of all knowledge'
+    assert source.id == 'urn:uuid:28213c50-f84c-11d9-8cd6-0800200c9a66'
+    assert source.updated_at == datetime.datetime(2003, 12, 13, 17, 46, 27,
+                                                  tzinfo=utc)
+    categories = source.categories
+    assert isinstance(categories[0], Category)
+    assert categories[0].term == 'technology'
+    assert isinstance(categories[1], Category)
+    assert categories[1].term == 'business'
+    assert len(categories) == 2
