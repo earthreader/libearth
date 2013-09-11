@@ -1,4 +1,5 @@
 .coverage
+.DS_Store
 .tox
 docs/_build
 libearth.egg-info

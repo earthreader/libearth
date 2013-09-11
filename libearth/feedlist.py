@@ -1,5 +1,5 @@
 """:mod:`libearth.feedlist` --- Feed list
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 """
 
@@ -19,7 +19,9 @@ class CommaSeparatedList(Codec):
     """Codec to encode/decode comma seperated list.
     It can be decode ``"a, b, c"`` and ``"a,b,c"`` to ``['a','b','c']``.
     See :class:`.schema.Codec`
+
     """
+
     def encode(self, value):
         if value is None:
             res = ""
@@ -38,8 +40,8 @@ class CommaSeparatedList(Codec):
 
 
 class FeedTree(object):
-    """Abstract base class to contain feed(s)
-    """
+    """Abstract base class to contain feed(s)."""
+
     def __init__(self, type, title):
         self.type = type
         self.title = title
@@ -73,7 +75,9 @@ class FeedCategory(FeedTree, MutableSequence):
                  `isBreakpoint` attribute.
     :type created: datetime
     :param created: `created` attribute for `outline` element.
+
     """
+
     type = 'category'
 
     def __init__(self, title, type=None, text=None, category=None,
@@ -103,8 +107,7 @@ class FeedCategory(FeedTree, MutableSequence):
         elif value.type == 'category':
             if value in self:
                 raise AlreadyExistException(
-                    "{0!r} is already here"
-                    .format(value)
+                    "{0!r} is already here".format(value)
                 )
             elif self in value:
                 raise AlreadyExistException(
@@ -121,14 +124,11 @@ class FeedCategory(FeedTree, MutableSequence):
     def __contains__(self, key):
         if not isinstance(key, FeedTree):
             raise TypeError("{0!r} must be instance of FeedTree".format(key))
-
         if key in self.children:
             return True
-        else:
-            for child in self.children:
-                if child.type == 'category' and key in child:
-                    return True
-
+        for child in self.children:
+            if child.type == 'category' and key in child:
+                return True
         return False
 
     def __iter__(self):
@@ -176,7 +176,9 @@ class Feed(FeedTree):
     :type created: datetime.datetime
     :param created: ``created`` attribute of ``outline`` element.
                     It is valid RFC822 format.
+
     """
+
     def __init__(self, rsstype, title, xml_url, html_url=None, text=None,
                  category=None, is_breakpoint=None, created=None):
         super(Feed, self).__init__('feed', title)
@@ -191,8 +193,8 @@ class Feed(FeedTree):
 
 
 class OutlineElement(Element):
-    """Class for ``outline`` element of OPML document.
-    """
+    """Class for ``outline`` element of OPML document."""
+
     text = Attribute('text', required=True)
     title = Attribute('title')
     type = Attribute('type')
@@ -206,8 +208,8 @@ class OutlineElement(Element):
 
 
 class HeadElement(Element):
-    """Class for ``head`` element of OPML document.
-    """
+    """Class for ``head`` element of OPML document."""
+
     title = Text('title')
 
     date_created = Text('dateCreated', Rfc822)
@@ -228,11 +230,14 @@ class HeadElement(Element):
 class BodyElement(Element):
     """Class for ``body`` element of OPML document.
     It contains :class:`OutlineElement` as children to :var:`outline`
+
     """
+
     outline = Child('outline', OutlineElement, multiple=True)
 
 
 class OpmlDoc(DocumentElement):
+
     __tag__ = 'opml'
     head = Child('head', HeadElement)
     body = Child('body', BodyElement)
@@ -244,12 +249,14 @@ class FeedList(MutableSequence):
     linked on multi :class:`FeedCategory`
 
     ``all_feeds`` is hashed with tuple key: (type, title, xml_url)
+
     """
+
     def __init__(self, path=None, is_xml_string=False):
         """Initializer of Feed list
         when path is None, it doesn't save opml file. just use memory
-        """
 
+        """
         #default value
         self.title = "EarthReader"
         self.owner_name = "EarthReader"
@@ -310,6 +317,7 @@ class FeedList(MutableSequence):
     def save_file(self, filename=None):
         """Save to OPML format.
         When ``filename`` is :const:`None`, use filename used for constructor.
+
         """
         self.doc.head.title = self.title
         self.doc.head.owner_name = self.owner_name
@@ -353,7 +361,6 @@ class FeedList(MutableSequence):
         if key in self.all_feeds:
             orig_feed = self.all_feeds.get(key)
             self.feedlist.insert(index, orig_feed)
-
             orig_feed.html_url = feed.html_url
             orig_feed.text = feed.text
         else:
@@ -448,10 +455,12 @@ class FeedList(MutableSequence):
 
 
 class AlreadyExistException(Exception):
+
     def __init__(self, message):
         super(AlreadyExistException, self).__init__(message)
 
 
 class SaveOpmlError(Exception):
+
     def __init__(self, message):
         super(SaveOpmlError, self).__init__(message)
