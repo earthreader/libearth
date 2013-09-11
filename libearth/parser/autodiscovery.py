@@ -15,6 +15,8 @@ else:
     import urlparse
     from HTMLParser import HTMLParser
 
+__all__ = 'autodiscovery',
+
 
 #: (:class:`str`) The MIME type of RSS 2.0 format.
 RSS_TYPE = 'application/rss+xml'
