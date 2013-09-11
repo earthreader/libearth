@@ -16,9 +16,15 @@ __all__ = ('AlreadyExistException', 'CommaSeparatedList', 'Feed',
 
 
 class CommaSeparatedList(Codec):
-    """Codec to encode/decode comma seperated list.
-    It can be decode ``"a, b, c"`` and ``"a,b,c"`` to ``['a','b','c']``.
-    See :class:`.schema.Codec`
+    """Encode strings e.g. ``['a', 'b', 'c']`` into a comma-separated list
+    e.g. ``'a,b,c'``, and decode it back to a Python list.  Whitespaces
+    between commas are ignored.
+
+    >>> codec = CommaSeparatedList()
+    >>> codec.encode(['technology', 'business'])
+    'technology,business'
+    >>> codec.decode('technology, business')
+    ['technology', 'business']
 
     """
 
@@ -40,7 +46,10 @@ class CommaSeparatedList(Codec):
 
 
 class FeedTree(object):
-    """Abstract base class to contain feed(s)."""
+    """Joint base type of :class:`FeedCategory`, :class:`Feed`.  It has
+    two common attributes: :attr:`type` and :attr:`title`.
+
+    """
 
     def __init__(self, type, title):
         self.type = type
@@ -53,28 +62,30 @@ class FeedTree(object):
 
 
 class FeedCategory(FeedTree, MutableSequence):
-    """FeedCategory
+    """Category of feeds to organize.  It can recursively contains other
+    categories as well.  It implements :class:`~collections.MutableSequence`
+    interface.
 
-    :type title: str
-    :param title: title for FeedCategory.
-                  it can be `text` attribute when ``text`` is None
-    :type type: str
-    :param type: `type` attribute for `outline` element.
+    :param title: human-readable title of the category.
+                  it can replace with ``text`` when ``text`` is not present
+    :type title: :class:`str`
+    :param type: ``type`` attribute of ``outline`` element.
                  not used but OPML spec says `outline` element can has
-                 `type` attribute.
-    :type text: str
-    :param text: `text` attribute for `outline` element.
-                 when this parametre is None, it is set as :arg:`title`
-    :type category: str
-    :param category: `category` attribute for `outline` element.
-                 not used but OPML spec says `outline` element can has
-                 `category` attribute.
-    :type is_breakpoint: str
-    :param is_breakpoint: `isBreakpoint` attribute for `outline` element.
-                 not used but OPML spec says `outline` element can has
-                 `isBreakpoint` attribute.
-    :type created: datetime
-    :param created: `created` attribute for `outline` element.
+                 `type` attribute
+    :type type: :class:`str`
+    :param text: ``text`` attribute of ``outline`` element.
+                 it is set to :arg:`title` if omitted
+    :type text: :class:`str`
+    :param category: ``category`` attribute of ``outline`` element.
+                     not used but OPML spec says ``outline`` element can have
+                     ``category`` attribute
+    :type category: :class:`str`
+    :param is_breakpoint: ``isBreakpoint`` attribute of ``outline`` element.
+                          not used but OPML spec says ``outline`` element can
+                          have ``isBreakpoint`` attribute
+    :type is_breakpoint: :class:`str`
+    :param created: ``created`` attribute for ``outline`` element.
+    :type created: :class:`datetime.datetime`
 
     """
 
@@ -86,13 +97,10 @@ class FeedCategory(FeedTree, MutableSequence):
         self.text = text
         self._type = type
         self.text = text or title
-        #FIXME: created must be valid rfc822 string. so prefer use datetime
-        self.created = created
-
+        self.created = created  # FIXME: created must be a valid rfc822 string.
+                                # so prefer to use datetime
         self.children = []
-
-        #for not allowing same feed on same category
-        self.urls = []
+        self.urls = []  # to avoid duplication of feeds for the same category
 
     def insert(self, index, value):
         if not isinstance(value, FeedTree):
@@ -151,32 +159,33 @@ class FeedCategory(FeedTree, MutableSequence):
 
 
 class Feed(FeedTree):
-    """Typical feed class.
-    This class has attributes of `outline` element in OPML
+    """Subscription feed.  This class has attributes to represent
+    an OPML ``outline`` element.
 
     .. note::
-        :attr:`type` is fixed to `'rss'`
-        if you want to get `'type'` attribute of outline,
-        use :attr:`rsstype` instead.
 
-    :type rsstype: str
+       :attr:`type` cannot be changed from ``'rss'``.
+       If you want to get ``type`` attribute of outline,
+       use :attr:`rsstype` instead.
+
     :param rsstype: ``type`` attribute of ``outline`` element
-    :type title: str
+    :type rsstype: :class:`str`
     :param title: ``title`` attribute of ``outline`` element
-    :type xml_url: str
+    :type title: :class:`str`
     :param xml_url: ``xmlUrl`` attribute of ``outline`` element
-    :type html_url: str
+    :type xml_url: :class:`str`
     :param html_url: ``htmlUrl`` attribute of ``outline`` element
-    :type text: str
+    :type html_url: :class:`str`
     :param text: ``text`` attribute of ``outline`` element.
-                 If it is :const:`None`, set as :arg:`title`
-    :type category: str
+                 set to :arg:`title` if omitted
+    :type text: :class:`str`
     :param category: ``category`` attribute of ``outline`` element
-    :type is_breakpoint: str
+    :type category: :class:`str`
     :param is_breakpoint: ``isBreakpoint`` attribute of ``outline`` element
-    :type created: datetime.datetime
+    :type is_breakpoint: :class:`str`
     :param created: ``created`` attribute of ``outline`` element.
-                    It is valid RFC822 format.
+                    it is valid :rfc:`822` format
+    :type created: :class:`datetime.datetime`
 
     """
 
@@ -194,7 +203,7 @@ class Feed(FeedTree):
 
 
 class OutlineElement(Element):
-    """Class for ``outline`` element of OPML document."""
+    """Represent ``outline`` element of OPML document."""
 
     text = Attribute('text', required=True)
     title = Attribute('title')
@@ -209,7 +218,7 @@ class OutlineElement(Element):
 
 
 class HeadElement(Element):
-    """Class for ``head`` element of OPML document."""
+    """Represent ``head`` element of OPML document."""
 
     title = Text('title')
 
@@ -229,8 +238,8 @@ class HeadElement(Element):
 
 
 class BodyElement(Element):
-    """Class for ``body`` element of OPML document.
-    It contains :class:`OutlineElement` as children to :var:`outline`
+    """Represent ``body`` element of OPML document.
+    :attr:`outline` contains child :class:`OutlineElement` objects.
 
     """
 
@@ -245,20 +254,21 @@ class OpmlDoc(DocumentElement):
 
 
 class FeedList(MutableSequence):
-    """FeedList is Class for OPML file
-    it has a dictionary named ``all_feeds`` which have all :class:`Feed` for
-    linked on multi :class:`FeedCategory`
+    """Represent OPML document.
 
-    ``all_feeds`` is hashed with tuple key: (type, title, xml_url)
+    :param path: file path to save the document.  if not present, the document
+                 won't be saved but just on memory
+    :type path: :class:`str`
 
     """
 
-    def __init__(self, path=None, is_xml_string=False):
-        """Initializer of Feed list
-        when path is None, it doesn't save opml file. just use memory
+    #: (:class:`collections.Mapping`)  Entire :class:`Feed` objects contained
+    #: by one or multiple categories.  Hashed by triple of (:attr:`~Feed.type`,
+    #: :attr:`~Feed.title`, :attr:`~Feed.xml_url`).
+    all_feeds = None
 
-        """
-        #default value
+    def __init__(self, path=None, is_xml_string=False):
+        # default values  FIXME: the following magic constants should be avoided
         self.title = "EarthReader"
         self.owner_name = "EarthReader"
         self.owner_email = "earthreader@librelist.com"
@@ -312,8 +322,9 @@ class FeedList(MutableSequence):
             self.feedlist.append(self.convert_from_outline(outline))
 
     def save_file(self, filename=None):
-        """Save to OPML format.
-        When ``filename`` is :const:`None`, use filename used for constructor.
+        """Save the document as an OPML to the file.
+        If ``filename`` is not present, the path the constructor gave will
+        be used instead.
 
         """
         self.doc.head.title = self.title
@@ -365,8 +376,10 @@ class FeedList(MutableSequence):
 
     def make_feed(self, type, title, xml_url, html_url=None, text=None,
                   category=None, is_breakoint=None, created=None):
-        """pick from all_feeds or make feed for multiple linking"""
+        """Find the existing feed, or add one to include it into multiple
+        categories.
 
+        """
         text = text or title
 
         key = (type, title, xml_url)
