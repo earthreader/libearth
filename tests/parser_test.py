@@ -1,7 +1,41 @@
 import datetime
 import httpretty
-from libearth.parser import atom, rss2
+from libearth.parser import atom, rss2, autodiscovery
 from libearth.tz import FixedOffset, utc
+
+atom_blog = """
+<html>
+    <head>
+        <link rel="alternate" type="application/atom+xml"
+            href="http://vio.atomtest.com/feed/atom/" />
+    </head>
+    <body>
+        Test
+    </body>
+</html>
+"""
+
+
+def test_autodiscovery_atom():
+    assert autodiscovery.autodiscovery(atom_blog, None) == \
+        'http://vio.atomtest.com/feed/atom/'
+
+rss_blog = """
+<html>
+    <head>
+        <link rel="alternate" type="application/rss+xml"
+            href="http://vio.rsstest.com/feed/rss/" />
+    </head>
+    <body>
+        Test
+    </body>
+</html>
+"""
+
+
+def test_autodiscovery_rss2():
+    assert autodiscovery.autodiscovery(rss_blog, None) == \
+        'http://vio.rsstest.com/feed/rss/'
 
 
 atom_xml = """

@@ -9,6 +9,7 @@
       libearth/crawler
       libearth/feed
       libearth/parser/atom
+      libearth/parser/autodiscovery
       libearth/parser/common
       libearth/parser/heuristic
       libearth/parser/rss2

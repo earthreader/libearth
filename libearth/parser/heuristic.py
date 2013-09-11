@@ -4,8 +4,6 @@
 Get any XML and guess the type of XML.
 
 """
-import re
-
 try:
     from lxml import etree
 except ImportError:
