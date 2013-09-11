@@ -13,13 +13,15 @@ try:
     import HTMLParser
 except ImportError:
     from html import parser as HTMLParser
+import re
 
-from .codecs import Enum
+from .codecs import Enum, Rfc3339
 from .compat import UNICODE_BY_DEFAULT, text_type
-from .schema import Attribute, Content, Element, Text as TextChild
+from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
+                     Element, Text as TextChild)
 
-__all__ = ('ATOM_XMLNS', 'Category', 'Link', 'MarkupTagCleaner', 'Person',
-           'Text')
+__all__ = ('ATOM_XMLNS', 'Category', 'Content', 'Entry', 'Generator', 'Link',
+           'MarkupTagCleaner', 'Metadata', 'Person', 'Source', 'Text')
 
 
 #: (:class:`str`) The XML namespace name used for Atom (:rfc:`4287`).
@@ -53,18 +55,15 @@ class Text(Element):
     #: .. note::
     #:
     #:    It currently does not support ``'xhtml'``.
-    #:
-    #: .. todo::
-    #:
-    #:    Default value should be ``'text'``.
-    type = Attribute('type', Enum(['text', 'html']), required=True)
+    type = Attribute('type', Enum(['text', 'html']),
+                     required=True, default='text')
 
     #: (:class:`str`) The content of the text.  Interpretation for this
     #: has to differ according to its :attr:`type`.  It corresponds to
     #: :rfc:`4287#section-3.1.1.1` (section 3.1.1.1) if :attr:`type` is
     #: ``'text'``, and :rfc:`4287#section-3.1.1.2` (section 3.1.1.2) if
     #: :attr:`type` is ``'html'``.
-    value = Content()
+    value = ContentValue()
 
     def __unicode__(self):
         if self.type == 'html':
@@ -142,7 +141,7 @@ class Link(Element):
 
     #: (:class:`str`) The relation type of the link.  It corresponds to
     #: ``rel`` attribute of :rfc:`4287#section-4.2.7.2` (section 4.2.7.2).
-    relation = Attribute('rel')  # TODO: default should be 'alternate'
+    relation = Attribute('rel', default='alternate')
 
     #: (:class:`str`) The optional hint for the MIME media type of the linked
     #: content.  It corresponds to ``type`` attribute of
@@ -233,3 +232,228 @@ class Category(Element):
         return ('{0.__module__}.{0.__name__}(term={1!r}, scheme_uri={2!r}'
                 ', label={3!r})').format(type(self), self.term,
                                          self.scheme_uri, self.label)
+
+
+class Content(Text):
+    """Content construct defined in :rfc:`4287#section-4.1.3`
+    (section 4.1.3).
+
+    """
+
+    #: (:class:`collections.Mapping`) The mapping of :attr:`type` string
+    #: (e.g. ``'text'``) to the corresponding MIME type
+    #: (e.g. :mimetype:`text/plain`).
+    TYPE_MIMETYPE_MAP = {
+        'text': 'text/plain',
+        'html': 'text/html',
+        'xhtml': 'application/xhtml+xml'
+    }
+
+    #: (:class:`re.RegexObject`) The regular expression pattern that matches
+    #: with valid MIME type strings.
+    MIMETYPE_PATTERN = re.compile(r'''
+        ^
+        (?P<type> [A-Za-z0-9!#$&.+^_-]{1,127} )
+        /
+        (?P<subtype> [A-Za-z0-9!#$&.+^_-]{1,127} )
+        $
+    ''', re.VERBOSE)
+
+    #: (:class:`str`) An optional remote content URI to retrieve the content.
+    source_uri = Attribute('src')
+
+    @property
+    def mimetype(self):
+        """(:class:`str`) The mimetype of the content."""
+        try:
+            mimetype = self.TYPE_MIMETYPE_MAP[self.type]
+        except KeyError:
+            mimetype = self.type
+        if self.MIMETYPE_PATTERN.match(mimetype):
+            return mimetype
+        raise ValueError(repr(mimetype) + ' is invalid mimetype')
+
+    @mimetype.setter
+    def mimetype(self, mimetype):
+        match = self.MIMETYPE_PATTERN.match(mimetype)
+        if not match:
+            raise ValueError(repr(mimetype) + ' is invalid mimetype')
+        if match.group('type') == 'text':
+            subtype = match.group('subtype')
+            if subtype == 'plain':
+                self.type = 'text'
+                return
+            elif subtype == 'html':
+                self.type = 'html'
+                return
+        self.type = mimetype
+
+    def __repr__(self):
+        if not self.source_uri:
+            return super(Content, self).__repr__()
+        format_string = ('{0.__module__}.{0.__name__}'
+                         '(mimetype={1!r}, source_uri={2!r})')
+        return format_string.format(type(self), self.mimetype, self.source_uri)
+
+
+class Generator(Element):
+    """Identify the agent used to generate a feed, for debugging and
+    other purposes.  It's corresponds to ``atom:generator`` element
+    of :rfc:`4287#section-4.2.4` (section 4.2.4).
+
+    """
+
+    #: (:class:`str`) A URI that represents something relavent to the agent.
+    uri = Attribute('uri')
+
+    #: (:class:`str`) The version of the generating agent.
+    version = Attribute('version')
+
+    #: (:class:`str`) The human-readable name for the generating agent.
+    value = ContentValue()
+
+    def __unicode__(self):
+        if self.version:
+            return '{0} {1}'.format(self.value, self.version)
+        return self.value
+
+    if UNICODE_BY_DEFAULT:
+        __str__ = __unicode__
+    else:
+        __str__ = lambda self: unicode(self).encode('utf-8')
+
+    def __html__(self):
+        label = cgi.escape(self.value)
+        if self.version:
+            label = '{0} {1}'.format(label, cgi.escape(self.version))
+        if self.uri:
+            return '<a href="{0}">{1}</a>'.format(cgi.escape(self.uri), label)
+        return label
+
+    def __repr__(self):
+        return '{0.__module__}.{0.__name__}(value={1!r}, version={2!r}, uri=' \
+               '{3!r})'.format(type(self), self.value, self.version, self.uri)
+
+
+class Metadata(Element):
+    """Common metadata shared by :class:`Source`, :class:`Entry`, and
+    :class:`Feed`.
+
+    """
+
+    #: (:class:`str`) The URI that conveys a permanent, universally unique
+    #: identifier for an entry or feed.  It corresponds to ``atom:id``
+    #: element of :rfc:`4287#section-4.2.6` (section 4.2.6).
+    id = TextChild('id', xmlns=ATOM_XMLNS, required=True)
+
+    #: (:class:`Text`) The human-readable title for an entry or feed.
+    #: It corresponds to ``atom:title`` element of :rfc:`4287#section-4.2.14`
+    #: (section 4.2.14).
+    title = TextChild('title', xmlns=ATOM_XMLNS, required=True)
+
+    #: (:class:`collections.Seqeuence`) The list of :class:`Link` objects
+    #: that define a reference from an entry or feed to a web resource.
+    #: It corresponds to ``atom:link`` element of :rfc:`4287#section-4.2.7`
+    #: (section 4.2.7).
+    links = Child('link', Link, xmlns=ATOM_XMLNS, multiple=True)
+
+    #: (:class:`datetime.datetime`) The tz-aware :class:`~datetime.datetime`
+    #: indicating the most recent instant in time when the entry was modified
+    #: in a way the publisher considers significant.  Therefore, not all
+    #: modifications necessarily result in a changed :attr:`updated_at` value.
+    #: It corresponds to ``atom:updated`` element of :rfc:`4287#section-4.2.15`
+    #: (section 4.2.15).
+    updated_at = TextChild('updated', Rfc3339, xmlns=ATOM_XMLNS, required=True)
+
+    #: (:class:`collections.Seqeuence`) The list of :class:`Person` objects
+    #: which indicates the author of the entry or feed.  It corresponds to
+    #: ``atom:author`` element of :rfc:`4287#section-4.2.1` (section 4.2.1).
+    authors = Child('author', Person, xmlns=ATOM_XMLNS, multiple=True)
+
+    #: (:class:`collections.Seqeuence`) The list of :class:`Person` objects
+    #: which indicates a person or other entity who contributed to the entry
+    #: or feed.  It corresponds to ``atom:contributor`` element  of
+    #: :rfc:`4287#section-4.2.3` (section 4.2.3).
+    contributors = Child('contributor', Person, xmlns=ATOM_XMLNS, multiple=True)
+
+    #: (:class:`collections.Sequence`) The list of :class:`Category` objects
+    #: that conveys information about categories associated with an entry or
+    #: feed.  It corresponds to ``atom:category`` element of
+    #: :rfc:`4287#section-4.2.2` (section 4.2.2).
+    categories = Child('category', Category, xmlns=ATOM_XMLNS, multiple=True)
+
+    #: (:class:`Text`) The text field that conveys information about rights
+    #: held in and of an entry or feed.  It corresponds to ``atom:rights``
+    #: element of :rfc:`4287#section-4.2.10` (section 4.2.10).
+    rights = Child('rights', Text, xmlns=ATOM_XMLNS)
+
+    def __unicode__(self):
+        return unicode(self.title)
+
+    def __str__(self):
+        return str(self.title)
+
+    def __repr__(self):
+        return '<{0.__module__}.{0.__name__} {1} {2!r}>'.format(
+            type(self),
+            self.id,
+            str(self.title)
+        )
+
+
+class Source(Metadata):
+    """All metadata for :class:`Feed` excepting :attr:`Feed.entries`.
+    It corresponds to ``atom:source`` element of :rfc:`4287#section-4.2.10`
+    (section 4.2.10).
+
+    """
+
+    #: (:class:`Generator`) Identify the agent used to generate a feed,
+    #: for debugging and other purposes.  It's corresponds to
+    #: ``atom:generator`` element of :rfc:`4287#section-4.2.4` (section 4.2.4).
+    generator = Child('generator', Generator, xmlns=ATOM_XMLNS)
+
+
+class Entry(DocumentElement, Metadata):
+    """Represent an individual entry, acting as a container for metadata and
+    data associated with the entry.  It corresponds to ``atom:entry`` element
+    of :rfc:`4287#section-4.1.2` (section 4.1.2).
+
+    """
+
+    __tag__ = 'entry'
+    __xmlns__ = ATOM_XMLNS
+
+    #: (:class:`datetime.datetime`) The tz-aware :class:`~datetime.datetime`
+    #: indicating an instant in time associated with an event early in the
+    #: life cycle of the entry.  Typically, :attr:`published_at` will be
+    #: associated with the initial creation or first availability of
+    #: the resource.  It corresponds to ``atom:published`` element of
+    #: :rfc:`4287#section-4.2.9` (section 4.2.9).
+    published_at = TextChild('published', Rfc3339, xmlns=ATOM_XMLNS,
+                             required=True)
+
+    #: (:class:`Text`) The text field that conveys a short summary, abstract,
+    #: or excerpt of the entry.  It corresponds to ``atom:summary`` element
+    #: of :rfc:`4287#section-4.2.13` (section 4.2.13).
+    summary = Child('summary', Text, xmlns=ATOM_XMLNS)
+
+    #: (:class:`Content`) It either contains or links to the content of
+    #: the entry.
+    #:
+    #: It corresponds to ``atom:content`` element of :rfc:`4287#section-4.1.3`
+    #: (section 4.1.3).
+    content = Child('content', Content, xmlns=ATOM_XMLNS)
+
+    #: (:class:`Source`) If an entry is copied from one feed into another
+    #: feed, then the source feed's metadata may be preserved within
+    #: the copied entry by adding :attr:`source` if it is not already present
+    #: in the entry, and including some or all of the source feed's metadata
+    #: as the :attr:`source`'s data.
+    #:
+    #: It is designed to allow the aggregation of entries from different feeds
+    #: while retaining information about an entry's source feed.
+    #:
+    #: It corresponds to ``atom:source`` element of :rfc:`4287#section-4.2.10`
+    #: (section 4.2.10).
+    source = Child('source', Source, xmlns=ATOM_XMLNS)

@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
+import datetime
+
+from pytest import raises
+
 from libearth.compat import text_type
-from libearth.feed import Category, Link, MarkupTagCleaner, Person, Text
+from libearth.feed import (Category, Content, Entry, Generator, Link,
+                           MarkupTagCleaner, Person, Text)
+from libearth.schema import read
+from libearth.tz import utc
 
 
 def u(text):
@@ -99,3 +106,95 @@ def test_link_html():
 def test_category_str():
     assert text_type(Category(term='python')) == 'python'
     assert text_type(Category(term='python', label='Python')) == 'Python'
+
+
+def test_content_mimetype():
+    assert Content(type='text', value='Hello').mimetype == 'text/plain'
+    assert Content(type='html', value='Hello').mimetype == 'text/html'
+    assert Content(type='text/xml', value='<a>Hello</a>').mimetype == 'text/xml'
+    assert Content(mimetype='text/plain', value='Hello').type == 'text'
+    assert Content(mimetype='text/html', value='Hello').type == 'html'
+    assert Content(mimetype='text/xml', value='<a>Hello</a>').type == 'text/xml'
+
+
+def test_content_invalid_mimetype():
+    with raises(ValueError):
+        Content(mimetype='invalid/mime/type')
+    with raises(ValueError):
+        Content(mimetype='invalidmimetype')
+    with raises(ValueError):
+        Content(mimetype='invalid/(mimetype)')
+
+
+def test_generator_str():
+    assert text_type(Generator(value='Earth Reader')) == 'Earth Reader'
+    assert text_type(Generator(value='Earth Reader',
+                     uri='http://earthreader.github.io/')) == 'Earth Reader'
+    assert (text_type(Generator(value='Earth Reader', version='1.0')) ==
+            'Earth Reader 1.0')
+    assert text_type(Generator(value='Earth Reader',
+                     version='1.0',
+                     uri='http://earthreader.github.io/')) == 'Earth Reader 1.0'
+
+
+def test_generator_html():
+    assert Generator(value='Earth Reader').__html__() == 'Earth Reader'
+    assert Generator(value='<escape test>').__html__() == '&lt;escape test&gt;'
+    html = Generator(
+        value='Earth Reader',
+        uri='http://earthreader.github.io/'
+    ).__html__()
+    assert html == '<a href="http://earthreader.github.io/">Earth Reader</a>'
+    assert (Generator(value='Earth Reader', version='1.0').__html__() ==
+            'Earth Reader 1.0')
+    html = Generator(
+        value='Earth Reader',
+        version='1.0',
+        uri='http://earthreader.github.io/'
+    ).__html__()
+    assert (html ==
+            '<a href="http://earthreader.github.io/">Earth Reader 1.0</a>')
+
+
+def test_entry_read():
+    # http://www.intertwingly.net/wiki/pie/FormatTests
+    entry = read(Entry, ['''
+        <entry xmlns="http://www.w3.org/2005/Atom">
+            <title>Atom-Powered Robots Run Amok</title>
+            <link href="http://example.org/2003/12/13/atom03"/>
+            <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+            <updated>2003-12-13T18:30:02Z</updated>
+            <summary>Some text.</summary>
+            <category term="technology"/>
+            <category term="business"/>
+            <contributor>
+                <name>John Smith</name>
+            </contributor>
+            <contributor>
+                <name>Jane Doe</name>
+            </contributor>
+        </entry>
+    '''])
+    assert entry.id == 'urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a'
+    assert entry.title == 'Atom-Powered Robots Run Amok'
+    assert entry.updated_at == datetime.datetime(2003, 12, 13, 18, 30, 2,
+                                                 tzinfo=utc)
+    assert isinstance(entry.links[0], Link)
+    assert entry.links[0].uri == 'http://example.org/2003/12/13/atom03'
+    assert entry.links[0].relation == 'alternate'
+    assert len(entry.links) == 1
+    assert isinstance(entry.summary, Text)
+    assert entry.summary.type == 'text'
+    assert entry.summary.value == 'Some text.'
+    assert isinstance(entry.categories[0], Category)
+    assert entry.categories[0].term == 'technology'
+    assert entry.categories[1].term == 'business'
+    assert len(entry.categories) == 2
+    assert isinstance(entry.contributors[0], Person)
+    assert entry.contributors[0].name == 'John Smith'
+    assert entry.contributors[1].name == 'Jane Doe'
+    assert len(entry.contributors) == 2
+
+
+def test_entry_str():
+    assert text_type(Entry(title='Title desu')) == 'Title desu'

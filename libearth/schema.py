@@ -675,7 +675,7 @@ class Attribute(CodecDescriptor):
     required = None
 
     def __init__(self, name, codec=None, xmlns=None, required=False,
-                 encoder=None, decoder=None):
+                 default=None, encoder=None, decoder=None):
         super(Attribute, self).__init__(codec=codec,
                                         encoder=encoder,
                                         decoder=decoder)
@@ -683,10 +683,11 @@ class Attribute(CodecDescriptor):
         self.xmlns = xmlns
         self.key_pair = xmlns, name
         self.required = bool(required)
+        self.default = default
 
     def __get__(self, obj, cls=None):
         if isinstance(obj, Element):
-            return obj._attrs.get(self)
+            return obj._attrs.setdefault(self, self.default)
         return self
 
 
@@ -778,7 +779,8 @@ class Element(object):
             if hasattr(self._root(), '_handler'):
                 self._stack_top = len(self._root()._handler.stack)
         cls = type(self)
-        acceptable_desc_types = Descriptor, Content, Attribute  # FIXME
+        acceptable_desc_types = Descriptor, Content, Attribute, property
+        # FIXME: ^-- hardcoded type list
         for attr_name, attr_value in attributes.items():
             if isinstance(getattr(cls, attr_name, None), acceptable_desc_types):
                 setattr(self, attr_name, attr_value)
@@ -878,7 +880,8 @@ class ElementList(collections.MutableSequence):
             return True
         stack = handler.stack
         top = element._stack_top
-        return len(stack) < top or stack[top - 1].reserved_value is not parent
+        return (len(stack) < top or
+                top > 0 and stack[top - 1].reserved_value is not parent)
 
     def consume_index(self, index):
         if isinstance(index, slice):
@@ -1389,6 +1392,8 @@ def write(document, validate=True, indent='  ', newline='\n',
                                 key=operator.itemgetter(0))
         for attr, desc in attr_descriptors:
             raw_attr_value = getattr(element, attr, None)
+            if raw_attr_value is None:
+                continue
             encoded_attr_value = desc.encode(raw_attr_value, element)
             if encoded_attr_value is None:
                 continue
@@ -1434,6 +1439,8 @@ def write(document, validate=True, indent='  ', newline='\n',
                         child_elements = [child_elements]
                     for child_element in child_elements:
                         if isinstance(desc, Text):  # FIXME: remove type query
+                            if child_element is None:
+                                continue
                             encoded_child = desc.encode(child_element, element)
                             if encoded_child is None:
                                 continue
