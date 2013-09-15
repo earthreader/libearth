@@ -1218,6 +1218,14 @@ def inspect_child_tags(element_type):
     except AttributeError:
         index_descriptors(element_type)
         child_tags = element_type.__child_tags__
+    else:
+        # FIXME: it should be tested, and considered in inspect_content_tag(),
+        # inspect_xmlns_set(), and inspect_attributes() as well.
+        if any(hasattr(sup, '__child_tags__') and
+               sup.__child_tags__ is child_tags
+               for sup in element_type.__bases__):
+            index_descriptors(element_type)
+            child_tags = element_type.__child_tags__
     return child_tags
 
 
