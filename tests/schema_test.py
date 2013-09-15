@@ -476,21 +476,21 @@ def test_write_test_doc(fx_test_doc):
 <?xml version="1.0" encoding="utf-8"?>
 <test xmlns:ns0="http://earthreader.github.io/"\
  attr="속성 값" attr-decoder="decoder test">
+    <title>제목 test</title>
     <content>Content test</content>
-    <content-decoder>CONTENT DECODER</content-decoder>
     <multi>a</multi>
     <multi>b</multi>
     <multi>c</multi>
+    <text-content>텍스트 내용</text-content>
+    <text-multi>a</text-multi>
+    <text-multi>b</text-multi>
+    <text-decoder>123.456</text-decoder>
+    <text-decoder-decorator>123</text-decoder-decorator>
+    <text-combined-decoder>1234</text-combined-decoder>
     <ns0:ns-element ns0:ns-attr="namespace attribute value">\
 Namespace test</ns0:ns-element>
     <ns0:ns-text>Namespace test</ns0:ns-text>
-    <text-combined-decoder>1234</text-combined-decoder>
-    <text-content>텍스트 내용</text-content>
-    <text-decoder>123.456</text-decoder>
-    <text-decoder-decorator>123</text-decoder-decorator>
-    <text-multi>a</text-multi>
-    <text-multi>b</text-multi>
-    <title>제목 test</title>
+    <content-decoder>CONTENT DECODER</content-decoder>
 </test>'''
 
 
@@ -509,44 +509,44 @@ def test_write_test_doc_tree(fx_test_doc):
         'attr': u('속성 값'),
         'attr-decoder': 'decoder test'
     }
-    assert tree[0].tag == 'content'
-    assert tree[0].text == 'Content test'
+    assert tree[0].tag == 'title'
     assert not tree[0].attrib
-    assert tree[1].tag == 'content-decoder'
-    assert tree[1].text == 'CONTENT DECODER'
+    assert tree[0].text == u('제목 test')
+    assert tree[1].tag == 'content'
+    assert tree[1].text == 'Content test'
     assert not tree[1].attrib
     assert tree[2].tag == tree[3].tag == tree[4].tag == 'multi'
     assert tree[2].attrib == tree[3].attrib == tree[4].attrib == {}
     assert tree[2].text == 'a'
     assert tree[3].text == 'b'
     assert tree[4].text == 'c'
-    assert tree[5].tag == '{http://earthreader.github.io/}ns-element'
-    assert tree[5].attrib == {
+    assert tree[5].tag == 'text-content'
+    assert not tree[5].attrib
+    assert tree[5].text == u('텍스트 내용')
+    assert tree[6].tag == tree[7].tag == 'text-multi'
+    assert tree[6].attrib == tree[7].attrib == {}
+    assert tree[6].text == 'a'
+    assert tree[7].text == 'b'
+    assert tree[8].tag == 'text-decoder'
+    assert not tree[8].attrib
+    assert tree[8].text == '123.456'
+    assert tree[9].tag == 'text-decoder-decorator'
+    assert not tree[9].attrib
+    assert tree[9].text == '123'
+    assert tree[10].tag == 'text-combined-decoder'
+    assert not tree[10].attrib
+    assert tree[10].text == '1234'
+    assert tree[11].tag == '{http://earthreader.github.io/}ns-element'
+    assert tree[11].attrib == {
         '{http://earthreader.github.io/}ns-attr': 'namespace attribute value'
     }
-    assert tree[5].text == 'Namespace test'
-    assert tree[6].tag == '{http://earthreader.github.io/}ns-text'
-    assert not tree[6].attrib
-    assert tree[6].text == 'Namespace test'
-    assert tree[7].tag == 'text-combined-decoder'
-    assert not tree[7].attrib
-    assert tree[7].text == '1234'
-    assert tree[8].tag == 'text-content'
-    assert not tree[8].attrib
-    assert tree[8].text == u('텍스트 내용')
-    assert tree[9].tag == 'text-decoder'
-    assert not tree[9].attrib
-    assert tree[9].text == '123.456'
-    assert tree[10].tag == 'text-decoder-decorator'
-    assert not tree[10].attrib
-    assert tree[10].text == '123'
-    assert tree[11].tag == tree[12].tag == 'text-multi'
-    assert tree[11].attrib == tree[12].attrib == {}
-    assert tree[11].text == 'a'
-    assert tree[12].text == 'b'
-    assert tree[13].tag == 'title'
+    assert tree[11].text == 'Namespace test'
+    assert tree[12].tag == '{http://earthreader.github.io/}ns-text'
+    assert not tree[12].attrib
+    assert tree[12].text == 'Namespace test'
+    assert tree[13].tag == 'content-decoder'
+    assert tree[13].text == 'CONTENT DECODER'
     assert not tree[13].attrib
-    assert tree[13].text == u('제목 test')
     assert len(tree) == 14
 
 
@@ -557,8 +557,8 @@ def test_write_xmlns_doc(fx_xmlns_doc):
 <?xml version="1.0" encoding="utf-8"?>
 <ns0:nstest xmlns:ns0="http://earthreader.github.io/"\
  xmlns:ns1="https://github.com/earthreader/libearth">
-    <ns1:otherns>Other namespace</ns1:otherns>
     <ns0:samens>Same namespace</ns0:samens>
+    <ns1:otherns>Other namespace</ns1:otherns>
 </ns0:nstest>''')
 
 

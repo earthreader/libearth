@@ -122,6 +122,7 @@ class Descriptor(object):
     multiple = None
 
     def __init__(self, tag, xmlns=None, required=False, multiple=False):
+        global _descriptor_counter
         if required and multiple:
             raise TypeError('required and multiple are exclusive')
         self.tag = tag
@@ -129,6 +130,11 @@ class Descriptor(object):
         self.key_pair = self.xmlns, self.tag
         self.required = bool(required)
         self.multiple = bool(multiple)
+        try:
+            _descriptor_counter += 1
+        except NameError:
+            _descriptor_counter = 1
+        self.descriptor_counter = _descriptor_counter
 
     def __get__(self, obj, cls=None):
         if isinstance(obj, Element):
@@ -1432,7 +1438,7 @@ def write(document, validate=True, indent='  ', newline='\n',
                     yield encode(escape(encoded_content_value))
             else:
                 children = sort(children.values(),
-                                key=operator.itemgetter(0))
+                                key=lambda pair: pair[1].descriptor_counter)
                 for attr, desc in children:
                     child_elements = getattr(element, attr, None)
                     if not desc.multiple:

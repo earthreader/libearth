@@ -4,8 +4,8 @@ import datetime
 from pytest import raises
 
 from libearth.compat import text_type
-from libearth.feed import (Category, Content, Entry, Generator, Link,
-                           MarkupTagCleaner, Person, Text)
+from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
+                           MarkupTagCleaner, Person, Source, Text)
 from libearth.schema import read
 from libearth.tz import utc
 
@@ -198,3 +198,106 @@ def test_entry_read():
 
 def test_entry_str():
     assert text_type(Entry(title='Title desu')) == 'Title desu'
+
+
+def test_source():
+    entry = read(Entry, ['''
+        <entry xmlns="http://www.w3.org/2005/Atom">
+            <source>
+                <title>Source of all knowledge</title>
+                <id>urn:uuid:28213c50-f84c-11d9-8cd6-0800200c9a66</id>
+                <updated>2003-12-13T17:46:27Z</updated>
+                <category term="technology"/>
+                <category term="business"/>
+            </source>
+            <title>Atom-Powered Robots Run Amok</title>
+            <link href="http://example.org/2003/12/13/atom03"/>
+            <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+            <updated>2003-12-13T18:30:02Z</updated>
+            <summary>Some text.</summary>
+        </entry>
+    '''])
+    source = entry.source
+    assert isinstance(source, Source)
+    assert source.title == 'Source of all knowledge'
+    assert source.id == 'urn:uuid:28213c50-f84c-11d9-8cd6-0800200c9a66'
+    assert source.updated_at == datetime.datetime(2003, 12, 13, 17, 46, 27,
+                                                  tzinfo=utc)
+    categories = source.categories
+    assert isinstance(categories[0], Category)
+    assert categories[0].term == 'technology'
+    assert isinstance(categories[1], Category)
+    assert categories[1].term == 'business'
+    assert len(categories) == 2
+
+
+class test_feed_read():
+    feed = read(Feed, ['''
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <link href="http://example.org/"/>
+            <updated>2003-12-13T18:30:02Z</updated>
+            <author><name>John Doe</name></author>
+            <author><name>Jane Doe</name></author>
+            <id>urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6</id>
+            <category term="technology"/>
+            <category term="business"/>
+            <rights>Public Domain</rights>
+            <entry>
+                <title>Atom-Powered Robots Run Amok</title>
+                <link href="http://example.org/2003/12/13/atom03"/>
+                <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+                <updated>2003-12-13T18:30:02Z</updated>
+                <summary>Some text.</summary>
+                <author><name>Jane Doe</name></author>
+            </entry>
+            <entry>
+                <title>Danger, Will Robinson!</title>
+                <link href="http://example.org/2003/12/13/lost"/>
+                <id>urn:uuid:b12f2c10-ffc1-11d9-8cd6-0800200c9a66</id>
+                <updated>2003-12-13T18:30:02Z</updated>
+                <summary>Don't Panic!</summary>
+            </entry>
+        </feed>
+    '''])
+    assert feed.title == 'Example Feed'
+    link = feed.links[0]
+    assert isinstance(link, Link)
+    assert link.relation == 'alternate'
+    assert link.uri == 'http://example.org/'
+    assert len(feed.links) == 1
+    assert feed.updated_at == datetime.datetime(2003, 12, 13, 18, 30, 2,
+                                                tzinfo=utc)
+    authors = feed.authors
+    assert isinstance(authors[0], Person)
+    assert authors[0].name == 'John Doe'
+    assert isinstance(authors[1], Person)
+    assert authors[1].name == 'Jane Doe'
+    assert len(feed.authors) == 2
+    assert feed.id == 'urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6'
+    categories = feed.categories
+    assert isinstance(categories[0], Category)
+    assert categories[0].term == 'technology'
+    assert isinstance(categories[1], Category)
+    assert categories[1].term == 'business'
+    assert len(categories) == 2
+    assert feed.rights == Text(value='Public Domain')
+    entries = feed.entries
+    assert isinstance(entries[0], Entry)
+    assert entries[0].title == 'Atom-Powered Robots Run Amok'
+    assert (list(entries[0].links) ==
+            [Link(uri='http://example.org/2003/12/13/atom03')])
+    assert entries[0].id == 'urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a'
+    assert entries[0].updated_at == datetime.datetime(2003, 12, 13, 18, 30, 2,
+                                                      tzinfo=utc)
+    assert entries[0].summary == Text(value='Some text.')
+    assert list(entries[0].authors) == [Person(name='Jane Doe')]
+    assert isinstance(entries[1], Entry)
+    assert entries[1].title == 'Danger, Will Robinson!'
+    assert (list(entries[1].links) ==
+            [Link(uri='http://example.org/2003/12/13/lost')])
+    assert entries[1].id == 'urn:uuid:b12f2c10-ffc1-11d9-8cd6-0800200c9a66'
+    assert entries[1].updated_at == datetime.datetime(2003, 12, 13, 18, 30, 2,
+                                                      tzinfo=utc)
+    assert entries[1].summary == Text(value="Don't Panic!")
+    assert len(entries) == 2
