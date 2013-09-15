@@ -66,7 +66,8 @@ class Text(Element):
     value = ContentValue()
 
     def __eq__(self, other):
-        return self.type == other.type and self.value == other.value
+        return (isinstance(other, type(self)) and
+                self.type == other.type and self.value == other.value)
 
     def __ne__(self, other):
         return not (self == other)
@@ -112,7 +113,8 @@ class Person(Element):
     email = TextChild('email', xmlns=ATOM_XMLNS)
 
     def __eq__(self, other):
-        return (self.name == other.name and
+        return (isinstance(other, type(self)) and
+                self.name == other.name and
                 self.uri == other.uri and
                 self.email == other.email)
 
@@ -177,7 +179,8 @@ class Link(Element):
     byte_size = Attribute('length')
 
     def __eq__(self, other):
-        return (self.uri == other.uri and
+        return (isinstance(other, type(self)) and
+                self.uri == other.uri and
                 self.relation == other.relation and
                 self.mimetype == other.mimetype and
                 self.language == other.language and
