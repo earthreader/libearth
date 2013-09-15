@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 
-from pytest import raises
+from pytest import fixture, raises
 
 from libearth.compat import text_type
 from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
@@ -176,7 +176,7 @@ def test_entry_read():
         </entry>
     '''])
     assert entry.id == 'urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a'
-    assert entry.title == 'Atom-Powered Robots Run Amok'
+    assert entry.title == Text(value='Atom-Powered Robots Run Amok')
     assert entry.updated_at == datetime.datetime(2003, 12, 13, 18, 30, 2,
                                                  tzinfo=utc)
     assert isinstance(entry.links[0], Link)
@@ -197,7 +197,7 @@ def test_entry_read():
 
 
 def test_entry_str():
-    assert text_type(Entry(title='Title desu')) == 'Title desu'
+    assert text_type(Entry(title=Text(value='Title desu'))) == 'Title desu'
 
 
 def test_source():
@@ -219,7 +219,7 @@ def test_source():
     '''])
     source = entry.source
     assert isinstance(source, Source)
-    assert source.title == 'Source of all knowledge'
+    assert source.title == Text(value='Source of all knowledge')
     assert source.id == 'urn:uuid:28213c50-f84c-11d9-8cd6-0800200c9a66'
     assert source.updated_at == datetime.datetime(2003, 12, 13, 17, 46, 27,
                                                   tzinfo=utc)
@@ -231,8 +231,9 @@ def test_source():
     assert len(categories) == 2
 
 
-class test_feed_read():
-    feed = read(Feed, ['''
+@fixture
+def fx_feed():
+    return read(Feed, ['''
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <link href="http://example.org/"/>
@@ -260,7 +261,11 @@ class test_feed_read():
             </entry>
         </feed>
     '''])
-    assert feed.title == 'Example Feed'
+
+
+def test_feed_read(fx_feed):
+    feed = fx_feed
+    assert feed.title == Text(value='Example Feed')
     link = feed.links[0]
     assert isinstance(link, Link)
     assert link.relation == 'alternate'
@@ -284,7 +289,7 @@ class test_feed_read():
     assert feed.rights == Text(value='Public Domain')
     entries = feed.entries
     assert isinstance(entries[0], Entry)
-    assert entries[0].title == 'Atom-Powered Robots Run Amok'
+    assert entries[0].title == Text(value='Atom-Powered Robots Run Amok')
     assert (list(entries[0].links) ==
             [Link(uri='http://example.org/2003/12/13/atom03')])
     assert entries[0].id == 'urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a'
@@ -293,7 +298,7 @@ class test_feed_read():
     assert entries[0].summary == Text(value='Some text.')
     assert list(entries[0].authors) == [Person(name='Jane Doe')]
     assert isinstance(entries[1], Entry)
-    assert entries[1].title == 'Danger, Will Robinson!'
+    assert entries[1].title == Text(value='Danger, Will Robinson!')
     assert (list(entries[1].links) ==
             [Link(uri='http://example.org/2003/12/13/lost')])
     assert entries[1].id == 'urn:uuid:b12f2c10-ffc1-11d9-8cd6-0800200c9a66'
