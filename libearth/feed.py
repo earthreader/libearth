@@ -73,7 +73,9 @@ class Text(Element):
         return not (self == other)
 
     def __unicode__(self):
-        if self.type == 'html':
+        if not self.value:
+            return ''
+        elif self.type == 'html':
             return MarkupTagCleaner.clean(self.value)
         elif self.type == 'text':
             return self.value
@@ -425,10 +427,10 @@ class Metadata(Element):
     rights = Child('rights', Text, xmlns=ATOM_XMLNS)
 
     def __unicode__(self):
-        return unicode(self.title)
+        return unicode(self.title) if self.title else unicode()
 
     def __str__(self):
-        return str(self.title)
+        return str(self.title) if self.title else ''
 
     def __repr__(self):
         return '<{0.__module__}.{0.__name__} {1} {2!r}>'.format(

@@ -198,6 +198,7 @@ def test_entry_read():
 
 def test_entry_str():
     assert text_type(Entry(title=Text(value='Title desu'))) == 'Title desu'
+    assert text_type(Entry()) == ''
 
 
 def test_source():
