@@ -1005,10 +1005,23 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             try:
                 attr, child = child_tags[tag]
             except KeyError:
+                available_children = [
+                    '{0} (namespace: {1})'.format(name, ns) if xmlns else name
+                    for ns, name in child_tags
+                ]
+                available_children.sort()
+                available_children = ', '.join(available_children)
                 if xmlns:
-                    raise IntegrityError('unexpected element: {0} (namespace: '
-                                         '{1})'.format(name, xmlns))
-                raise IntegrityError('unexpected element: ' + name)
+                    raise IntegrityError(
+                        'unexpected element: {0} (namespace: {1}); available '
+                        'elements: {2}'.format(name, xmlns, available_children)
+                    )
+                raise IntegrityError(
+                    'unexpected element: {0}; available elements: '.format(
+                        name,
+                        available_children
+                    )
+                )
             if isinstance(child, Descriptor):
                 reserved_value = child.start_element(parent_element, attr)
                 self.stack.append(
