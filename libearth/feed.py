@@ -383,7 +383,7 @@ class Metadata(Element):
     #: (:class:`Text`) The human-readable title for an entry or feed.
     #: It corresponds to ``atom:title`` element of :rfc:`4287#section-4.2.14`
     #: (section 4.2.14).
-    title = TextChild('title', xmlns=ATOM_XMLNS, required=True)
+    title = Child('title', Text, xmlns=ATOM_XMLNS, required=True)
 
     #: (:class:`collections.MutableSequence`) The list of :class:`Link` objects
     #: that define a reference from an entry or feed to a web resource.

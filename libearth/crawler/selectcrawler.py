@@ -1,15 +1,11 @@
-import re
-import select
 import socket
-
+from  libearth.compat import PY3
+if PY3:
+    import urllib.parse as urlparse
+else:
+    import urlparse
 
 class FeedSocket(object):
-
-    URL_PATTERN = re.compile(r'''
-    (?:http://)?
-    (?P<host> [^/]+)
-    (?P<path> .+)
-    ''', re.VERBOSE)
 
     just_received = 'not None'
     received = ''
@@ -18,9 +14,10 @@ class FeedSocket(object):
         try:
             self.url = feed_url
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            match = self.URL_PATTERN.match(feed_url)
-            host = match.group('host')
-            path = match.group('path')
+            self.sock.settimeout(1)
+            url_parsed = urlparse.urlparse(feed_url)
+            host = url_parsed.netloc
+            path = url_parsed.path
             self.connect((host, 80))
             send_buffer = ('GET %s HTTP/1.1\r\n' % path +
                            'Host: %s\r\n\r\n' % host)
@@ -39,16 +36,9 @@ class FeedSocket(object):
         return self.just_received
 
 
-class SelectCrawler(object):
+class Crawler(object):
 
     readers = []
-    returns = []
-    feedlist = []
-    URL_PATTERN = re.compile(r'''
-    (?:http://)?
-    (?P<host> [^/]+)
-    (?P<path> .+)
-    ''', re.VERBOSE)
 
     def __init__(self):
         self.error_handler = self.default_error_handler
@@ -59,35 +49,25 @@ class SelectCrawler(object):
     def add_error_handler(self, error_handler):
         self.error_handler = error_handler
 
-    def add_feedlist(self, feedlist):
-        self.feedlist.extend(feedlist)
+    def add_reader(self, reader):
+        self.readers.append(reader)
 
-    def crawl(self):
-        for feed_url in self.feedlist:
-            try:
-                s = FeedSocket(feed_url)
-            except ConnectError as e:
-                self.error_handler(e)
-            else:
-                self.readers.append(s)
-        while True:
-            r_list, w, e = select.select(self.readers, [], [], 3)
-            if not r_list:
-                break
-            else:
-                for r in r_list:
-                    if r.just_received:
-                        r.recv(3000)
-                    else:
-                        self.readers.remove(r)
-                        self.returns.append((r.url, r.received))
-        for reader in self.readers:
-            self.returns.append((reader.url, reader.received))
-        return self.returns
+    def add_readers(self, readers):
+        self.readers.extend(readers)
+
+    def crawl(self, reader):
+        while reader:
+            reader = yield reader.recv(2048)
 
 
 class ConnectError(Exception):
     """Exception raised when socket connect failed."""
+
+    def __init__(self, msg):
+        self.msg = msg
+
+class RecvFinished(Exception):
+    """Exception raised when socket has no data to receive"""
 
     def __init__(self, msg):
         self.msg = msg
