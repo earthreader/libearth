@@ -1,9 +1,10 @@
 import socket
-from  libearth.compat import PY3
+from libearth.compat import PY3
 if PY3:
     import urllib.parse as urlparse
 else:
     import urlparse
+
 
 class FeedSocket(object):
 
@@ -65,6 +66,7 @@ class ConnectError(Exception):
 
     def __init__(self, msg):
         self.msg = msg
+
 
 class RecvFinished(Exception):
     """Exception raised when socket has no data to receive"""

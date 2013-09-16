@@ -6,6 +6,9 @@ Parsing RSS 2.0 feed.
 """
 from libearth.compat import PY3
 from libearth.codecs import Rfc822
+from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
+                           Person, Source, Text)
+
 
 if PY3:
     import urllib.request as urllib2
@@ -38,56 +41,56 @@ def parse_rss(xml, parse_item=True):
     items = channel.findall('item')
     feed_data, data_for_crawl = rss_get_channel_data(channel)
     if parse_item:
-        feed_data['entry'] = rss_get_item_data(items)
+        feed_data.entries = rss_get_item_data(items)
     return feed_data, data_for_crawl
 
 
 def rss_get_channel_data(root):
-    feed_data = {}
+    feed_data = Feed()
     data_for_crawl = {}
-    multiple = ['category', 'contributor', 'link']
-    for tag in multiple:
-        feed_data[tag] = []
+    contributors = []
     for data in root:
         if data.tag == 'title':
-            feed_data['title'] = data.text
+            feed_data.title = Text()
+            feed_data.title.value = data.text
         elif data.tag == 'link':
-            link = {}
-            link['href'] = data.text
-            link['rel'] = 'alternate'
-            link['type'] = 'text/html'
-            feed_data['link'].append(link)
+            link = Link()
+            link.uri = data.text
+            link.relation = 'alternate'
+            link.type = 'text/html'
+            feed_data.links = [link]
         elif data.tag == 'description':
-            subtitle = {}
-            subtitle['type'] = 'text'
-            subtitle['text'] = data.text
-            feed_data['subtitle'] = subtitle
+            subtitle = Text()
+            subtitle.type = 'text'
+            subtitle.value = data.text
+            feed_data.subtitle = subtitle
         elif data.tag == 'copyright':
-            rights = {}
-            rights['text'] = data.text
-            feed_data['rights'] = rights
+            rights = Text()
+            rights.value = data.text
+            feed_data.rights = rights
         elif data.tag == 'managingEditor':
-            contributor = {}
-            contributor['name'] = data.text
-            contributor['email'] = data.text
-            feed_data['contributor'].append(contributor)
+            contributor = Person()
+            contributor.name = data.text
+            contributor.email = data.text
+            contributors.append(contributor)
+            feed_data.contributors = contributors
         elif data.tag == 'webMaster':
-            contributor = {}
-            contributor['name'] = data.text
-            contributor['email'] = data.text
-            feed_data['contributor'].append(contributor)
+            contributor = Person()
+            contributor.name = data.text
+            contributor.email = data.text
+            contributors.append(contributor)
+            feed_data.contributors = contributors
         elif data.tag == 'pubDate':
-            feed_data['updated'] = Rfc822().decode(data.text)
+            feed_data.updated_at = Rfc822().decode(data.text)
         elif data.tag == 'category':
-            category = {}
-            category['term'] = data.text
-            feed_data['category'].append(category)
+            category = Category()
+            category.term = data.text
+            feed_data.categories = [category]
         elif data.tag == 'generator':
             feed_data['generator'] = {}
             feed_data['generator']['text'] = data.text
         elif data.tag == 'lastBuildDate':
             data_for_crawl['lastBuildDate'] = Rfc822().decode(data.text)
-
         elif data.tag == 'ttl':
             data_for_crawl['ttl'] = data.text
         elif data.tag == 'skipHours':
@@ -101,50 +104,48 @@ def rss_get_channel_data(root):
 
 def rss_get_item_data(entries):
     entries_data = []
-    multiple = ['category', 'link']
     for entry in entries:
-        entry_data = {}
-        for tag in multiple:
-            entry_data[tag] = []
+        entry_data = Entry()
+        links = []
         for data in entry:
             if data.tag == 'title':
-                title = {}
-                title['text'] = data.text
-                title['type'] = 'text'
-                entry_data['title'] = title
+                title = Text()
+                title.value = data.text
+                entry_data.title = title
             elif data.tag == 'link':
-                link = {}
-                link['href'] = data.text
-                link['rel'] = 'alternate'
-                link['type'] = 'text/html'
-                entry_data['link'].append(link)
+                link = Link()
+                link.uri = data.text
+                link.relation = 'alternate'
+                link.type = 'text/html'
+                links.append(link)
+                entry_data.links = links
             elif data.tag == 'description':
-                content = {}
-                content['type'] = 'text'
-                content['text'] = data.text
-                entry_data['content'] = content
+                content = Content()
+                content.type = 'text'
+                content.value = data.text
+                entry_data.content = content
             elif data.tag == 'author':
-                author = {}
-                author['name'] = data.text
-                author['email'] = data.text
-                entry_data['author'] = author
+                author = Person()
+                author.name = data.text
+                author.email = data.text
+                entry_data.authors = [author]
             elif data.tag == 'category':
-                category = {}
-                category['term'] = data.text
-                entry_data['category'].append(category)
+                category = Category()
+                category.term = data.text
+                entry_data.categories = [category]
             elif data.tag == 'comments':
-                entry_data['comments'] = data.text
+                #entry_data['comments'] = data.text
+                pass  # FIXME
             elif data.tag == 'enclosure':
-                link = {}
-                link['type'] = data.get('type')
-                link['href'] = data.get('url')
-                entry_data['link'].append(link)
+                link = Link()
+                link.type = data.get('type')
+                link.uri = data.get('url')
+                links.append(link)
+                entry_data.links = links
             elif data.tag == 'guid':
-                id = {}
-                id['uri'] = data.text
-                entry_data['id'] = id
+                entry_data.id = data.text
             elif data.tag == 'pubDate':
-                entry_data['published'] = Rfc822().decode(data.text)
+                entry_data.published = Rfc822().decode(data.text)
             elif data.tag == 'source':
                 from .heuristic import get_document_type, get_parser
                 source = {}
@@ -155,6 +156,6 @@ def rss_get_item_data(entries):
                 document_type = get_document_type(xml)
                 parser = get_parser(document_type)
                 source, _ = parser(xml, False)
-                entry_data['source'] = source
+                entry_data.source = source
         entries_data.append(entry_data)
     return entries_data
