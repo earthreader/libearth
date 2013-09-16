@@ -9,6 +9,8 @@ Parsing Atom feed. Atom specification is :rfc:`4287`
 
 """
 from libearth.codecs import Rfc3339
+from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
+                           Person, Source, Text)
 
 try:
     import urlparse
@@ -60,63 +62,56 @@ def parse_atom(xml, feed_url, parse_entry=True):
 
 
 def atom_parse_text_construct(data):
-    text = {}
-    text['type'] = data.get('type')
-    if text['type'] in (None, 'text', 'html'):
-        text['text'] = data.text
-    elif text['type'] == 'xhtml':
-        text['text'] = ''  # TODO
-    return text
+    tag = Text()
+    tag.type = data.get('type')
+    if tag.type in (None, 'text', 'html'):
+        tag.value = data.text
+    elif tag.vallue == 'xhtml':
+        tag.value = ''  # TODO
+    return tag
 
 
 def atom_parse_person_construct(data, xml_base):
-    person = {}
+    person = Person()
     xml_base = atom_get_xml_base(data, xml_base)
     for child in data:
         if child.tag == '{' + XMLNS_ATOM + '}' + 'name':
-            person['name'] = child.text
+            person.name = child.text
         elif child.tag == '{' + XMLNS_ATOM + '}' + 'uri':
-            person['uri'] = urlparse.urljoin(xml_base, child.text)
+            person.uri = urlparse.urljoin(xml_base, child.text)
         elif child.tag == '{' + XMLNS_ATOM + '}' + 'email':
-            person['email'] = child.text
+            person.email = child.text
     return person
 
 
 def atom_get_feed_data(root, feed_url):
-    feed_data = {}
+    feed_data = Feed()
     xml_base = atom_get_xml_base(root, feed_url)
-    multiple = ['author', 'category', 'contributor', 'link']
-    for tag in multiple:
-        feed_data[tag] = []
     for data in root:
         if data.tag == '{' + XMLNS_ATOM + '}' + 'id':
-            feed_data['id'] = atom_get_id_tag(data, xml_base)
+            feed_data.id = atom_get_id_tag(data, xml_base)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'title':
-            feed_data['title'] = atom_get_title_tag(data)
+            feed_data.title = atom_get_title_tag(data)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'updated':
-            feed_data['updated'] = atom_get_updated_tag(data)
+            atom_get_updated_tag(feed_data.updated_at, data)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'author':
-            author_tag = atom_get_author_tag(data, xml_base)
-            feed_data['author'].append(author_tag)
+            atom_get_author_tag(feed_data.authors, data, xml_base)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'category':
-            category_tag = atom_get_category_tag(data)
-            feed_data['category'].append(category_tag)
+            atom_get_category_tag(feed_data.categories, data)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'contributor':
-            contributor_tag = atom_get_contributor_tag(data, xml_base)
-            feed_data['contributor'].append(contributor_tag)
+            atom_get_contributor_tag(feed_data.contributors, data, xml_base)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'link':
-            link_tag = atom_get_link_tag(data, xml_base)
-            feed_data['link'].append(link_tag)
+            atom_get_link_tag(feed_data.links, data, xml_base)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'generator':
-            feed_data['generator'] = atom_get_generator_tag(data, xml_base)
+            atom_get_generator_tag(feed_data.generator, data, xml_base)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'icon':
-            feed_data['icon'] = atom_get_icon_tag(data, xml_base)
+            atom_get_icon_tag(feed_data.icon, data, xml_base)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'logo':
-            feed_data['logo'] = atom_get_logo_tag(data, xml_base)
+            atom_get_logo_tag(feed_data.logo, data, xml_base)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'rights':
-            feed_data['rights'] = atom_get_rights_tag(data)
+            atom_get_rights_tag(feed_data.rights, data)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'subtitle':
-            feed_data['subtitle'] = atom_get_subtitle_tag(data)
+            atom_get_subtitle_tag(feed_data.subtitle, data)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'entry':
             break
     return feed_data
@@ -172,29 +167,24 @@ def atom_get_xml_base(data, default):
         return default
 
 
-def atom_get_id_tag(data, xml_base):
-    id_tag = {}
+def atom_get_id_tag(id, data, xml_base):
     xml_base = atom_get_xml_base(data, xml_base)
-    id_tag['uri'] = urlparse.urljoin(xml_base, data.text)
-    return id_tag
+    return urlparse.urljoin(xml_base, data.text)
 
 
 def atom_get_title_tag(data):
-    title_tag = atom_parse_text_construct(data)
-    return title_tag
+    return atom_parse_text_construct(data)
 
 
-def atom_get_updated_tag(data):
-    updated_tag = Rfc3339().decode(data.text)
-    return updated_tag
+def atom_get_updated_tag(updated_at, data):
+    updated_at = data.text
 
 
-def atom_get_author_tag(data, xml_base):
-    author_tag = atom_parse_person_construct(data, xml_base)
-    return author_tag
+def atom_get_author_tag(authors, data, xml_base):
+    authors = atom_parse_person_construct(data, xml_base)
 
 
-def atom_get_category_tag(data):
+def atom_get_category_tag(category, data):
     category_tag = {}
     category_tag['term'] = data.get('term')
     category_tag['scheme'] = data.get('scheme')
