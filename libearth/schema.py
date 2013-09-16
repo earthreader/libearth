@@ -1005,10 +1005,23 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             try:
                 attr, child = child_tags[tag]
             except KeyError:
+                available_children = [
+                    '{0} (namespace: {1})'.format(name, ns) if xmlns else name
+                    for ns, name in child_tags
+                ]
+                available_children.sort()
+                available_children = ', '.join(available_children)
                 if xmlns:
-                    raise IntegrityError('unexpected element: {0} (namespace: '
-                                         '{1})'.format(name, xmlns))
-                raise IntegrityError('unexpected element: ' + name)
+                    raise IntegrityError(
+                        'unexpected element: {0} (namespace: {1}); available '
+                        'elements: {2}'.format(name, xmlns, available_children)
+                    )
+                raise IntegrityError(
+                    'unexpected element: {0}; available elements: '.format(
+                        name,
+                        available_children
+                    )
+                )
             if isinstance(child, Descriptor):
                 reserved_value = child.start_element(parent_element, attr)
                 self.stack.append(
@@ -1205,6 +1218,14 @@ def inspect_child_tags(element_type):
     except AttributeError:
         index_descriptors(element_type)
         child_tags = element_type.__child_tags__
+    else:
+        # FIXME: it should be tested, and considered in inspect_content_tag(),
+        # inspect_xmlns_set(), and inspect_attributes() as well.
+        if any(hasattr(sup, '__child_tags__') and
+               sup.__child_tags__ is child_tags
+               for sup in element_type.__bases__):
+            index_descriptors(element_type)
+            child_tags = element_type.__child_tags__
     return child_tags
 
 

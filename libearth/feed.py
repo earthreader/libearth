@@ -66,13 +66,16 @@ class Text(Element):
     value = ContentValue()
 
     def __eq__(self, other):
-        return self.type == other.type and self.value == other.value
+        return (isinstance(other, type(self)) and
+                self.type == other.type and self.value == other.value)
 
     def __ne__(self, other):
         return not (self == other)
 
     def __unicode__(self):
-        if self.type == 'html':
+        if not self.value:
+            return ''
+        elif self.type == 'html':
             return MarkupTagCleaner.clean(self.value)
         elif self.type == 'text':
             return self.value
@@ -112,7 +115,8 @@ class Person(Element):
     email = TextChild('email', xmlns=ATOM_XMLNS)
 
     def __eq__(self, other):
-        return (self.name == other.name and
+        return (isinstance(other, type(self)) and
+                self.name == other.name and
                 self.uri == other.uri and
                 self.email == other.email)
 
@@ -177,7 +181,8 @@ class Link(Element):
     byte_size = Attribute('length')
 
     def __eq__(self, other):
-        return (self.uri == other.uri and
+        return (isinstance(other, type(self)) and
+                self.uri == other.uri and
                 self.relation == other.relation and
                 self.mimetype == other.mimetype and
                 self.language == other.language and
@@ -422,10 +427,10 @@ class Metadata(Element):
     rights = Child('rights', Text, xmlns=ATOM_XMLNS)
 
     def __unicode__(self):
-        return unicode(self.title)
+        return unicode(self.title) if self.title else unicode()
 
     def __str__(self):
-        return str(self.title)
+        return str(self.title) if self.title else ''
 
     def __repr__(self):
         return '<{0.__module__}.{0.__name__} {1} {2!r}>'.format(
