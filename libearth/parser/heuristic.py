@@ -32,7 +32,6 @@ def get_document_type(document):
     :type document: :class:`str`
 
     """
-
     try:
         root = etree.fromstring(document)
     except:

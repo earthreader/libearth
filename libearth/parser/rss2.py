@@ -1,19 +1,13 @@
 """:mod:`libearth.parser.rss2` --- RSS 2.0 parser
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Parsing RSS 2.0 feed.
 
 """
-from libearth.compat import PY3
-from libearth.codecs import Rfc822
-from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
-                           Person, Source, Text)
-
-
-if PY3:
-    import urllib.request as urllib2
-else:
+try:
     import urllib2
+except ImportError:
+    import urllib.request as urllib2
 
 try:
     from lxml import etree
@@ -23,8 +17,12 @@ except ImportError:
     except ImportError:
         from xml.etree import ElementTree as etree
 
+from ..codecs import Rfc822
+from ..feed import (Category, Content, Entry, Feed, Generator, Link,
+                    Person, Text)
 
-def parse_rss(xml, parse_item=True):
+
+def parse_rss(xml, feed_url=None, parse_entry=True):
     """Parse RSS 2.0 XML.
 
     :param xml: target rss 2.0 xml to parse
@@ -33,16 +31,17 @@ def parse_rss(xml, parse_item=True):
                        it's useful to ignore items when retrieve
                        ``<source>``.  :const:`True` by default.
     :type parse_item: :class:`bool`
-    :returns: feed data parsed from xml.
+    :returns: a pair of (:class:`~libearth.feed.Feed`, crawler hint)
+    :rtype: :class:`tuple`
 
     """
     root = etree.fromstring(xml)
     channel = root.find('channel')
     items = channel.findall('item')
-    feed_data, data_for_crawl = rss_get_channel_data(channel)
-    if parse_item:
+    feed_data, crawler_hint = rss_get_channel_data(channel)
+    if parse_entry:
         feed_data.entries = rss_get_item_data(items)
-    return feed_data, data_for_crawl
+    return feed_data, crawler_hint
 
 
 def rss_get_channel_data(root):
@@ -87,8 +86,9 @@ def rss_get_channel_data(root):
             category.term = data.text
             feed_data.categories = [category]
         elif data.tag == 'generator':
-            feed_data['generator'] = {}
-            feed_data['generator']['text'] = data.text
+            generator = Generator()
+            generator.value = data.text
+            feed_data.generator = generator
         elif data.tag == 'lastBuildDate':
             data_for_crawl['lastBuildDate'] = Rfc822().decode(data.text)
         elif data.tag == 'ttl':
@@ -155,7 +155,7 @@ def rss_get_item_data(entries):
                 xml = f.read()
                 document_type = get_document_type(xml)
                 parser = get_parser(document_type)
-                source, _ = parser(xml, False)
+                source, _ = parser(xml, parse_entry=False)
                 entry_data.source = source
         entries_data.append(entry_data)
     return entries_data

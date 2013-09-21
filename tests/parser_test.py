@@ -2,7 +2,6 @@ import datetime
 import httpretty
 from libearth.codecs import Rfc3339, Rfc822
 from libearth.parser import atom, rss2, autodiscovery
-from libearth.tz import FixedOffset, utc
 
 atom_blog = """
 <html>

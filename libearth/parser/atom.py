@@ -8,14 +8,11 @@ Parsing Atom feed. Atom specification is :rfc:`4287`
    Parsing text construct which ``type`` is ``'xhtml'``.
 
 """
-from libearth.codecs import Rfc3339
-from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
-                           Person, Source, Text)
-
 try:
     import urlparse
 except:
     import urllib.parse as urlparse
+
 try:
     from lxml import etree
 except ImportError:
@@ -23,6 +20,10 @@ except ImportError:
         from xml.etree import cElementTree as etree
     except ImportError:
         from xml.etree import ElementTree as etree
+
+from ..codecs import Rfc3339
+from ..feed import (Category, Content, Entry, Feed, Generator, Link,
+                    Person, Source, Text)
 
 __all__ = 'XMLNS_ATOM', 'XMLNS_XML', 'parse_atom'
 
@@ -48,8 +49,8 @@ def parse_atom(xml, feed_url, parse_entry=True):
                         it's useful to ignore items when retrieve
                         ``<source>`` in rss 2.0.  :const:`True` by default.
     :type parse_item: :class:`bool`
-    :returns: feed data as internal representation
-    :rtype: :class:`dict`
+    :returns: a pair of (:class:`~libearth.feed.Feed`, crawler hint)
+    :rtype: :class:`tuple`
 
     """
     root = etree.fromstring(xml)
