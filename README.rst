@@ -11,7 +11,7 @@ Package Index (PyPI)
    https://pypi.python.org/pypi/libearth
 
 Docs (ReadTheDocs)
-   https://libearth.readthedocs.org/
+   https://libearth.earthreader.org/
 
 Git repository (GitHub)
    https://github.com/earthreader/libearth

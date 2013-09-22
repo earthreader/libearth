@@ -37,7 +37,7 @@ setup(
     version=VERSION,
     description='The core implementation of Earth Reader',
     long_description=readme(),
-    url='http://dahlia.kr/',
+    url='http://libearth.earthreader.org/',
     author='Hong Minhee',
     author_email='minhee' '@' 'dahlia.kr',
     license='MIT License',
