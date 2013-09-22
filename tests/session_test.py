@@ -11,6 +11,10 @@ def test_intern():
     session = Session('id1')
     assert session is Session('id1')
     assert session is not Session('id2')
+    assert session == Session('id1')
+    assert session != Session('id2')
+    assert hash(session) == hash(Session('id1'))
+    assert hash(session) != hash(Session('id2'))
 
 
 def test_default_identifier():
