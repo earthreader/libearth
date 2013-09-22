@@ -1,4 +1,5 @@
 import httpretty
+
 from libearth.crawler import crawl
 
 atom_xml = """
@@ -103,7 +104,7 @@ def test_crawler():
                            body=rss_source_xml)
     feeds = ['http://vio.atomtest.com/feed/atom',
              'http://rsstest.com/rss.xml']
-    generator = crawl(feeds)
+    generator = crawl(feeds, 4)
     for result in generator:
         feed_data = result[0]
         if feed_data.title.value == 'Atom Test':

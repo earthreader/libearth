@@ -15,7 +15,7 @@ from .parser.heuristic import get_document_type, get_parser
 __all__ = 'crawl',
 
 
-def crawl(feeds):
+def crawl(feeds, num_of_thread):
     """Crawl feeds in feed list using thread.
 
     .. note::
@@ -28,7 +28,7 @@ def crawl(feeds):
     :rtype: :class:`collections.Iterable`
 
     """
-    pool = multiprocessing.pool.ThreadPool(10)
+    pool = multiprocessing.pool.ThreadPool(num_of_thread)
     for result in pool.imap_unordered(get_feed, feeds):
         yield result
     pool.close()
