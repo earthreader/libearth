@@ -119,6 +119,10 @@ class RevisionSet(collections.Mapping):
         """
         return [Revision(*pair) for pair in super(RevisionSet, self).items()]
 
+    def __repr__(self):
+        return '{0.__module__}.{0.__name__}({1!r})'.format(type(self),
+                                                           self.items())
+
 
 class RevisionCodec(Codec):
     """Codec to encode/decode :class:`Revision` pairs.
@@ -160,7 +164,30 @@ class RevisionCodec(Codec):
 
 
 class RevisionSetCodec(RevisionCodec):
-    """Codec to encode/decode multiple :class:`Revision` pairs.
+    r"""Codec to encode/decode multiple :class:`Revision` pairs.
+
+    >>> from datetime import datetime
+    >>> from libearth.tz import utc
+    >>> revs = RevisionSet([
+    ...     (Session('a'), datetime(2013, 9, 22, 16, 58, 57, tzinfo=utc)),
+    ...     (Session('b'), datetime(2013, 9, 22, 16, 59, 30, tzinfo=utc)),
+    ...     (Session('c'), datetime(2013, 9, 22, 17, 0, 30, tzinfo=utc))
+    ... ])
+    >>> encoded = RevisionSetCodec().encode(revs)
+    >>> encoded
+    'c 2013-09-22T17:00:30Z,\nb 2013-09-22T16:59:30Z,\na 2013-09-22T16:58:57Z'
+    >>> RevisionSetCodec().decode(encoded)
+    libearth.session.RevisionSet([
+        Revision(session=libearth.session.Session('b'),
+                 updated_at=datetime.datetime(2013, 9, 22, 16, 59, 30,
+                                              tzinfo=libearth.tz.Utc())),
+        Revision(session=libearth.session.Session('c'),
+                 updated_at=datetime.datetime(2013, 9, 22, 17, 0, 30,
+                                              tzinfo=libearth.tz.Utc())),
+        Revision(session=libearth.session.Session('a'),
+                 updated_at=datetime.datetime(2013, 9, 22, 16, 58, 57,
+                                              tzinfo=libearth.tz.Utc()))
+    ])
 
     """
 
