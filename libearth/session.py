@@ -11,7 +11,8 @@ from .codecs import Rfc3339
 from .compat import string_type
 from .schema import Codec
 
-__all__ = 'SESSION_XMLNS', 'Revision', 'RevisionCodec', 'Session'
+__all__ = ('SESSION_XMLNS', 'Revision', 'RevisionCodec', 'RevisionSet',
+           'Session', 'ensure_revision_pair')
 
 
 #: (:class:`str`) The XML namespace name used for session metadata.
@@ -59,6 +60,66 @@ class Session(object):
 Revision = collections.namedtuple('Revision', 'session updated_at')
 
 
+def ensure_revision_pair(pair, force_cast=False):
+    """Check the type of the given ``pair`` and error unless it's a valid
+    revision pair (:class:`Session`, :class:`datetime.datetime`).
+
+    :param pair: a value to check
+    :type pair: :class:`collections.Sequence`
+    :param force_cast: whether to return the casted value to :class:`Revision`
+                       named tuple type
+    :type force_cast: :class:`bool`
+    :returns: the revision pair
+    :rtype: :class:`Revision`, :class:`collections.Sequence`
+
+    """
+    try:
+        session, updated_at = pair
+    except ValueError:
+        raise TypeError('expected a pair, not ' + repr(pair))
+    if not isinstance(session, Session):
+        raise TypeError('{0!r} is not an instance of {1.__module__}.'
+                        '{1.__name__}'.format(session, Session))
+    elif not isinstance(updated_at, datetime.datetime):
+        raise TypeError('{0!r} is not an instance of {1.__module__}.{1.'
+                        '__name__}'.format(updated_at, datetime.datetime))
+    if isinstance(pair, Revision) or not force_cast:
+        return pair
+    return Revision(*pair)
+
+
+class RevisionSet(collections.Mapping):
+    """Set of :class:`Revision` pairs.  It provides dictionary-like
+    mapping protocol.
+
+    :param revisions: the iterable of
+                      (:class:`Session`, :class:`datetime.datetime`) pairs
+    :type revisions: :class:`collections.Iterable`
+
+    """
+
+    def __init__(self, revisions):
+        self.revisions = dict(map(ensure_revision_pair, revisions))
+
+    def __len__(self):
+        return len(self.revisions)
+
+    def __iter__(self):
+        return iter(self.revisions)
+
+    def __getitem__(self, session):
+        return self.revisions[session]
+
+    def items(self):
+        """The list of (:class:`Session`, :class:`datetime.datetime`) pairs.
+
+        :return: the list of :class:`Revision` instances
+        :rtype: :class:`collections.ItemsView`
+
+        """
+        return [Revision(*pair) for pair in super(RevisionSet, self).items()]
+
+
 class RevisionCodec(Codec):
     """Codec to encode/decode :class:`Revision` pairs.
 
@@ -76,13 +137,7 @@ class RevisionCodec(Codec):
     RFC3339_CODEC = Rfc3339(prefer_utc=True)
 
     def encode(self, value):
-        session, updated_at = value
-        if not isinstance(session, Session):
-            raise TypeError('{0!r} is not an instance of {1.__module__}.'
-                            '{1.__name__}'.format(session, Session))
-        elif not isinstance(updated_at, datetime.datetime):
-            raise TypeError('{0!r} is not an instance of {1.__module__}.{1.'
-                            '__name__}'.format(updated_at, datetime.datetime))
+        session, updated_at = ensure_revision_pair(value)
         return '{0} {1}'.format(session, self.RFC3339_CODEC.encode(updated_at))
 
     def decode(self, text):

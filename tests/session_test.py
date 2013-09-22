@@ -1,8 +1,10 @@
+import collections
 import datetime
 
 from pytest import raises
 
-from libearth.session import Revision, RevisionCodec, Session
+from libearth.session import (Revision, RevisionCodec, RevisionSet, Session,
+                              ensure_revision_pair)
 from libearth.tz import now, utc
 
 
@@ -53,6 +55,45 @@ def test_revision():
     assert rev == (session, updated_at)
     assert rev[0] is rev.session is session
     assert rev[1] == rev.updated_at == updated_at
+
+
+def test_ensure_revision_pair():
+    session = Session()
+    updated_at = now()
+    assert ensure_revision_pair((session, updated_at)) == (session, updated_at)
+    pair = ensure_revision_pair((session, updated_at), force_cast=True)
+    assert isinstance(pair, Revision)
+    assert pair == (session, updated_at)
+    with raises(TypeError):
+        ensure_revision_pair(())
+    with raises(TypeError):
+        ensure_revision_pair((session,))
+    with raises(TypeError):
+        ensure_revision_pair((session, updated_at, 1))
+    with raises(TypeError):
+        ensure_revision_pair(session)
+    with raises(TypeError):
+        ensure_revision_pair((session, 1))
+    with raises(TypeError):
+        ensure_revision_pair((1, updated_at))
+
+
+def test_revision_set():
+    dt = datetime.datetime
+    revisions = RevisionSet([
+        (Session('key1'), dt(2013, 9, 22, 16, 58, 57, tzinfo=utc)),
+        (Session('key2'), dt(2013, 9, 22, 16, 59, 30, tzinfo=utc)),
+        (Session('key3'), dt(2013, 9, 22, 17, 0, 30, tzinfo=utc)),
+        (Session('key4'), dt(2013, 9, 22, 17, 10, 30, tzinfo=utc))
+    ])
+    assert isinstance(revisions, collections.Mapping)
+    assert len(revisions) == 4
+    assert set(revisions) == set([Session('key1'), Session('key2'),
+                                  Session('key3'), Session('key4')])
+    assert revisions[Session('key1')] == dt(2013, 9, 22, 16, 58, 57, tzinfo=utc)
+    assert revisions[Session('key2')] == dt(2013, 9, 22, 16, 59, 30, tzinfo=utc)
+    for pair in revisions.items():
+        assert isinstance(pair, Revision)
 
 
 def test_revision_codec():
