@@ -1,6 +1,24 @@
 """:mod:`libearth.session` --- Merging concurrent updates between devices
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+This module provides merging facilities to avoid conflict between concurrent
+updates of the same document/entity from different devices (installations).
+There are several concepts here.
+
+:class:`Session` abstracts installations on devices.  For example, if you
+have a laptop, a tablet, and a mobile phone, and two apps are installed on
+the laptop, then there have to be four sessions: `laptop-1`, `laptop-2`,
+`table-1`, and `phone-1`.  You can think of it as branch if you are familiar
+with DVCS.
+
+:class:`Revision` abstracts timestamps of updated time.  An important thing
+is that it preserves its session as well.
+
+Base revisions (:attr:`MergeableDocumentElement.__base_revisions__`) show
+what revisions the current revision is built on top of.  In other words,
+what revisions were merged into the current revision.  :class:`RevisionSet`
+is a dictionary-like data structure to represent them.
+
 """
 import collections
 import datetime
@@ -9,10 +27,12 @@ import uuid
 
 from .codecs import Rfc3339
 from .compat import string_type
-from .schema import Codec, DecodeError, EncodeError
+from .schema import Attribute, Codec, DecodeError, DocumentElement, EncodeError
+from .tz import now
 
-__all__ = ('SESSION_XMLNS', 'Revision', 'RevisionCodec', 'RevisionSet',
-           'RevisionSetCodec', 'Session', 'ensure_revision_pair')
+__all__ = ('SESSION_XMLNS', 'MergeableDocumentElement', 'Revision',
+           'RevisionCodec', 'RevisionSet', 'RevisionSetCodec', 'Session',
+           'ensure_revision_pair')
 
 
 #: (:class:`str`) The XML namespace name used for session metadata.
@@ -20,6 +40,16 @@ SESSION_XMLNS = 'http://earthreader.org/session/'
 
 
 class Session(object):
+    """The unit of device (more abstractly, *installation*) that updates
+    the same document (e.g. :class:`~libearth.feed.Feed`).  Every session
+    must have its own unique :attr:`identifier` to avoid conflict between
+    concurrent updates from different sessions.
+
+    :param identifier: the unique identifier.  automatically generated
+                       using :mod:`uuid` if not present
+    :type identifier: :class:`str`
+
+    """
 
     #: (:class:`re.RegexObject`) The regular expression pattern that matches
     #: to allowed identifiers.
@@ -47,6 +77,25 @@ class Session(object):
             session.identifier = identifier
             cls.interns[identifier] = session
         return session
+
+    def revise(self, document):
+        """Mark the given ``document`` as the latest revision of the current
+        session.
+
+        :param document: mergeable document to mark
+        :type document: :class:`MergeableDocumentElement`
+
+        """
+        if not isinstance(document, MergeableDocumentElement):
+            raise TypeError(
+                'document must be an instance of {0.__module__}.{0.__name__}, '
+                'not {1!r}'.format(MergeableDocumentElement, document)
+            )
+        if document.__base_revisions__:
+            updated_at = max(now(), max(document.__base_revisions__.values()))
+        else:
+            updated_at = now()
+        document.__revision__ = Revision(self, updated_at) 
 
     def __str__(self):
         return self.identifier
@@ -98,7 +147,7 @@ class RevisionSet(collections.Mapping):
 
     """
 
-    def __init__(self, revisions):
+    def __init__(self, revisions=[]):
         self.revisions = dict(map(ensure_revision_pair, revisions))
 
     def __len__(self):
@@ -210,3 +259,17 @@ class RevisionSetCodec(RevisionCodec):
         decode_pair = super(RevisionSetCodec, self).decode
         pairs = self.SEPARATOR_PATTERN.split(text)
         return RevisionSet(map(decode_pair, pairs))
+
+
+class MergeableDocumentElement(DocumentElement):
+    """Document element which is mergeable using :class:`Session`."""
+
+    #: (:class:`Revision`) The revision of the document.
+    __revision__ = Attribute('revision', RevisionCodec, xmlns=SESSION_XMLNS)
+
+    #: (:class:`RevisionSet`) The set of revisions that its current
+    #: :attr:`revision` is built on top of.  That means these revisions
+    #: no longer need to be merged.
+    __base_revisions__ = Attribute('bases', RevisionSetCodec,
+                                   xmlns=SESSION_XMLNS,
+                                   default=RevisionSet())

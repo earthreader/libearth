@@ -1,10 +1,12 @@
 import collections
 import datetime
+import time
 
 from pytest import fixture, raises
 
-from libearth.session import (Revision, RevisionCodec, RevisionSet,
-                              RevisionSetCodec, Session, ensure_revision_pair)
+from libearth.session import (MergeableDocumentElement, Revision, RevisionCodec,
+                              RevisionSet, RevisionSetCodec, Session,
+                              ensure_revision_pair)
 from libearth.tz import now, utc
 
 
@@ -100,6 +102,8 @@ def test_revision_set(fx_revision_set):
             datetime.datetime(2013, 9, 22, 16, 59, 30, tzinfo=utc))
     for pair in fx_revision_set.items():
         assert isinstance(pair, Revision)
+    assert fx_revision_set
+    assert not RevisionSet()
 
 
 def test_revision_codec():
@@ -123,3 +127,22 @@ key2 2013-09-22T16:59:30Z,
 key1 2013-09-22T16:58:57Z'''
     assert codec.encode(fx_revision_set) == expected
     assert codec.decode(expected) == fx_revision_set
+
+
+class TestMergeableDoc(MergeableDocumentElement):
+
+    __tag__ = 'merge-test'
+
+
+def test_session_revise():
+    doc = TestMergeableDoc()
+    min_updated_at = now()
+    session = Session()
+    session.revise(doc)
+    assert isinstance(doc.__revision__, Revision)
+    assert doc.__revision__.session is session
+    assert min_updated_at <= doc.__revision__.updated_at <= now()
+    time.sleep(0.1)
+    min_updated_at = now()
+    session.revise(doc)
+    assert min_updated_at <= doc.__revision__.updated_at <= now()
