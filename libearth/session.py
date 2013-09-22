@@ -15,7 +15,7 @@ __all__ = 'SESSION_XMLNS', 'Revision', 'RevisionCodec', 'Session'
 
 
 #: (:class:`str`) The XML namespace name used for session metadata.
-SESSION_XMLNS = 'http://earthreader.github.io/session/'
+SESSION_XMLNS = 'http://earthreader.org/session/'
 
 
 class Session(object):
