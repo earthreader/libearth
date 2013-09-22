@@ -2,7 +2,7 @@ import datetime
 
 from pytest import mark, raises
 
-from libearth.codecs import Enum, Boolean, Integer, Rfc3339, Rfc822
+from libearth.codecs import Boolean, Enum, Integer, Rfc3339, Rfc822
 from libearth.schema import DecodeError, EncodeError
 from libearth.tz import FixedOffset, utc
 

@@ -42,7 +42,7 @@ setup(
     author_email='minhee' '@' 'dahlia.kr',
     license='MIT License',
     packages=find_packages(exclude=['tests']),
-    tests_require=['pytest >= 2.3.0'],
+    tests_require=['pytest >= 2.3.0', 'httpretty >= 0.6.3'],
     cmdclass={'test': pytest},
     classifiers=[
         'Development Status :: 1 - Planning',  # FIXME
