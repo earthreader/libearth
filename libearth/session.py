@@ -9,10 +9,10 @@ import uuid
 
 from .codecs import Rfc3339
 from .compat import string_type
-from .schema import Codec
+from .schema import Codec, DecodeError, EncodeError
 
 __all__ = ('SESSION_XMLNS', 'Revision', 'RevisionCodec', 'RevisionSet',
-           'Session', 'ensure_revision_pair')
+           'RevisionSetCodec', 'Session', 'ensure_revision_pair')
 
 
 #: (:class:`str`) The XML namespace name used for session metadata.
@@ -137,12 +137,49 @@ class RevisionCodec(Codec):
     RFC3339_CODEC = Rfc3339(prefer_utc=True)
 
     def encode(self, value):
-        session, updated_at = ensure_revision_pair(value)
+        try:
+            session, updated_at = ensure_revision_pair(value)
+        except TypeError as e:
+            raise EncodeError(str(e))
         return '{0} {1}'.format(session, self.RFC3339_CODEC.encode(updated_at))
 
     def decode(self, text):
-        identifier, updated_at = text.split()
+        try:
+            identifier, updated_at = text.split()
+        except ValueError:
+            raise DecodeError(repr(text) + ' is an invalid revision format')
+        try:
+            session = Session(identifier)
+        except ValueError:
+            raise DecodeError(repr(identifier) +
+                              ' is and invalid session identifier')
         return Revision(
-            session=Session(identifier),
+            session=session,
             updated_at=self.RFC3339_CODEC.decode(updated_at)
         )
+
+
+class RevisionSetCodec(RevisionCodec):
+    """Codec to encode/decode multiple :class:`Revision` pairs.
+
+    """
+
+    #: (:class:`re.RegexObject`) The regular expression pattern that matches
+    #: to separator substrings betweens revision pairs.
+    SEPARATOR_PATTERN = re.compile('\s*,\s*')
+
+    def encode(self, value):
+        if not isinstance(value, RevisionSet):
+            raise EncodeError('{0!r} is not an instance of {1.__module__}.'
+                              '{1.__name__}'.format(value, RevisionSet))
+        encode_pair = super(RevisionSetCodec, self).encode
+        pairs = value.items()
+        if not isinstance(pairs, list):
+            pairs = list(pairs)
+        pairs.sort(key=lambda pair: pair[1], reverse=True)
+        return ',\n'.join(map(encode_pair, pairs))
+
+    def decode(self, text):
+        decode_pair = super(RevisionSetCodec, self).decode
+        pairs = self.SEPARATOR_PATTERN.split(text)
+        return RevisionSet(map(decode_pair, pairs))

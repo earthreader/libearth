@@ -1,10 +1,10 @@
 import collections
 import datetime
 
-from pytest import raises
+from pytest import fixture, raises
 
-from libearth.session import (Revision, RevisionCodec, RevisionSet, Session,
-                              ensure_revision_pair)
+from libearth.session import (Revision, RevisionCodec, RevisionSet,
+                              RevisionSetCodec, Session, ensure_revision_pair)
 from libearth.tz import now, utc
 
 
@@ -78,21 +78,27 @@ def test_ensure_revision_pair():
         ensure_revision_pair((1, updated_at))
 
 
-def test_revision_set():
+@fixture
+def fx_revision_set():
     dt = datetime.datetime
-    revisions = RevisionSet([
+    return RevisionSet([
         (Session('key1'), dt(2013, 9, 22, 16, 58, 57, tzinfo=utc)),
         (Session('key2'), dt(2013, 9, 22, 16, 59, 30, tzinfo=utc)),
         (Session('key3'), dt(2013, 9, 22, 17, 0, 30, tzinfo=utc)),
         (Session('key4'), dt(2013, 9, 22, 17, 10, 30, tzinfo=utc))
     ])
-    assert isinstance(revisions, collections.Mapping)
-    assert len(revisions) == 4
-    assert set(revisions) == set([Session('key1'), Session('key2'),
-                                  Session('key3'), Session('key4')])
-    assert revisions[Session('key1')] == dt(2013, 9, 22, 16, 58, 57, tzinfo=utc)
-    assert revisions[Session('key2')] == dt(2013, 9, 22, 16, 59, 30, tzinfo=utc)
-    for pair in revisions.items():
+
+
+def test_revision_set(fx_revision_set):
+    assert isinstance(fx_revision_set, collections.Mapping)
+    assert len(fx_revision_set) == 4
+    assert set(fx_revision_set) == set([Session('key1'), Session('key2'),
+                                        Session('key3'), Session('key4')])
+    assert (fx_revision_set[Session('key1')] ==
+            datetime.datetime(2013, 9, 22, 16, 58, 57, tzinfo=utc))
+    assert (fx_revision_set[Session('key2')] ==
+            datetime.datetime(2013, 9, 22, 16, 59, 30, tzinfo=utc))
+    for pair in fx_revision_set.items():
         assert isinstance(pair, Revision)
 
 
@@ -107,3 +113,13 @@ def test_revision_codec():
     assert decoded == rev
     assert decoded.session is session
     assert decoded.updated_at == updated_at
+
+
+def test_revision_set_codec(fx_revision_set):
+    codec = RevisionSetCodec()
+    expected = '''key4 2013-09-22T17:10:30Z,
+key3 2013-09-22T17:00:30Z,
+key2 2013-09-22T16:59:30Z,
+key1 2013-09-22T16:58:57Z'''
+    assert codec.encode(fx_revision_set) == expected
+    assert codec.decode(expected) == fx_revision_set
