@@ -6,3 +6,4 @@ MANIFEST
 .*.swp
 *.egg
 *.pyc
+.DS_Store
