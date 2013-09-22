@@ -1,4 +1,4 @@
-""":mod:`libearth.session` --- Crawler
+""":mod:`libearth.crawler` --- Crawler
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Crawl feeds.

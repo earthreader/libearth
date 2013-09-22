@@ -8,10 +8,7 @@
       libearth/compat
       libearth/crawler
       libearth/feed
-      libearth/parser/atom
-      libearth/parser/autodiscovery
-      libearth/parser/heuristic
-      libearth/parser/rss2
+      libearth/parser
       libearth/feedlist
       libearth/repository
       libearth/schema

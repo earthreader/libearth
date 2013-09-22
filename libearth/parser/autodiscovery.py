@@ -1,5 +1,5 @@
-""":mod:`libearth.crawler` --- Crawler
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`libearth.parser.autodiscovery` --- Autodiscovery
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module provides functions to autodiscovery feed url in document.
 

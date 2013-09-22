@@ -1,7 +1,7 @@
 """:mod:`libearth.parser.heuristic` --- Guessing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Get any XML and guess the type of XML.
+Guess the syndication format of given arbitrary XML documents.
 
 """
 try:
@@ -26,7 +26,7 @@ TYPE_RSS2 = 'rss2.0'
 
 
 def get_document_type(document):
-    """Get arbitrary document and guess the syndication format of it.
+    """Guess the syndication format of an arbitrary ``document``.
 
     :param document: document string to guess
     :type document: :class:`str`
