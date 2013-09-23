@@ -6,7 +6,7 @@
 from collections import MutableSequence
 from datetime import datetime
 
-from .codecs import Boolean, Integer, Rfc822
+from .codecs import Boolean, Integer, Rfc822, Version
 from .compat import text_type
 from .schema import (Attribute, Child, Codec, DecodeError, DocumentElement,
                      Element, Text, read, write)
@@ -262,6 +262,7 @@ class OpmlDoc(DocumentElement):
     __tag__ = 'opml'
     head = Child('head', HeadElement)
     body = Child('body', BodyElement)
+    version = Attribute('version', Version, default=(2, 0))
 
 
 class FeedList(MutableSequence):
