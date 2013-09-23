@@ -106,6 +106,13 @@ def test_revision_set(fx_revision_set):
     assert not RevisionSet()
 
 
+def test_revision_set_copy(fx_revision_set):
+    clone = fx_revision_set.copy()
+    assert isinstance(clone, RevisionSet)
+    assert clone == fx_revision_set
+    assert clone is not fx_revision_set
+
+
 def test_revision_codec():
     session = Session('test-identifier')
     updated_at = datetime.datetime(2013, 9, 22, 3, 43, 40, tzinfo=utc)

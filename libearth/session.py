@@ -168,6 +168,15 @@ class RevisionSet(collections.Mapping):
         """
         return [Revision(*pair) for pair in super(RevisionSet, self).items()]
 
+    def copy(self):
+        """Make a copy of the set.
+
+        :returns: a new equivalent set
+        :rtype: :class:`RevisionSet`
+
+        """
+        return type(self)(self.items())
+
     def __repr__(self):
         return '{0.__module__}.{0.__name__}({1!r})'.format(type(self),
                                                            self.items())
