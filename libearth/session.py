@@ -95,7 +95,7 @@ class Session(object):
             updated_at = max(now(), max(document.__base_revisions__.values()))
         else:
             updated_at = now()
-        document.__revision__ = Revision(self, updated_at) 
+        document.__revision__ = Revision(self, updated_at)
 
     def __str__(self):
         return self.identifier
