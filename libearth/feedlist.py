@@ -302,6 +302,11 @@ class FeedList(MutableSequence):
         if self.path:
             self.open_file(is_xml_string)
 
+        if not path and not is_xml_string:
+            self.doc = OpmlDoc()
+            self.doc.head = HeadElement()
+            self.doc.body = BodyElement()
+
     def open_file(self, is_xml_string):
         if is_xml_string:
             xml = self.path
