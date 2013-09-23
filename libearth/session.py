@@ -177,6 +177,31 @@ class RevisionSet(collections.Mapping):
         """
         return type(self)(self.items())
 
+    def merge(self, *sets):
+        """Merge two or more :class:`RevisionSet`\ s.  The latest time
+        remains for the same session.
+
+        :param \*sets: one or more :class:`RevisionSet` objects to merge
+        :returns: the merged set
+        :rtype: :class:`RevisionSet`
+
+        """
+        cls = type(self)
+        if not sets:
+            raise TypeError('expected one or more {0.__module__}.{0.__name__} '
+                            'objects'.format(cls))
+        sets = sets + (self,)
+        sessions = set()
+        for revisions in sets:
+            if not isinstance(revisions, cls):
+                raise TypeError('{0!r} is not an instance of {1.__module__}.'
+                                '{1.__name__}'.format(revisions, cls))
+            sessions.update(revisions)
+        return cls(
+            Revision(session, max(s[session] for s in sets if session in s))
+            for session in sessions
+        )
+
     def __repr__(self):
         return '{0.__module__}.{0.__name__}({1!r})'.format(type(self),
                                                            self.items())

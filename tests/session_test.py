@@ -113,6 +113,55 @@ def test_revision_set_copy(fx_revision_set):
     assert clone is not fx_revision_set
 
 
+def test_revision_set_merge(fx_revision_set):
+    dt = datetime.datetime
+    initial = fx_revision_set.copy()
+    with raises(TypeError):
+        fx_revision_set.merge()
+    with raises(TypeError):
+        fx_revision_set.merge(fx_revision_set, [])
+    assert fx_revision_set.merge(fx_revision_set) == fx_revision_set
+    assert fx_revision_set == initial
+    session_a = Session()
+    session_b = Session()
+    merged = fx_revision_set.merge(
+        RevisionSet([
+            (Session('key1'), dt(2013, 9, 23, 18, 40, 48, tzinfo=utc)),
+            (Session('key2'), dt(2012, 9, 23, 18, 40, 48, tzinfo=utc)),
+            (session_a, dt(2013, 9, 23, 18, 40, 48, tzinfo=utc)),
+            (session_b, dt(2013, 9, 23, 18, 41, 00, tzinfo=utc))
+        ])
+    )
+    assert merged == RevisionSet([
+        (Session('key1'), dt(2013, 9, 23, 18, 40, 48, tzinfo=utc)),
+        (Session('key2'), dt(2013, 9, 22, 16, 59, 30, tzinfo=utc)),
+        (Session('key3'), dt(2013, 9, 22, 17, 0, 30, tzinfo=utc)),
+        (Session('key4'), dt(2013, 9, 22, 17, 10, 30, tzinfo=utc)),
+        (session_a, dt(2013, 9, 23, 18, 40, 48, tzinfo=utc)),
+        (session_b, dt(2013, 9, 23, 18, 41, 00, tzinfo=utc))
+    ])
+    assert fx_revision_set == initial
+    merged = fx_revision_set.merge(
+        RevisionSet([
+            (Session('key1'), dt(2013, 9, 23, 18, 40, 48, tzinfo=utc)),
+            (Session('key2'), dt(2012, 9, 23, 18, 40, 48, tzinfo=utc)),
+            (session_a, dt(2013, 9, 23, 18, 40, 48, tzinfo=utc))
+        ]),
+        RevisionSet([
+            (Session('key3'), dt(2012, 9, 22, 17, 0, 30, tzinfo=utc)),
+            (Session('key4'), dt(2013, 9, 23, 19, 10, 30, tzinfo=utc)),
+            (session_a, dt(2013, 9, 23, 19, 8, 47, tzinfo=utc))
+        ])
+    )
+    assert merged == RevisionSet([
+        (Session('key1'), dt(2013, 9, 23, 18, 40, 48, tzinfo=utc)),
+        (Session('key2'), dt(2013, 9, 22, 16, 59, 30, tzinfo=utc)),
+        (Session('key3'), dt(2013, 9, 22, 17, 0, 30, tzinfo=utc)),
+        (Session('key4'), dt(2013, 9, 23, 19, 10, 30, tzinfo=utc)),
+        (session_a, dt(2013, 9, 23, 19, 8, 47, tzinfo=utc))
+    ])
+
+
 def test_revision_codec():
     session = Session('test-identifier')
     updated_at = datetime.datetime(2013, 9, 22, 3, 43, 40, tzinfo=utc)
