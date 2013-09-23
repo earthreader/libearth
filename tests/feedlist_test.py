@@ -213,3 +213,14 @@ def test_circular_reference(tmpdir):
     filename = tmpdir.join('feeds.opml').strpath
     print(filename)
     feeds.save_file(filename)
+
+
+def test_feedCategory():
+    feedCategory = FeedCategory('title')
+
+    #'Created' must be datetime.
+    with raises(TypeError):
+        feedCategory = FeedCategory('title', created='not datetime')
+
+    #Or valid rfc822 string.
+    feedCategory = FeedCategory('title', 'Mon, 23 Sep 2013 11:49:28 +0900')
