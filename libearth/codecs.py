@@ -13,7 +13,7 @@ from .compat import string_type
 from .schema import Codec, DecodeError, EncodeError
 from .tz import FixedOffset, utc
 
-__all__ = 'Enum', 'Boolean', 'Rfc3339', 'Rfc822', 'Integer'
+__all__ = 'Boolean', 'Enum', 'Integer', 'Rfc3339', 'Rfc822', 'Version'
 
 
 class Enum(Codec):
@@ -272,3 +272,49 @@ class Boolean(Codec):
         else:
             raise DecodeError('invalid string')
         return value
+
+
+class Version(Codec):
+    """Codec to interpret version string like ```'x.y'```
+    (x and y both are number)
+    and encode :class:`tuple` or :class:`list` values back to string.
+
+    :type count: :class:`int`
+    :param count: number of numbers contains in version string.
+    """
+
+    def __init__(self, count=2):
+        if not isinstance(count, int):
+            raise TypeError('expected {0.__module__}.{0.__name__}, '
+                            'not {1!r}'.format(int, count))
+        self.count = count
+
+    def encode(self, value):
+        if not isinstance(value, (list, tuple)):
+            raise EncodeError(
+                'expected {0.__module__}.{0.__name__} or '
+                '{1.__module__}.{1.__name__}, not {2!r}'.format(list, tuple))
+
+        if len(value) != self.count:
+            raise EncodeError('expected length was {0}, '
+                              'not {1}'.format(self.count, len(value)))
+
+        for i in value:
+            if not isinstance(i, int):
+                raise EncodeError('version string allows integer only.')
+
+        return '.'.join(str(i) for i in value)
+
+    def decode(self, text):
+        lst = text.split('.')
+
+        if len(lst) != self.count:
+            raise DecodeError('expected length was {0}, '
+                              'not {1}'.format(self.count, len(lst)))
+
+        try:
+            res = tuple(int(x) for x in lst)
+        except ValueError:
+            raise DecodeError('version string allows integer only')
+
+        return res
