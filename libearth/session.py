@@ -219,7 +219,7 @@ class RevisionCodec(Codec):
 
     """
 
-    #: (:class:`Rfc3339`) The intenally used codec to encode
+    #: (:class:`Rfc3339`) The internally used codec to encode
     #: :attr:`Revision.updated_at` time to :rfc:`3339` format.
     RFC3339_CODEC = Rfc3339(prefer_utc=True)
 
@@ -275,7 +275,7 @@ class RevisionSetCodec(RevisionCodec):
     """
 
     #: (:class:`re.RegexObject`) The regular expression pattern that matches
-    #: to separator substrings betweens revision pairs.
+    #: to separator substrings between revision pairs.
     SEPARATOR_PATTERN = re.compile('\s*,\s*')
 
     def encode(self, value):
