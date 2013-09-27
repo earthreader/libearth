@@ -91,7 +91,6 @@ def atom_get_feed_data(root, feed_url):
     feed_data = Feed()
     xml_base = atom_get_xml_base(root, feed_url)
     authors = []
-    categories = []
     contributors = []
     links = []
     for data in root:
@@ -105,8 +104,9 @@ def atom_get_feed_data(root, feed_url):
             authors.append(atom_get_author_tag(data, xml_base))
             feed_data.authors = authors
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'category':
-            categories.append(atom_get_category_tag(data))
-            feed_data.categories = categories
+            category = atom_get_category_tag(data)
+            if category:
+                feed_data.categories.append(atom_get_category_tag(data))
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'contributor':
             contributors.append(atom_get_contributor_tag(data, xml_base))
             feed_data.contributors = contributors
@@ -148,8 +148,9 @@ def atom_get_entry_data(entries, feed_url):
                 authors.append(atom_get_author_tag(data, xml_base))
                 entry_data.authors = authors
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'category':
-                categories.append(atom_get_category_tag(data))
-                entry_data.categories = categories
+                category = atom_get_category_tag(data)
+                if category:
+                    entry_data.categories.append(atom_get_category_tag(data))
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'contributor':
                 contributors.append(atom_get_contributor_tag(data, xml_base))
                 entry_data.contributors = contributors
@@ -195,6 +196,8 @@ def atom_get_author_tag(data, xml_base):
 
 
 def atom_get_category_tag(data):
+    if not data.get('term'):
+        return
     category = Category()
     category.term = data.get('term')
     category.scheme = data.get('scheme')

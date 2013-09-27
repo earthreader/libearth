@@ -236,3 +236,18 @@ def test_rss_parser():
     assert source.subtitle.type == 'text'
     assert source.subtitle.value == 'for source tag test'
     assert len(source.entries) is 0
+
+
+category_with_no_term = '''
+<feed>
+    <id>categorywithnoterm.com</id>
+    <title>Category has no term attribute</title>
+    <updated>2013-08-10T15:27:04Z</updated>
+    <category>this will not be parsed</category>
+</feed>
+'''
+
+
+def test_category_with_no_term():
+    feed_data, crawler_hints = atom.parse_atom(category_with_no_term, None)
+    assert not feed_data.categories
