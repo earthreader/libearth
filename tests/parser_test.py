@@ -241,7 +241,7 @@ def test_rss_parser():
     assert source.links[1].relation == 'alternate'
     assert source.subtitle.type == 'text'
     assert source.subtitle.value == 'for source tag test'
-    assert len(source.entries) is 0
+    assert not source.entries
 
 
 category_with_no_term = '''
