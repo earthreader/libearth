@@ -195,9 +195,9 @@ def test_rss_parser():
     assert title.type == 'text'
     assert title.value == 'Vio Blog'
     links = feed_data.links
-    assert links[0].type == 'text/html'
-    assert links[0].relation == 'alternate'
-    assert links[0].uri == 'http://vioblog.com'
+    assert links[1].type == 'text/html'
+    assert links[1].relation == 'alternate'
+    assert links[1].uri == 'http://vioblog.com'
     rights = feed_data.rights
     assert rights.type == 'text'
     assert rights.value == 'Copyright2013, Vio'
@@ -232,9 +232,9 @@ def test_rss_parser():
     source = entries[0].source
     assert source.title.type == 'text'
     assert source.title.value == 'Source Test'
-    assert source.links[0].type == 'text/html'
-    assert source.links[0].uri == 'http://sourcetest.com/'
-    assert source.links[0].relation == 'alternate'
+    assert source.links[1].type == 'text/html'
+    assert source.links[1].uri == 'http://sourcetest.com/'
+    assert source.links[1].relation == 'alternate'
     assert source.subtitle.type == 'text'
     assert source.subtitle.value == 'for source tag test'
     assert len(source.entries) is 0

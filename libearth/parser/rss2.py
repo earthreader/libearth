@@ -38,7 +38,7 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
     root = etree.fromstring(xml)
     channel = root.find('channel')
     items = channel.findall('item')
-    feed_data, crawler_hint = rss_get_channel_data(channel)
+    feed_data, crawler_hints = rss_get_channel_data(channel, feed_url)
     if parse_entry:
         feed_data.entries = rss_get_item_data(items)
         if feed_data.updated_at is None:
@@ -49,9 +49,10 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
     return feed_data, crawler_hints
 
 
-def rss_get_channel_data(root):
-    feed_data = Feed()
-    data_for_crawl = {}
+def rss_get_channel_data(root, feed_url):
+    feed_data = Feed(id=feed_url)
+    feed_data.links.append(Link(relation='self', uri=feed_url))
+    crawler_hints = {}
     contributors = []
     for data in root:
         if data.tag == 'title':
@@ -62,7 +63,7 @@ def rss_get_channel_data(root):
             link.uri = data.text
             link.relation = 'alternate'
             link.type = 'text/html'
-            feed_data.links = [link]
+            feed_data.links.append(link)
         elif data.tag == 'description':
             subtitle = Text()
             subtitle.type = 'text'
