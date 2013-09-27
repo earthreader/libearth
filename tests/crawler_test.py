@@ -106,7 +106,7 @@ def test_crawler():
              'http://rsstest.com/rss.xml']
     generator = crawl(feeds, 4)
     for result in generator:
-        feed_data = result[0]
+        feed_data = result[1][0]
         if feed_data.title.value == 'Atom Test':
             entries = feed_data.entries
             assert entries[0].title.value == 'Title One'

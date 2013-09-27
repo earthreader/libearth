@@ -34,8 +34,8 @@ def crawl(feeds, pool_size):
     pool.close()
 
 
-    return parser(feed_crawled, feed)
 def get_feed(feed_url):
     f = urllib2.urlopen(feed_url)
     feed_xml = f.read()
     parser = get_document_type(feed_xml)
+    return feed_url, parser(feed_xml, feed_url)
