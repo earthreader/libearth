@@ -226,9 +226,9 @@ def test_rss_parser():
     assert entries[0].links[1].type == 'audio/mpeg'
     assert entries[0].links[1].uri == 'http://vioblog.com/mp/a.mp3'
     assert entries[0].id == 'http://vioblog.com/12'
-    assert entries[0].published_at == \
-           entries[0].updated_at == \
-           datetime.datetime(2002, 9, 7, 0, 0, 1, tzinfo=utc)
+    assert (entries[0].published_at ==
+            entries[0].updated_at ==
+            datetime.datetime(2002, 9, 7, 0, 0, 1, tzinfo=utc))
     assert data_for_crawl == {
         'lastBuildDate': datetime.datetime(2002, 9, 7, 0, 0, 1, tzinfo=utc),
         'ttl': '10',

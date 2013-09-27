@@ -42,10 +42,9 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
     if parse_entry:
         feed_data.entries = rss_get_item_data(items)
         if feed_data.updated_at is None:
-            feed_data.updated_at = max(
-                entry.updated_at for entry in feed_data.entries
-                                 if entry.updated_at
-            )
+            feed_data.updated_at = max(entry.updated_at
+                                       for entry in feed_data.entries
+                                       if entry.updated_at)
     return feed_data, crawler_hints
 
 
