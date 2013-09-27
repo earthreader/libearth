@@ -1,6 +1,67 @@
 """:mod:`libearth.feedlist` --- Feed list
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Test opml here
+
+.. code-block:: xml
+
+    <?xml version="1.0" encoding="UTF-8"?>
+
+    <opml version="1.0">
+      <head>
+        <title>exported opml</title>
+      </head>
+      <body>
+        <outline text="category1" title="category1">
+          <outline type="rss" text="feed1" title="feed1"
+          xmlUrl="http://feed1.com/rss" htmlUrl="http://feed1.com/"/>
+        </outline>
+        <outline type="rss" text="feed2" title="feed2"
+        xmlUrl="http://feed2.com/rss" htmlUrl="http://feed2.com"/>
+      </body>
+    </opml>
+
+FeedList can import opml file:
+
+>>> from libearth.feedlist import FeedList
+>>> feedlist = FeedList('feedlist.opml')
+>>> print feedlist.title
+exported opml
+>>> print feedlist[0]
+<libearth.feedlist.FeedCategory type='category' title=u'category1'>
+>>> print feedlist[0][0]
+<libearth.feedlist.Feed type='feed' title=u'feed1'>
+>>> print feedlist[0][0].title
+feed1
+>>> print feedlist[0][0].xml_url
+http://feed1.com/rss
+
+change and save to file:
+
+>>> from libearth.feedlist import FeedList
+>>> feedlist = FeedList('feedlist.opml')
+>>> feedlist.title = "changed title"
+>>> feedlist.save_file()
+
+with file name:
+
+>>> feedlist.save_file('newfile.opml')
+
+create opml without import:
+
+>>> from libearth.feedlist import Feed, FeedList
+>>> feedlist = FeedList()
+>>> feed = Feed('rss2', 'title', 'http://feed1.com/rss', 'http://feed1.com/')
+>>> feedlist.append(feed)
+>>> feedlist.save_file('/tmp/test.opml')
+
+or:
+
+>>> from libearth.feedlist import Feed, FeedList
+>>> feedlist = FeedList()
+>>> feedlist.add('rss2', 'title', 'http://feed1.com/rss', 'http://feed1.com/')
+>>> feedlist.save_file('/tmp/test.opml')
+
 """
 
 from collections import MutableSequence
