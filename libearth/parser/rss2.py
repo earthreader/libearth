@@ -41,7 +41,12 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
     feed_data, crawler_hint = rss_get_channel_data(channel)
     if parse_entry:
         feed_data.entries = rss_get_item_data(items)
-    return feed_data, crawler_hint
+        if feed_data.updated_at is None:
+            feed_data.updated_at = max(
+                entry.updated_at for entry in feed_data.entries
+                                 if entry.updated_at
+            )
+    return feed_data, crawler_hints
 
 
 def rss_get_channel_data(root):
@@ -145,7 +150,10 @@ def rss_get_item_data(entries):
             elif data.tag == 'guid':
                 entry_data.id = data.text
             elif data.tag == 'pubDate':
-                entry_data.published = Rfc822().decode(data.text)
+                entry_data.published_at = Rfc822().decode(data.text)
+                # TODO 'pubDate' is optional in RSS 2, but 'updated' in Atom
+                #       is required element, so we have to fill some value to
+                #       entry.updated_at.
             elif data.tag == 'source':
                 from .heuristic import get_document_type
                 url = data.get('url')
@@ -155,5 +163,7 @@ def rss_get_item_data(entries):
                 parser = get_document_type(xml)
                 source, _ = parser(xml, parse_entry=False)
                 entry_data.source = source
+        if entry_data.updated_at is None:
+            entry_data.updated_at = entry_data.published_at
         entries_data.append(entry_data)
     return entries_data

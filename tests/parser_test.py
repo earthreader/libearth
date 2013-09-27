@@ -128,7 +128,8 @@ def test_atom_parser():
     assert entries[0].links[0].relation == 'self'
     assert entries[0].links[0].uri == 'http://vio.atomtest.com/?p=12345'
     assert entries[0].updated_at == Rfc3339().decode('2013-08-10T15:27:04Z')
-    assert entries[0].published == Rfc3339().decode('2013-08-10T15:26:15Z')
+    assert entries[0].published_at == datetime.datetime(2013, 8, 10, 15, 26, 15,
+                                                        tzinfo=utc)
     assert entries[0].categories[0].scheme == 'http://vio.atomtest.com'
     assert entries[0].categories[0].term == 'Category One'
     assert entries[0].categories[1].scheme == 'http://vio.atomtest.com'
@@ -221,8 +222,9 @@ def test_rss_parser():
     assert entries[0].links[1].type == 'audio/mpeg'
     assert entries[0].links[1].uri == 'http://vioblog.com/mp/a.mp3'
     assert entries[0].id == 'http://vioblog.com/12'
-    assert entries[0].published == \
-        Rfc822().decode('Sat, 07 Sep 2002 00:00:01 GMT')
+    assert entries[0].published_at == \
+           entries[0].updated_at == \
+           datetime.datetime(2002, 9, 7, 0, 0, 1, tzinfo=utc)
     assert data_for_crawl == {
         'lastBuildDate': datetime.datetime(2002, 9, 7, 0, 0, 1),
         'ttl': '10',
