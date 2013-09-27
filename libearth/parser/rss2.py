@@ -126,10 +126,7 @@ def rss_get_item_data(entries):
                 links.append(link)
                 entry_data.links = links
             elif data.tag == 'description':
-                content = Content()
-                content.type = 'text'
-                content.value = data.text
-                entry_data.content = content
+                entry_data.content = Content(type='html', value=data.text)
             elif data.tag == 'author':
                 author = Person()
                 author.name = data.text
