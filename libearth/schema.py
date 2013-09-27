@@ -775,11 +775,14 @@ class Element(object):
 
     __slots__ = '_attrs', '_content', '_data', '_parent', '_root'
 
-    def __init__(self, _parent=None, *args, **attributes):
+    def __init__(self, _parent=None, **attributes):
         self._attrs = getattr(self, '_attrs', {})  # FIXME
         self._content = getattr(self, '_content', None)
         self._data = getattr(self, '_data', {})
         if _parent is not None:
+            if not isinstance(_parent, Element):
+                raise TypeError('expected a {0.__module__}.{0.__name__} '
+                                'instance, not {1!r}'.format(Element, _parent))
             self._parent = weakref.ref(_parent)
             self._root = _parent._root
             if hasattr(self._root(), '_handler'):
@@ -808,7 +811,7 @@ class DocumentElement(Element):
     #: attribute to the XML namespace of the document element.
     __xmlns__ = None
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, _parent=None, **kwargs):
         cls = type(self)
         if cls.__tag__ is NotImplemented:
             raise NotImplementedError(
@@ -821,7 +824,7 @@ class DocumentElement(Element):
                 '__tag__ has to be a string, not ' + repr(cls.__tag__)
             )
         self._root = weakref.ref(self)
-        super(DocumentElement, self).__init__(self, **kwargs)
+        super(DocumentElement, self).__init__(_parent or self, **kwargs)
 
 
 class ElementList(collections.MutableSequence):

@@ -892,3 +892,33 @@ def test_attribute_default():
     assert present.default_attr == (1, 2)
     lack = read(DefaultAttrTestDoc, ['<default-attr-test />'])
     assert lack.default_attr == (0, 0)
+
+
+class PartialLoadTestEntry(DocumentElement):
+
+    __tag__ = 'entry'
+    __xmlns__ = 'http://example.com/'
+    value = Text('value', xmlns=__xmlns__)
+
+
+class PartialLoadTestDoc(DocumentElement):
+
+    __tag__ = 'partial-load-test'
+    __xmlns__ = 'http://example.com/'
+    entry = Child('entry', PartialLoadTestEntry, xmlns=__xmlns__)
+
+
+def test_partial_load_test():
+    doc = read(PartialLoadTestDoc, '''
+        <x:partial-load-test xmlns:x="http://example.com/">
+            <x:entry>
+                <x:value>as<!--
+                -->df</x:value>
+            </x:entry>
+            <x:entry>
+                <x:value>as<!--
+                -->df</x:value>
+            </x:entry>
+        </x:partial-load-test>
+    '''.splitlines())
+    assert doc.entry.value == 'asdf'
