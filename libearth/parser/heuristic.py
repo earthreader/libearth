@@ -19,10 +19,10 @@ __all__ = 'TYPE_ATOM', 'TYPE_RSS2', 'get_document_type', 'get_parser'
 
 
 #: (:class:`str`) The document type value for Atom format.
-TYPE_ATOM = 'atom'
+TYPE_ATOM = parse_atom
 
 #: (:class:`str`) THe document type value for RSS 2.0 format.
-TYPE_RSS2 = 'rss2.0'
+TYPE_RSS2 = parse_rss
 
 
 def get_document_type(document):
@@ -37,23 +37,8 @@ def get_document_type(document):
     except:
         return None
     if root.tag == '{http://www.w3.org/2005/Atom}feed':
-        return TYPE_ATOM
+        return parse_atom
     elif root.tag == 'rss':
-        return TYPE_RSS2
+        return parse_rss
     else:
         return None
-
-
-def get_parser(document_type):
-    """return appropriate parser for specific feed.
-
-    :param document_type: type of feed
-    :type document_type: :class:`str`
-    :returns: appropriate parser funcion
-    :rtype: :class:`collections.Callable`
-
-    """
-    if document_type == TYPE_ATOM:
-        return parse_atom
-    elif document_type == TYPE_RSS2:
-        return parse_rss

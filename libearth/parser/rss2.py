@@ -147,14 +147,12 @@ def rss_get_item_data(entries):
             elif data.tag == 'pubDate':
                 entry_data.published = Rfc822().decode(data.text)
             elif data.tag == 'source':
-                from .heuristic import get_document_type, get_parser
-                source = {}
+                from .heuristic import get_document_type
                 url = data.get('url')
                 request = urllib2.Request(url)
                 f = urllib2.urlopen(request)
                 xml = f.read()
-                document_type = get_document_type(xml)
-                parser = get_parser(document_type)
+                parser = get_document_type(xml)
                 source, _ = parser(xml, parse_entry=False)
                 entry_data.source = source
         entries_data.append(entry_data)
