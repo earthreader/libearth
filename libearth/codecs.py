@@ -227,7 +227,7 @@ class Rfc822(Codec):
                 )
                 res = res.replace(tzinfo=offset)
             elif timezone in self.TIMEZONES:
-                res.replace(tzinfo=self.TIMEZONES[timezone])
+                res = res.replace(tzinfo=self.TIMEZONES[timezone])
             else:
                 raise DecodeError(
                     'given argument was not valid RFC822 string. '

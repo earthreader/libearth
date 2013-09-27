@@ -61,6 +61,13 @@ def test_rfc822():
     assert codec.encode(kst_datetime) == kst_string
 
 
+def test_rfc822_namedtz():
+    codec = Rfc822()
+    gmt_string = 'Sat, 07 Sep 2013 01:20:43 GMT'
+    gmt_datetime = datetime.datetime(2013, 9, 7, 1, 20, 43, tzinfo=utc)
+    assert codec.decode(gmt_string) == gmt_datetime
+
+
 def test_rfc822_raise():
     codec = Rfc822()
 
