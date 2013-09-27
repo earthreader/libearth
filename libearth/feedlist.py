@@ -4,11 +4,12 @@
 """
 
 from collections import MutableSequence
+from datetime import datetime
 
-from .codecs import Boolean, Integer, Rfc822
+from .codecs import Boolean, Integer, Rfc822, Version
 from .compat import text_type
-from .schema import (Attribute, Child, Codec, DocumentElement, Element, Text,
-                     read, write)
+from .schema import (Attribute, Child, Codec, DecodeError, DocumentElement,
+                     Element, Text, read, write)
 from .tz import now
 
 __all__ = ('AlreadyExistException', 'CommaSeparatedList', 'Feed',
@@ -97,8 +98,18 @@ class FeedCategory(FeedTree, MutableSequence):
         self.text = text
         self._type = type
         self.text = text or title
-        self.created = created  # FIXME: created must be a valid rfc822 string.
-                                # so prefer to use datetime
+
+        if created is not None and not isinstance(created, datetime):
+            try:
+                codec = Rfc822()
+                created = codec.decode(created)
+            except DecodeError:
+                raise TypeError(
+                    'Expected an instance of {0.__module__}.{0.__name__} or '
+                    'valid RFC822 string, not {1!r}'.format(datetime, created))
+        else:
+            self.created = created
+
         self.children = []
         self.urls = []  # to avoid duplication of feeds for the same category
 
@@ -251,6 +262,7 @@ class OpmlDoc(DocumentElement):
     __tag__ = 'opml'
     head = Child('head', HeadElement)
     body = Child('body', BodyElement)
+    version = Attribute('version', Version, default=(2, 0))
 
 
 class FeedList(MutableSequence):
@@ -289,6 +301,11 @@ class FeedList(MutableSequence):
 
         if self.path:
             self.open_file(is_xml_string)
+
+        if not path and not is_xml_string:
+            self.doc = OpmlDoc()
+            self.doc.head = HeadElement()
+            self.doc.body = BodyElement()
 
     def open_file(self, is_xml_string):
         if is_xml_string:

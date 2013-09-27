@@ -2,7 +2,7 @@ import datetime
 
 from pytest import mark, raises
 
-from libearth.codecs import Boolean, Enum, Integer, Rfc3339, Rfc822
+from libearth.codecs import Boolean, Enum, Integer, Rfc3339, Rfc822, Version
 from libearth.schema import DecodeError, EncodeError
 from libearth.tz import FixedOffset, utc
 
@@ -125,3 +125,15 @@ def test_boolean_tuple():
 
     with raises(DecodeError):
         print(codec.decode("is one true?"))
+
+
+def test_version():
+    codec = Version(2)
+    assert codec.decode('1.2') == (1, 2)
+    assert codec.encode((1, 2)) == '1.2'
+
+    with raises(EncodeError):
+        codec.encode((1, 2, 3))
+
+    with raises(DecodeError):
+        codec.decode('1.2.3')
