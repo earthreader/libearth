@@ -96,16 +96,16 @@ def rss_get_channel_data(root, feed_url):
             generator.value = data.text
             feed_data.generator = generator
         elif data.tag == 'lastBuildDate':
-            data_for_crawl['lastBuildDate'] = Rfc822().decode(data.text)
+            crawler_hints['lastBuildDate'] = Rfc822().decode(data.text)
         elif data.tag == 'ttl':
-            data_for_crawl['ttl'] = data.text
+            crawler_hints['ttl'] = data.text
         elif data.tag == 'skipHours':
-            data_for_crawl['skipHours'] = data.text
+            crawler_hints['skipHours'] = data.text
         elif data.tag == 'skipMinutes':
-            data_for_crawl['skipMinutes'] = data.text
+            crawler_hints['skipMinutes'] = data.text
         elif data.tag == 'skipDays':
-            data_for_crawl['skipDays'] = data.text
-    return feed_data, data_for_crawl
+            crawler_hints['skipDays'] = data.text
+    return feed_data, crawler_hints
 
 
 def rss_get_item_data(entries):
