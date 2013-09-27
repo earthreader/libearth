@@ -1,7 +1,11 @@
 import datetime
+
 import httpretty
-from libearth.codecs import Rfc3339, Rfc822
+
+from libearth.codecs import Rfc3339
 from libearth.parser import atom, rss2, autodiscovery
+from libearth.tz import utc
+
 
 atom_blog = """
 <html>
@@ -207,7 +211,7 @@ def test_rss_parser():
     assert contributors[1].name == 'vio.bo94@gmail.com'
     assert contributors[1].email == 'vio.bo94@gmail.com'
     updated_at = feed_data.updated_at
-    assert updated_at == Rfc822().decode('Sat, 17 Sep 2002 00:00:01 GMT')
+    assert updated_at == datetime.datetime(2002, 9, 17, 0, 0, 1, tzinfo=utc)
     categories = feed_data.categories
     assert categories[0].term == 'Python'
     entries = feed_data.entries
@@ -226,7 +230,7 @@ def test_rss_parser():
            entries[0].updated_at == \
            datetime.datetime(2002, 9, 7, 0, 0, 1, tzinfo=utc)
     assert data_for_crawl == {
-        'lastBuildDate': datetime.datetime(2002, 9, 7, 0, 0, 1),
+        'lastBuildDate': datetime.datetime(2002, 9, 7, 0, 0, 1, tzinfo=utc),
         'ttl': '10',
     }
     source = entries[0].source
