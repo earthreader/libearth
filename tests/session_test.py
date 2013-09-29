@@ -2,8 +2,9 @@ import collections
 import datetime
 import time
 
-from pytest import fixture, raises
+from pytest import fixture, mark, raises
 
+from libearth.schema import Attribute, Content, Text
 from libearth.session import (MergeableDocumentElement, Revision, RevisionCodec,
                               RevisionSet, RevisionSetCodec, Session,
                               ensure_revision_pair)
@@ -162,6 +163,26 @@ def test_revision_set_merge(fx_revision_set):
     ])
 
 
+def test_revision_set_contains(fx_revision_set):
+    assert not fx_revision_set.contains(Revision(Session('key0'), now()))
+    assert not fx_revision_set.contains(
+        Revision(Session('key1'),
+                 datetime.datetime(2013, 9, 27, 16, 54, 50, tzinfo=utc))
+    )
+    assert fx_revision_set.contains(
+        Revision(Session('key1'),
+                 datetime.datetime(2013, 9, 22, 16, 58, 57, tzinfo=utc))
+    )
+    assert fx_revision_set.contains(
+        Revision(Session('key1'),
+                 datetime.datetime(2012, 9, 22, 16, 58, 57, tzinfo=utc))
+    )
+    assert not fx_revision_set.contains(
+        Revision(Session('key0'),
+                 datetime.datetime(2012, 9, 22, 16, 58, 57, tzinfo=utc))
+    )
+
+
 def test_revision_codec():
     session = Session('test-identifier')
     updated_at = datetime.datetime(2013, 9, 22, 3, 43, 40, tzinfo=utc)
@@ -188,6 +209,15 @@ key1 2013-09-22T16:58:57Z'''
 class TestMergeableDoc(MergeableDocumentElement):
 
     __tag__ = 'merge-test'
+    multi_text = Text('multi-text', multiple=True)
+    text = Text('text')
+    attr = Attribute('attr')
+
+
+class TestMergeableContentDoc(MergeableDocumentElement):
+
+    __tag__ = 'merge-content-test'
+    content = Content()
 
 
 def test_session_revise():
@@ -202,3 +232,76 @@ def test_session_revise():
     min_updated_at = now()
     session.revise(doc)
     assert min_updated_at <= doc.__revision__.updated_at <= now()
+
+
+@mark.parametrize('revised', [True, False])
+def test_session_pull(revised):
+    s1 = Session('s1')
+    s2 = Session('s2')
+    a = TestMergeableDoc(multi_text=['a', 'b', 'c'])
+    if revised:
+        s1.revise(a)
+    b = s2.pull(a)
+    assert b is not a
+    assert b.__revision__.session is s2
+    if revised:
+        assert b.__revision__.updated_at == a.__revision__.updated_at
+    assert b.multi_text == ['a', 'b', 'c']
+    assert a.multi_text is not b.multi_text
+    if revised:
+        assert a.__revision__.session is s1
+
+
+def test_session_pull_same_session():
+    session = Session('s1')
+    doc = TestMergeableDoc()
+    session.revise(doc)
+    assert session.pull(doc) is doc
+
+
+def test_session_merge():
+    #  s1  s2
+    #  ------
+    #  (1) a   b (2)
+    #      | / |
+    #  (3) c   b (4)
+    #      | \ |
+    #      |   d (5)
+    #      | /
+    #  (5) e
+    s1 = Session('s1')
+    a = TestMergeableDoc(attr='a', text='a', multi_text=['a', 'b', 'c'])
+    a_c = TestMergeableContentDoc(content='a')
+    s1.revise(a)  # (1)
+    s1.revise(a_c)
+    s2 = Session('s2')
+    b = TestMergeableDoc(attr='b', text='b', multi_text=['d', 'e', 'f'])
+    b_c = TestMergeableContentDoc(content='b')
+    s2.revise(b)  # (2)
+    s2.revise(b_c)
+    c = s1.merge(b, a)  # (3)
+    c_c = s1.merge(b_c, a_c)
+    assert c.__revision__.session is s1
+    assert c.__revision__.updated_at > a.__revision__.updated_at
+    assert c.__base_revisions__ == RevisionSet([a.__revision__, b.__revision__])
+    assert c.attr == c.text == c_c.content == 'b'
+    assert list(c.multi_text) == ['a', 'b', 'c', 'd', 'e', 'f']
+    b.attr = b.text = b_c.content = 'd'
+    b.multi_text.append('blah')
+    s2.revise(b)  # (4)
+    s2.revise(b_c)
+    assert list(b.multi_text) == ['d', 'e', 'f', 'blah']
+    d = s2.merge(b, c)  # (5)
+    d_c = s2.merge(b_c, c_c)
+    assert d.__revision__.session is s2
+    assert d.__revision__.updated_at >= c.__revision__.updated_at
+    assert d.__base_revisions__ == RevisionSet([b.__revision__, c.__revision__])
+    assert d.attr == d.text == d_c.content == 'd'
+    assert list(d.multi_text) == ['a', 'b', 'c', 'd', 'e', 'f', 'blah']
+    e = s1.merge(c, d)  # (5)
+    e_c = s1.merge(c_c, d_c)
+    assert e.__revision__.session is s1
+    assert e.__revision__.updated_at == d.__revision__.updated_at
+    assert e.__base_revisions__ == d.__base_revisions__
+    assert e.attr == e.text == e_c.content == 'd'
+    assert list(e.multi_text) == ['a', 'b', 'c', 'd', 'e', 'f', 'blah']

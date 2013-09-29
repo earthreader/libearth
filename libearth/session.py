@@ -27,7 +27,9 @@ import uuid
 
 from .codecs import Rfc3339
 from .compat import string_type
-from .schema import Attribute, Codec, DecodeError, DocumentElement, EncodeError
+from .schema import (Attribute, Codec, DecodeError, DocumentElement,
+                     EncodeError, inspect_attributes, inspect_child_tags,
+                     inspect_content_tag)
 from .tz import now
 
 __all__ = ('SESSION_XMLNS', 'MergeableDocumentElement', 'Revision',
@@ -96,6 +98,102 @@ class Session(object):
         else:
             updated_at = now()
         document.__revision__ = Revision(self, updated_at)
+
+    def pull(self, document):
+        """Pull the ``document`` (of possibly other session) to the current
+        session.
+
+        :returns: the clone of the given ``document`` with the replaced
+                  :attr:`~MergeableDocumentElement.__revision__`.
+                  note that the :attr:`Revision.updated_at` value won't
+                  be revised.  it could be the same object to the given
+                  ``document`` object if the session is the same
+        :rtype: :class:`
+
+        """
+        if not isinstance(document, MergeableDocumentElement):
+            raise TypeError(
+                'expected a {0.__module__}.{0.__name__} instance, not '
+                '{1!r}'.format(MergeableDocumentElement, document)
+            )
+        rev = document.__revision__
+        if rev is not None and rev.session is self:
+            return document
+        # TODO: It could be efficiently implemented using SAX parser with
+        #       less memory use.
+        element_type = type(document)
+        copy = element_type()
+        for name, desc in inspect_child_tags(element_type).values():
+            if desc.multiple:
+                value = list(getattr(document, name, []))
+            else:
+                value = getattr(document, name, None)
+            setattr(copy, name, value)
+        for name, _ in inspect_attributes(element_type).values():
+            setattr(copy, name, getattr(document, name, None))
+        content = inspect_content_tag(element_type)
+        if content is not None:
+            name = content[0]
+            setattr(copy, name, getattr(document, name))
+        if rev:
+            copy.__revision__ = Revision(self, rev.updated_at)
+        else:
+            self.revise(copy)
+        return copy
+
+    def merge(self, a, b):
+        """Merge the given two documents and return new merged document.
+        The given documents are not manipulated in place.  Two documents
+        must have the same type.
+
+        :param a: the first document to be merged
+        :type a: :class:`MergeableDocumentElement`
+        :param b: the second document to be merged
+        :type b: :class:`MergeableDocumentElement`
+
+        """
+        element_type = type(a)
+        cls_b = type(b)
+        if element_type is not cls_b:
+            raise TypeError(
+                'two document must have the same type; but {0.__module__}.'
+                '{0.__name__} and {1.__module__}.{1.__name__} are not the '
+                'same type'.format(element_type, cls_b)
+            )
+        if a.__base_revisions__.contains(b.__revision__):
+            return self.pull(a)
+        elif b.__base_revisions__.contains(a.__revision__):
+            return self.pull(b)
+        # The latest one should be `b`.
+        if a.__revision__.updated_at > b.__revision__.updated_at:
+            a, b = b, a
+        merged = element_type()
+        for attr_name, desc in inspect_child_tags(element_type).values():
+            if desc.multiple:
+                a_list = getattr(a, attr_name, [])
+                merged_attr = list(a_list)
+                for element in getattr(b, attr_name, []):
+                    if element not in a_list:
+                        merged_attr.append(element)
+            else:
+                merged_attr = getattr(b, attr_name, getattr(a, attr_name, None))
+            setattr(merged, attr_name, merged_attr)
+        for attr_name, _ in inspect_attributes(element_type).values():
+            setattr(merged, attr_name,
+                    getattr(b, attr_name, getattr(a, attr_name, None)))
+        content = inspect_content_tag(element_type)
+        if content is not None:
+            name = content[0]
+            setattr(merged, name,
+                    getattr(b, name, getattr(a, name, None)))
+        self.revise(merged)
+        merged_revisions = a.__base_revisions__.merge(
+            b.__base_revisions__,
+            RevisionSet([a.__revision__, b.__revision__])
+        )
+        merged.__base_revisions__ = merged_revisions
+        self.revise(merged)
+        return merged
 
     def __str__(self):
         return self.identifier
@@ -202,6 +300,25 @@ class RevisionSet(collections.Mapping):
             for session in sessions
         )
 
+    def contains(self, revision):
+        """Find whether the given ``revision`` is already merged to
+        the revision set.  In other words, return :const:`True`
+        if the ``revision`` doesn't have to be merged to the revision set
+        anymore.
+
+        :param revision: the revision to find whether it has to be merged
+                         or not
+        :type revision: :class:`Revision`
+        :returns: :const:`True` if the ``revision`` is included in
+                  the revision set, or :const:`False`
+        :rtype: :class:`bool`
+
+        """
+        try:
+            return self[revision.session] >= revision.updated_at
+        except KeyError:
+            return False
+
     def __repr__(self):
         return '{0.__module__}.{0.__name__}({1!r})'.format(type(self),
                                                            self.items())
@@ -276,7 +393,7 @@ class RevisionSetCodec(RevisionCodec):
 
     #: (:class:`re.RegexObject`) The regular expression pattern that matches
     #: to separator substrings between revision pairs.
-    SEPARATOR_PATTERN = re.compile('\s*,\s*')
+    SEPARATOR_PATTERN = re.compile(r'\s*,\s*')
 
     def encode(self, value):
         if not isinstance(value, RevisionSet):
