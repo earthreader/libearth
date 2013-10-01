@@ -61,7 +61,7 @@ def rss_get_channel_data(root, feed_url):
             link = Link()
             link.uri = data.text
             link.relation = 'alternate'
-            link.type = 'text/html'
+            link.mimetype = 'text/html'
             feed_data.links.append(link)
         elif data.tag == 'description':
             subtitle = Text()
