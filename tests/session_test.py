@@ -4,7 +4,7 @@ import time
 
 from pytest import fixture, mark, raises
 
-from libearth.schema import Attribute, Content, Text
+from libearth.schema import Attribute, Child, Content, Text, Element
 from libearth.session import (MergeableDocumentElement, Revision, RevisionCodec,
                               RevisionSet, RevisionSetCodec, Session,
                               ensure_revision_pair)
@@ -206,12 +206,22 @@ key1 2013-09-22T16:58:57Z'''
     assert codec.decode(expected) == fx_revision_set
 
 
+class TestMergeableEntity(Element):
+
+    ident = Text('ident', required=True)
+    value = Attribute('value')
+
+    def __entity_id__(self):
+        return self.ident
+
+
 class TestMergeableDoc(MergeableDocumentElement):
 
     __tag__ = 'merge-test'
     multi_text = Text('multi-text', multiple=True)
     text = Text('text')
     attr = Attribute('attr')
+    entities = Child('entity', TestMergeableEntity, multiple=True)
 
 
 class TestMergeableContentDoc(MergeableDocumentElement):
@@ -270,12 +280,30 @@ def test_session_merge():
     #      | /
     #  (5) e
     s1 = Session('s1')
-    a = TestMergeableDoc(attr='a', text='a', multi_text=['a', 'b', 'c'])
+    a = TestMergeableDoc(
+        attr='a',
+        text='a',
+        multi_text=['a', 'b', 'c'],
+        entities=[
+            TestMergeableEntity(ident='a', value='s1-a'),
+            TestMergeableEntity(ident='b', value='s1-b'),
+            TestMergeableEntity(ident='c', value='s1-c')
+        ]
+    )
     a_c = TestMergeableContentDoc(content='a')
     s1.revise(a)  # (1)
     s1.revise(a_c)
     s2 = Session('s2')
-    b = TestMergeableDoc(attr='b', text='b', multi_text=['d', 'e', 'f'])
+    b = TestMergeableDoc(
+        attr='b',
+        text='b',
+        multi_text=['d', 'e', 'f'],
+        entities=[
+            TestMergeableEntity(ident='c', value='s2-c'),
+            TestMergeableEntity(ident='d', value='s2-d'),
+            TestMergeableEntity(ident='e', value='s2-e')
+        ]
+    )
     b_c = TestMergeableContentDoc(content='b')
     s2.revise(b)  # (2)
     s2.revise(b_c)
@@ -286,11 +314,16 @@ def test_session_merge():
     assert c.__base_revisions__ == RevisionSet([a.__revision__, b.__revision__])
     assert c.attr == c.text == c_c.content == 'b'
     assert list(c.multi_text) == ['a', 'b', 'c', 'd', 'e', 'f']
+    assert ([entity.value for entity in c.entities] ==
+            ['s1-a', 's1-b', 's2-c', 's2-d', 's2-e'])
     b.attr = b.text = b_c.content = 'd'
     b.multi_text.append('blah')
+    b.entities.append(TestMergeableEntity(ident='blah', value='s2-blah'))
     s2.revise(b)  # (4)
     s2.revise(b_c)
     assert list(b.multi_text) == ['d', 'e', 'f', 'blah']
+    assert ([entity.value for entity in b.entities] ==
+            ['s2-c', 's2-d', 's2-e', 's2-blah'])
     d = s2.merge(b, c)  # (5)
     d_c = s2.merge(b_c, c_c)
     assert d.__revision__.session is s2
@@ -298,6 +331,8 @@ def test_session_merge():
     assert d.__base_revisions__ == RevisionSet([b.__revision__, c.__revision__])
     assert d.attr == d.text == d_c.content == 'd'
     assert list(d.multi_text) == ['a', 'b', 'c', 'd', 'e', 'f', 'blah']
+    assert ([entity.value for entity in d.entities] ==
+            ['s1-a', 's1-b', 's2-c', 's2-d', 's2-e', 's2-blah'])
     e = s1.merge(c, d)  # (5)
     e_c = s1.merge(c_c, d_c)
     assert e.__revision__.session is s1
@@ -305,3 +340,5 @@ def test_session_merge():
     assert e.__base_revisions__ == d.__base_revisions__
     assert e.attr == e.text == e_c.content == 'd'
     assert list(e.multi_text) == ['a', 'b', 'c', 'd', 'e', 'f', 'blah']
+    assert ([entity.value for entity in d.entities] ==
+            ['s1-a', 's1-b', 's2-c', 's2-d', 's2-e', 's2-blah'])

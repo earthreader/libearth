@@ -797,6 +797,15 @@ class Element(object):
                 raise SchemaError('{0.__module__}.{0.__name__} has no such '
                                   'attribute: {1}'.format(cls, attr_name))
 
+    def __entity_id__(self):
+        """Identify the entity object.  It returns the entity object itself
+        by default, but should be overridden.
+
+        :returns: any value to identify the entity object
+
+        """
+        return self
+
 
 class DocumentElement(Element):
     """The root element of the document."""

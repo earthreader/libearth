@@ -28,8 +28,8 @@ import uuid
 from .codecs import Rfc3339
 from .compat import string_type
 from .schema import (Attribute, Codec, DecodeError, DocumentElement,
-                     EncodeError, inspect_attributes, inspect_child_tags,
-                     inspect_content_tag)
+                     Element, EncodeError, inspect_attributes,
+                     inspect_child_tags, inspect_content_tag)
 from .tz import now
 
 __all__ = ('SESSION_XMLNS', 'MergeableDocumentElement', 'Revision',
@@ -103,12 +103,15 @@ class Session(object):
         """Pull the ``document`` (of possibly other session) to the current
         session.
 
+        :param document: the document to pull from the possibly other session
+                         to the current session
+        :type document: :class:`MergeableDocumentElement`
         :returns: the clone of the given ``document`` with the replaced
                   :attr:`~MergeableDocumentElement.__revision__`.
                   note that the :attr:`Revision.updated_at` value won't
                   be revised.  it could be the same object to the given
                   ``document`` object if the session is the same
-        :rtype: :class:`
+        :rtype: :class:`MergeableDocumentElement`
 
         """
         if not isinstance(document, MergeableDocumentElement):
@@ -164,6 +167,10 @@ class Session(object):
             return self.pull(a)
         elif b.__base_revisions__.contains(a.__revision__):
             return self.pull(b)
+        def entity_id(entity):
+            if isinstance(entity, Element):
+                return entity.__entity_id__()
+            return entity
         # The latest one should be `b`.
         if a.__revision__.updated_at > b.__revision__.updated_at:
             a, b = b, a
@@ -171,10 +178,19 @@ class Session(object):
         for attr_name, desc in inspect_child_tags(element_type).values():
             if desc.multiple:
                 a_list = getattr(a, attr_name, [])
+                identifiers = dict((entity_id(entity), entity)
+                                   for entity in a_list)
                 merged_attr = list(a_list)
                 for element in getattr(b, attr_name, []):
-                    if element not in a_list:
-                        merged_attr.append(element)
+                    eid = entity_id(element)
+                    try:
+                        entity = identifiers[eid]
+                    except KeyError:
+                        pass
+                    else:
+                        merged_attr.remove(entity)
+                    identifiers[eid] = element
+                    merged_attr.append(element)
             else:
                 merged_attr = getattr(b, attr_name, getattr(a, attr_name, None))
             setattr(merged, attr_name, merged_attr)
