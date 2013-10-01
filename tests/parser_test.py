@@ -83,6 +83,7 @@ atom_xml = """
             <name>kjwon</name>
         </author>
         <title>xml base test</title>
+        <puhlished>2013-08-17T03:28:11Z</published>
         <updated>2013-08-17T03:28:11Z</updated>
     </entry>
 </feed>
