@@ -167,10 +167,9 @@ class Session(object):
             return self.pull(a)
         elif b.__base_revisions__.contains(a.__revision__):
             return self.pull(b)
-        def entity_id(entity):
-            if isinstance(entity, Element):
-                return entity.__entity_id__()
-            return entity
+        entity_id = lambda e: (e.__entity_id__()
+                               if isinstance(e, Element)
+                               else e)
         # The latest one should be `b`.
         if a.__revision__.updated_at > b.__revision__.updated_at:
             a, b = b, a
