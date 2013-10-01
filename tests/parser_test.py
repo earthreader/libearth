@@ -200,8 +200,10 @@ rss_source_xml = """
 def test_rss_parser():
     httpretty.register_uri(httpretty.GET, "http://sourcetest.com/rss.xml",
                            body=rss_source_xml)
-    crawled_feed, data_for_crawl = rss2.parse_rss(rss_xml,
-        'http://sourcetest.com/rss.xml')
+    crawled_feed, data_for_crawl = rss2.parse_rss(
+        rss_xml,
+        'http://sourcetest.com/rss.xml'
+    )
     feed = read(Feed, write(crawled_feed))
     assert crawled_feed.id == feed.id
     title = crawled_feed.title
