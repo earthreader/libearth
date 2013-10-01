@@ -158,7 +158,7 @@ def rss_get_item_data(entries):
                 f = urllib2.urlopen(request)
                 xml = f.read()
                 parser = get_document_type(xml)
-                source, _ = parser(xml, parse_entry=False)
+                source, _ = parser(xml, url, parse_entry=False)
                 entry_data.source = source
         if entry_data.updated_at is None:
             entry_data.updated_at = entry_data.published_at
