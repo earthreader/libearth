@@ -200,7 +200,7 @@ def atom_get_category_tag(data):
         return
     category = Category()
     category.term = data.get('term')
-    category.scheme = data.get('scheme')
+    category.scheme_uri = data.get('scheme')
     category.label = data.get('label')
     return category
 

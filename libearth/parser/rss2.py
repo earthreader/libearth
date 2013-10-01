@@ -121,7 +121,7 @@ def rss_get_item_data(entries):
                 link = Link()
                 link.uri = data.text
                 link.relation = 'alternate'
-                link.type = 'text/html'
+                link.mimetype = 'text/html'
                 links.append(link)
                 entry_data.links = links
             elif data.tag == 'description':
@@ -140,7 +140,7 @@ def rss_get_item_data(entries):
                 pass  # FIXME
             elif data.tag == 'enclosure':
                 link = Link()
-                link.type = data.get('type')
+                link.mimetype = data.get('type')
                 link.uri = data.get('url')
                 links.append(link)
                 entry_data.links = links
