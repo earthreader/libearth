@@ -90,9 +90,6 @@ def atom_parse_person_construct(data, xml_base):
 def atom_get_feed_data(root, feed_url):
     feed_data = Feed()
     xml_base = atom_get_xml_base(root, feed_url)
-    authors = []
-    contributors = []
-    links = []
     for data in root:
         if data.tag == '{' + XMLNS_ATOM + '}' + 'id':
             feed_data.id = atom_get_id_tag(data, xml_base)
@@ -101,18 +98,17 @@ def atom_get_feed_data(root, feed_url):
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'updated':
             feed_data.updated_at = atom_get_updated_tag(data)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'author':
-            authors.append(atom_get_author_tag(data, xml_base))
-            feed_data.authors = authors
+            feed_data.authors.append(atom_get_author_tag(data, xml_base))
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'category':
             category = atom_get_category_tag(data)
             if category:
                 feed_data.categories.append(atom_get_category_tag(data))
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'contributor':
-            contributors.append(atom_get_contributor_tag(data, xml_base))
-            feed_data.contributors = contributors
+            feed_data.contributors.append(
+                atom_get_contributor_tag(data, xml_base)
+            )
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'link':
-            links.append(atom_get_link_tag(data, xml_base))
-            feed_data.links = links
+            feed_data.links.append(atom_get_link_tag(data, xml_base))
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'generator':
             feed_data.generator = atom_get_generator_tag(data, xml_base)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'icon':
@@ -133,10 +129,6 @@ def atom_get_entry_data(entries, feed_url):
     for entry in entries:
         entry_data = Entry()
         xml_base = atom_get_xml_base(entry, feed_url)
-        authors = []
-        categories = []
-        contributors = []
-        links = []
         for data in entry:
             if data.tag == '{' + XMLNS_ATOM + '}' + 'id':
                 entry_data.id = atom_get_id_tag(data, xml_base)
@@ -145,18 +137,17 @@ def atom_get_entry_data(entries, feed_url):
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'updated':
                 entry_data.updated_at = atom_get_updated_tag(data)
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'author':
-                authors.append(atom_get_author_tag(data, xml_base))
-                entry_data.authors = authors
+                entry_data.authors.append(atom_get_author_tag(data, xml_base))
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'category':
                 category = atom_get_category_tag(data)
                 if category:
                     entry_data.categories.append(atom_get_category_tag(data))
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'contributor':
-                contributors.append(atom_get_contributor_tag(data, xml_base))
-                entry_data.contributors = contributors
+                entry_data.contributors.append(
+                    atom_get_contributor_tag(data, xml_base)
+                )
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'link':
-                links.append(atom_get_link_tag(data, xml_base))
-                entry_data.links = links
+                entry_data.links.append(atom_get_link_tag(data, xml_base))
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'content':
                 entry_data.content = atom_get_content_tag(data, xml_base)
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'published':
