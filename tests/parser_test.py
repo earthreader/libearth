@@ -1,10 +1,11 @@
 import datetime
 
 import httpretty
+from pytest import raises
 
-from libearth.codecs import Rfc3339
 from libearth.feed import Feed
-from libearth.parser import atom, rss2, autodiscovery
+from libearth.parser import atom, rss2
+from libearth.parser.autodiscovery import autodiscovery, FeedUrlNotFoundError
 from libearth.schema import read, write
 from libearth.tz import utc
 
@@ -23,7 +24,7 @@ atom_blog = """
 
 
 def test_autodiscovery_atom():
-    assert autodiscovery.autodiscovery(atom_blog, None) == \
+    assert autodiscovery(atom_blog, None) == \
         'http://vio.atomtest.com/feed/atom/'
 
 rss_blog = """
@@ -40,8 +41,23 @@ rss_blog = """
 
 
 def test_autodiscovery_rss2():
-    assert autodiscovery.autodiscovery(rss_blog, None) == \
+    assert autodiscovery(rss_blog, None) == \
         'http://vio.rsstest.com/feed/rss/'
+
+
+html_with_no_feed_url = b'''
+<html>
+<head>
+</head>
+<body>
+</body>
+</html>
+'''
+
+
+def test_autodiscovery_with_binary():
+    with raises(FeedUrlNotFoundError):
+        autodiscovery(html_with_no_feed_url, None)
 
 
 atom_xml = """
