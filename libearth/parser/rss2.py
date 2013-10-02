@@ -152,12 +152,12 @@ def rss_get_item_data(entries):
                 #       is required element, so we have to fill some value to
                 #       entry.updated_at.
             elif data.tag == 'source':
-                from .heuristic import get_document_type
+                from .heuristic import get_format
                 url = data.get('url')
                 request = urllib2.Request(url)
                 f = urllib2.urlopen(request)
                 xml = f.read()
-                parser = get_document_type(xml)
+                parser = get_format(xml)
                 source, _ = parser(xml, url, parse_entry=False)
                 entry_data.source = source
         if entry_data.updated_at is None:

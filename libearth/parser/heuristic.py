@@ -15,7 +15,7 @@ except ImportError:
 from .atom import parse_atom
 from .rss2 import parse_rss
 
-__all__ = 'TYPE_ATOM', 'TYPE_RSS2', 'get_document_type', 'get_parser'
+__all__ = 'TYPE_ATOM', 'TYPE_RSS2', 'get_format', 'get_parser'
 
 
 #: (:class:`str`) The document type value for Atom format.
@@ -25,7 +25,7 @@ TYPE_ATOM = parse_atom
 TYPE_RSS2 = parse_rss
 
 
-def get_document_type(document):
+def get_format(document):
     """Guess the syndication format of an arbitrary ``document``.
 
     :param document: document string to guess

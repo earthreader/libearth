@@ -10,7 +10,7 @@ try:
 except ImportError:
     import urllib2
 
-from .parser.heuristic import get_document_type
+from .parser.heuristic import get_format
 
 __all__ = 'crawl',
 
@@ -37,5 +37,5 @@ def crawl(feeds, pool_size):
 def get_feed(feed_url):
     f = urllib2.urlopen(feed_url)
     feed_xml = f.read()
-    parser = get_document_type(feed_xml)
+    parser = get_format(feed_xml)
     return feed_url, parser(feed_xml, feed_url)

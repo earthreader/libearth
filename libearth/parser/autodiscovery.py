@@ -6,7 +6,7 @@ This module provides functions to autodiscovery feed url in document.
 """
 import re
 from libearth.compat import PY3
-from libearth.parser.heuristic import get_document_type
+from libearth.parser.heuristic import get_format
 
 if PY3:
     import urllib.parse as urlparse
@@ -43,7 +43,7 @@ def autodiscovery(document, url):
     :rtype: :class:`str`
 
     """
-    document_type = get_document_type(document)
+    document_type = get_format(document)
     if document_type is None:
         parser = AutoDiscovery()
         rss_url = parser.find_feed_url(document)
