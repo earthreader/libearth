@@ -484,8 +484,7 @@ class Entry(DocumentElement, Metadata):
     #: associated with the initial creation or first availability of
     #: the resource.  It corresponds to ``atom:published`` element of
     #: :rfc:`4287#section-4.2.9` (section 4.2.9).
-    published_at = TextChild('published', Rfc3339, xmlns=ATOM_XMLNS,
-                             required=True)
+    published_at = TextChild('published', Rfc3339, xmlns=ATOM_XMLNS)
 
     #: (:class:`Text`) The text field that conveys a short summary, abstract,
     #: or excerpt of the entry.  It corresponds to ``atom:summary`` element
