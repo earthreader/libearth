@@ -224,3 +224,30 @@ def test_feedCategory():
 
     #Or valid rfc822 string.
     feedCategory = FeedCategory('title', 'Mon, 23 Sep 2013 11:49:28 +0900')
+
+
+def test_get_all_feeds():
+    feed1 = Feed('rss2', 'feed1', 'http://xmlurl1.com/rss')
+    feed2 = Feed('rss2', 'feed2', 'http://xmlurl2.com/rss')
+    feed3 = Feed('rss2', 'feed3', 'http://xmlurl3.com/rss')
+
+    cate1 = FeedCategory('category1')
+    cate2 = FeedCategory('category2')
+
+    #feeds can be placed on multi category
+    cate1.append(feed1)
+    cate1.append(feed2)
+    cate2.append(feed2)
+    cate2.append(feed3)
+
+    feedlist = FeedList()
+    feedlist.append(cate1)
+    feedlist.append(cate2)
+    feedlist.append(feed3)
+
+    all_feeds = feedlist.get_all_feeds()
+
+    assert feed1 in all_feeds
+    assert feed2 in all_feeds
+    assert feed3 in all_feeds
+    assert len(all_feeds) == 3

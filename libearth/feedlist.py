@@ -174,6 +174,16 @@ class FeedCategory(FeedTree, MutableSequence):
         self.children = []
         self.urls = []  # to avoid duplication of feeds for the same category
 
+    def get_all_feeds(self):
+        res = set()
+        for obj in self.children:
+            if isinstance(obj, FeedCategory):
+                res = res.union(obj.get_all_feeds())
+            else:
+                res.add(obj)
+
+        return res
+
     def insert(self, index, value):
         if not isinstance(value, FeedTree):
             raise TypeError('expected an instance of {0.__module__}.'
@@ -472,6 +482,9 @@ class FeedList(MutableSequence):
             self.all_feeds[key] = feed
 
         return feed
+
+    def get_all_feeds(self):
+        return self.feedlist.get_all_feeds()
 
     def convert_from_outline(self, outline_obj):
         if outline_obj.children:
