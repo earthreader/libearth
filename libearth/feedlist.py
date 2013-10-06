@@ -175,14 +175,14 @@ class FeedCategory(FeedTree, MutableSequence):
         self.urls = []  # to avoid duplication of feeds for the same category
 
     def get_all_feeds(self):
-        res = []
+        res = set()
         for obj in self.children:
             if isinstance(obj, FeedCategory):
-                res += obj.get_all_feeds()
+                res = res.union(obj.get_all_feeds())
             else:
-                res.append(obj)
+                res.add(obj)
 
-        return list(set(res))
+        return res
 
     def insert(self, index, value):
         if not isinstance(value, FeedTree):
