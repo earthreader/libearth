@@ -5,6 +5,7 @@ Crawl feeds.
 
 """
 import multiprocessing.pool
+import sys
 try:
     import urllib.request as urllib2
 except ImportError:
@@ -35,7 +36,15 @@ def crawl(feeds, pool_size):
 
 
 def get_feed(feed_url):
-    f = urllib2.urlopen(feed_url)
-    feed_xml = f.read()
-    parser = get_format(feed_xml)
-    return feed_url, parser(feed_xml, feed_url)
+    try:
+        f = urllib2.urlopen(feed_url)
+        feed_xml = f.read()
+        parser = get_format(feed_xml)
+        return feed_url, parser(feed_xml, feed_url)
+    except:
+        return CrawlError(
+            'Crawling, {0} failed: {1}'.format(feed_url, sys.exc_info()[0]))
+
+
+class CrawlError(IOError):
+    '''Error which rises when crawling given url failed.'''
