@@ -505,11 +505,8 @@ class FeedList(MutableSequence):
         return res
 
     def convert_to_outline(self, feed_obj):
-        print feed_obj
-        print feed_obj.type
         res = OutlineElement()
         if feed_obj.type == 'category':
-            print 'hi'
             res.type = 'category'
             res.text = feed_obj.text
             res.title = feed_obj.title
