@@ -487,7 +487,7 @@ class FeedList(MutableSequence):
         return self.feedlist.get_all_feeds()
 
     def convert_from_outline(self, outline_obj):
-        if not outline_obj.xml_url:
+        if outline_obj.children or not outline_obj.xml_url:
             title = outline_obj.title or outline_obj.text
             type = outline_obj.type
             text = outline_obj.text
