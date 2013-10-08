@@ -1,6 +1,7 @@
 import httpretty
+from pytest import raises
 
-from libearth.crawler import crawl
+from libearth.crawler import crawl, CrawlError
 
 atom_xml = """
 <feed xmlns="http://www.w3.org/2005/Atom">
@@ -93,6 +94,12 @@ rss_source_xml = """
 </rss>
 """
 
+broken_rss = """
+<rss version="2.0">
+    <channel>
+        <title>Broken rss
+"""
+
 
 @httpretty.activate
 def test_crawler():
@@ -116,3 +123,15 @@ def test_crawler():
             assert entries[0].title.value == 'test one'
             source = feed_data.entries[0].source
             assert source.title.value == 'Source Test'
+
+
+def test_crawl_error():
+    httpretty.register_uri(httpretty.GET, 'http://brokenrss.com/rss',
+                           body=broken_rss)
+
+    feeds = ['http://brokenrss.com/rss']
+
+    generator = crawl(feeds, 2)
+
+    with raises(CrawlError):
+        next(generator)
