@@ -1,6 +1,10 @@
 libearth
 ========
 
+.. image:: https://raw.github.com/earthreader/libearth/master/artwork/libearth.png
+   :width: 264
+   :height: 336
+
 Libearth is the core implementation of Earth Reader, without any frontends.
 
 
