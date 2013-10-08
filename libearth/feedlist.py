@@ -438,8 +438,9 @@ class FeedList(MutableSequence):
             self.doc.head.date_created = timestamp
 
         try:
-            filename = filename or self.path
-            with open(filename, 'w') as fp:
+            if filename:
+                self.path = filename
+            with open(self.path, 'w') as fp:
                 for chunk in write(self.doc):
                     fp.write(chunk)
         except Exception as e:
