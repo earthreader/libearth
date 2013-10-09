@@ -3,7 +3,7 @@ libearth
 
 .. image:: _images/libearth.svg
    :width: 264
-   :height: 336
+   :height: 279
 
 |
 

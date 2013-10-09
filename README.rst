@@ -1,6 +1,6 @@
 .. image:: https://raw.github.com/earthreader/libearth/master/artwork/libearth.png
    :width: 132
-   :height: 168
+   :height: 139
 
 
 libearth
