@@ -185,13 +185,26 @@ class Session(object):
                     try:
                         entity = identifiers[eid]
                     except KeyError:
-                        pass
+                        merged_element = element
                     else:
                         merged_attr.remove(entity)
-                    identifiers[eid] = element
-                    merged_attr.append(element)
+                        if isinstance(element, Element):
+                            merged_element = element.__merge_entities__(entity)
+                        else:
+                            merged_element = element
+                    identifiers[eid] = merged_element
+                    merged_attr.append(merged_element)
             else:
-                merged_attr = getattr(b, attr_name, getattr(a, attr_name, None))
+                older_attr = getattr(a, attr_name, None)
+                newer_attr = getattr(b, attr_name, None)
+                if older_attr is None:
+                    merged_attr = older_attr
+                elif newer_attr is None:
+                    merged_attr = newer_attr
+                elif isinstance(newer_attr, Element):
+                    merged_attr = newer_attr.__merge_entities__(older_attr)
+                else:
+                    merged_attr = newer_attr
             setattr(merged, attr_name, merged_attr)
         for attr_name, _ in inspect_attributes(element_type).values():
             setattr(merged, attr_name,
