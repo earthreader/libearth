@@ -1,6 +1,13 @@
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+try:
+    import urllib2
+except ImportError:
+    import urllib.request as urllib2
 import datetime
 
-import httpretty
 from pytest import raises
 
 from libearth.feed import Feed
@@ -212,10 +219,23 @@ rss_source_xml = """
 """
 
 
-@httpretty.activate
+def mock_response(req):
+    if req.get_full_url() == 'http://sourcetest.com/rss.xml':
+        resp = urllib2.addinfourl(StringIO(rss_source_xml), 'mock message',
+                                  req.get_full_url())
+        resp.code = 200
+        resp.msg = "OK"
+        return resp
+
+
+class TestHTTPHandler(urllib2.HTTPHandler):
+    def http_open(self, req):
+        return mock_response(req)
+
+
 def test_rss_parser():
-    httpretty.register_uri(httpretty.GET, "http://sourcetest.com/rss.xml",
-                           body=rss_source_xml)
+    my_opener = urllib2.build_opener(TestHTTPHandler)
+    urllib2.install_opener(my_opener)
     crawled_feed, data_for_crawl = rss2.parse_rss(
         rss_xml,
         'http://sourcetest.com/rss.xml'

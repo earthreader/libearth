@@ -1,6 +1,20 @@
-import httpretty
+try:
+    import httplib
+except ImportError:
+    from http import client as httplib
+try:
+    import urllib2
+except ImportError:
+    from urllib import request as urllib2
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
-from libearth.crawler import crawl
+from pytest import raises
+
+from libearth.crawler import crawl, CrawlError
+
 
 atom_xml = """
 <feed xmlns="http://www.w3.org/2005/Atom">
@@ -89,19 +103,46 @@ rss_source_xml = """
         <item>
             <title>It will not be parsed</title>
         </item>
+        <pubDate>Sat, 17 Sep 2002 00:00:01 GMT</pubDate>
     </channel>
 </rss>
 """
 
+broken_rss = """
+<rss version="2.0">
+    <channel>
+        <title>Broken rss
+"""
 
-@httpretty.activate
+
+mock_urls = {
+    'http://vio.atomtest.com/feed/atom': (200, atom_xml),
+    'http://rsstest.com/rss.xml': (200, rss_xml),
+    'http://sourcetest.com/rss.xml': (200, rss_source_xml),
+    'http://brokenrss.com/rss': (200, broken_rss)
+}
+
+
+class TestHTTPHandler(urllib2.HTTPHandler):
+
+    def http_open(self, req):
+        url = req.get_full_url()
+        try:
+            status_code, content = mock_urls[url]
+        except KeyError:
+            pass
+        else:
+            resp = urllib2.addinfourl(StringIO(content),
+                                      'mock message',
+                                      url)
+            resp.code = status_code
+            resp.msg = httplib.responses[status_code]
+            return resp
+
+
 def test_crawler():
-    httpretty.register_uri(httpretty.GET, "http://vio.atomtest.com/feed/atom",
-                           body=atom_xml)
-    httpretty.register_uri(httpretty.GET, "http://rsstest.com/rss.xml",
-                           body=rss_xml)
-    httpretty.register_uri(httpretty.GET, "http://sourcetest.com/rss.xml",
-                           body=rss_source_xml)
+    my_opener = urllib2.build_opener(TestHTTPHandler)
+    urllib2.install_opener(my_opener)
     feeds = ['http://vio.atomtest.com/feed/atom',
              'http://rsstest.com/rss.xml']
     generator = crawl(feeds, 4)
@@ -116,3 +157,12 @@ def test_crawler():
             assert entries[0].title.value == 'test one'
             source = feed_data.entries[0].source
             assert source.title.value == 'Source Test'
+
+
+def test_crawl_error():
+    my_opener = urllib2.build_opener(TestHTTPHandler)
+    urllib2.install_opener(my_opener)
+    feeds = ['http://brokenrss.com/rss']
+    generator = crawl(feeds, 2)
+    with raises(CrawlError):
+        next(generator)
