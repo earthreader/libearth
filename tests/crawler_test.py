@@ -7,7 +7,9 @@ try:
 except ImportError:
     import urllib.request as urllib2
 
-from libearth.crawler import crawl
+from pytest import raises
+
+from libearth.crawler import crawl, CrawlError
 
 atom_xml = """
 <feed xmlns="http://www.w3.org/2005/Atom">
@@ -101,6 +103,12 @@ rss_source_xml = """
 </rss>
 """
 
+broken_rss = """
+<rss version="2.0">
+    <channel>
+        <title>Broken rss
+"""
+
 
 def mock_response(req):
     if req.get_full_url() == 'http://vio.atomtest.com/feed/atom':
@@ -117,6 +125,12 @@ def mock_response(req):
         return resp
     if req.get_full_url() == 'http://sourcetest.com/rss.xml':
         resp = urllib2.addinfourl(StringIO(rss_source_xml), 'mock message',
+                                  req.get_full_url())
+        resp.code = 200
+        resp.msg = "OK"
+        return resp
+    if req.get_full_url() == 'http://brokenrss.com/rss':
+        resp = urllib2.addinfourl(StringIO(broken_rss), 'mock message',
                                   req.get_full_url())
         resp.code = 200
         resp.msg = "OK"
@@ -145,3 +159,12 @@ def test_crawler():
             assert entries[0].title.value == 'test one'
             source = feed_data.entries[0].source
             assert source.title.value == 'Source Test'
+
+
+def test_crawl_error():
+    my_opener = urllib2.build_opener(TestHTTPHandler)
+    urllib2.install_opener(my_opener)
+    feeds = ['http://brokenrss.com/rss']
+    generator = crawl(feeds, 2)
+    with raises(CrawlError):
+        next(generator)
