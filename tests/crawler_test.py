@@ -1,4 +1,11 @@
-import httpretty
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+try:
+    import urllib2
+except ImportError:
+    import urllib.request as urllib2
 
 from libearth.crawler import crawl
 
@@ -89,19 +96,41 @@ rss_source_xml = """
         <item>
             <title>It will not be parsed</title>
         </item>
+        <pubDate>Sat, 17 Sep 2002 00:00:01 GMT</pubDate>
     </channel>
 </rss>
 """
 
 
-@httpretty.activate
+def mock_response(req):
+    if req.get_full_url() == 'http://vio.atomtest.com/feed/atom':
+        resp = urllib2.addinfourl(StringIO(atom_xml), 'mock message',
+                                  req.get_full_url())
+        resp.code = 200
+        resp.msg = "OK"
+        return resp
+    if req.get_full_url() == 'http://rsstest.com/rss.xml':
+        resp = urllib2.addinfourl(StringIO(rss_xml), 'mock message',
+                                  req.get_full_url())
+        resp.code = 200
+        resp.msg = "OK"
+        return resp
+    if req.get_full_url() == 'http://sourcetest.com/rss.xml':
+        resp = urllib2.addinfourl(StringIO(rss_source_xml), 'mock message',
+                                  req.get_full_url())
+        resp.code = 200
+        resp.msg = "OK"
+        return resp
+
+
+class TestHTTPHandler(urllib2.HTTPHandler):
+    def http_open(self, req):
+        return mock_response(req)
+
+
 def test_crawler():
-    httpretty.register_uri(httpretty.GET, "http://vio.atomtest.com/feed/atom",
-                           body=atom_xml)
-    httpretty.register_uri(httpretty.GET, "http://rsstest.com/rss.xml",
-                           body=rss_xml)
-    httpretty.register_uri(httpretty.GET, "http://sourcetest.com/rss.xml",
-                           body=rss_source_xml)
+    my_opener = urllib2.build_opener(TestHTTPHandler)
+    urllib2.install_opener(my_opener)
     feeds = ['http://vio.atomtest.com/feed/atom',
              'http://rsstest.com/rss.xml']
     generator = crawl(feeds, 4)
