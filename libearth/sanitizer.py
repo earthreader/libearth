@@ -119,11 +119,15 @@ class HtmlSanitizer(HTMLParser.HTMLParser):
             for name, value in attrs
             if not name.startswith('on')
             for chunk in (
-                ' ', name, '="', cgi.escape(
-                    ('' if value.startswith(disallowed_schemes) else value)
-                    if name == 'href' else
-                    (remove_css('\\1', value) if name == 'style' else value)
-                ), '"'
+                [' ', name]
+                if value is None else
+                [
+                    ' ', name, '="', cgi.escape(
+                        ('' if value.startswith(disallowed_schemes) else value)
+                        if name == 'href' else
+                        (remove_css('\\1', value) if name == 'style' else value)
+                    ), '"'
+                ]
             )
         )
         self.fed.append('>')

@@ -45,6 +45,10 @@ def test_sanitized_html():
              value='<p>Hello</p><script>alert(1);</script>').sanitized_html
         == '<p>Hello</p>'
     )
+    assert (
+        Text(type='html', value='<p>Hello</p><hr noshade>').sanitized_html
+        == '<p>Hello</p><hr noshade>'
+    )
 
 
 def test_person_str():
