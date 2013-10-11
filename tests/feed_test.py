@@ -25,15 +25,26 @@ def test_text_str():
             == 'Hello world')
 
 
-def test_text_html():
-    assert Text(type='text', value='Hello world').__html__() == 'Hello world'
-    assert (Text(type='text', value='Hello\nworld').__html__() ==
+def test_sanitized_html():
+    assert (Text(type='text', value='Hello world').sanitized_html ==
+            'Hello world')
+    assert (Text(type='text', value='Hello\nworld').sanitized_html ==
             'Hello<br>\nworld')
-    assert (Text(type='text', value='<p>Hello <em>world</em></p>').__html__()
-            == '&lt;p&gt;Hello &lt;em&gt;world&lt;/em&gt;&lt;/p&gt;')
-    assert Text(type='html', value='Hello world').__html__() == 'Hello world'
-    assert (Text(type='html', value='<p>Hello <em>world</em></p>').__html__()
-            == '<p>Hello <em>world</em></p>')
+    assert (
+        Text(type='text', value='<p>Hello <em>world</em></p>').sanitized_html
+        == '&lt;p&gt;Hello &lt;em&gt;world&lt;/em&gt;&lt;/p&gt;'
+    )
+    assert (Text(type='html', value='Hello world').sanitized_html ==
+            'Hello world')
+    assert (
+        Text(type='html', value='<p>Hello <em>world</em></p>').sanitized_html
+        == '<p>Hello <em>world</em></p>'
+    )
+    assert (
+        Text(type='html',
+             value='<p>Hello</p><script>alert(1);</script>').sanitized_html
+        == '<p>Hello</p>'
+    )
 
 
 def test_person_str():
