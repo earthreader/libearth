@@ -9,14 +9,11 @@ all valid and well-formed.
 
 """
 import cgi
-try:
-    import HTMLParser
-except ImportError:
-    from html import parser as HTMLParser
 import re
 
 from .codecs import Enum, Rfc3339
 from .compat import UNICODE_BY_DEFAULT, text_type
+from .sanitizer import clean_html
 from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
                      Element, Text as TextChild)
 
@@ -26,23 +23,6 @@ __all__ = ('ATOM_XMLNS', 'Category', 'Content', 'Entry', 'Feed', 'Generator',
 
 #: (:class:`str`) The XML namespace name used for Atom (:rfc:`4287`).
 ATOM_XMLNS = 'http://www.w3.org/2005/Atom'
-
-
-class MarkupTagCleaner(HTMLParser.HTMLParser):
-    """Strip all markup tags from HTML string."""
-
-    @classmethod
-    def clean(cls, html):
-        parser = cls()
-        parser.feed(html)
-        return ''.join(parser.fed)
-
-    def __init__(self):
-        HTMLParser.HTMLParser.__init__(self)
-        self.fed = []
-
-    def handle_data(self, d):
-        self.fed.append(d)
 
 
 class Text(Element):
@@ -76,7 +56,7 @@ class Text(Element):
         if not self.value:
             return ''
         elif self.type == 'html':
-            return MarkupTagCleaner.clean(self.value)
+            return clean_html(self.value)
         elif self.type == 'text':
             return self.value
 

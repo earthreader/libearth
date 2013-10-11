@@ -5,7 +5,7 @@ from pytest import fixture, raises
 
 from libearth.compat import text_type
 from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
-                           MarkupTagCleaner, Person, Source, Text)
+                           Person, Source, Text)
 from libearth.schema import read
 from libearth.tz import utc
 
@@ -14,12 +14,6 @@ def u(text):
     if isinstance(text, text_type):
         return text
     return text.decode('utf-8')
-
-
-def test_markup_tag_cleaner():
-    assert MarkupTagCleaner.clean('<b>Hello</b>') == 'Hello'
-    assert MarkupTagCleaner.clean('<p><b>Hello</b></p>') == 'Hello'
-    assert MarkupTagCleaner.clean('<p>Hello <b>world</b></p>') == 'Hello world'
 
 
 def test_text_str():

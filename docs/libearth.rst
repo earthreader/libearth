@@ -11,6 +11,7 @@
       libearth/parser
       libearth/feedlist
       libearth/repository
+      libearth/sanitizer
       libearth/schema
       libearth/session
       libearth/tz
