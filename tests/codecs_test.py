@@ -61,6 +61,26 @@ def test_rfc822():
     assert codec.encode(kst_datetime) == kst_string
 
 
+def test_rfc822_minus_tz():
+    codec = Rfc822()
+    utc_string = 'Sat, 07 Sep 2013 01:20:43 -0000'
+    utc_datetime = datetime.datetime(2013, 9, 7, 1, 20, 43,
+                                     tzinfo=utc)
+
+    assert codec.decode(utc_string) == utc_datetime
+
+
+def test_rfc822_with_white_space():
+    codec = Rfc822()
+    utc_string = '''
+        Sat, 07 Sep 2013 01:20:43 +0000
+    '''
+    utc_datetime = datetime.datetime(2013, 9, 7, 1, 20, 43,
+                                     tzinfo=utc)
+
+    assert codec.decode(utc_string) == utc_datetime
+
+
 def test_rfc822_namedtz():
     codec = Rfc822()
     gmt_string = 'Sat, 07 Sep 2013 01:20:43 GMT'
