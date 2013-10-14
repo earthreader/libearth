@@ -9,14 +9,11 @@ all valid and well-formed.
 
 """
 import cgi
-try:
-    import HTMLParser
-except ImportError:
-    from html import parser as HTMLParser
 import re
 
 from .codecs import Enum, Rfc3339
 from .compat import UNICODE_BY_DEFAULT, text_type
+from .sanitizer import clean_html, sanitize_html
 from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
                      Element, Text as TextChild)
 
@@ -26,23 +23,6 @@ __all__ = ('ATOM_XMLNS', 'Category', 'Content', 'Entry', 'Feed', 'Generator',
 
 #: (:class:`str`) The XML namespace name used for Atom (:rfc:`4287`).
 ATOM_XMLNS = 'http://www.w3.org/2005/Atom'
-
-
-class MarkupTagCleaner(HTMLParser.HTMLParser):
-    """Strip all markup tags from HTML string."""
-
-    @classmethod
-    def clean(cls, html):
-        parser = cls()
-        parser.feed(html)
-        return ''.join(parser.fed)
-
-    def __init__(self):
-        HTMLParser.HTMLParser.__init__(self)
-        self.fed = []
-
-    def handle_data(self, d):
-        self.fed.append(d)
 
 
 class Text(Element):
@@ -65,6 +45,20 @@ class Text(Element):
     #: :attr:`type` is ``'html'``.
     value = ContentValue()
 
+    @property
+    def sanitized_html(self):
+        """(:class:`str`) The secure HTML string of the text.  If it's
+        a plain text, this becomes entity-escaped HTML string (for example,
+        ``'<Hello>'`` becomes ``'&lt;Hello&gt;'``), and if it's a HTML text,
+        the ``value`` is sanitized (for example,
+        ``'<script>alert(1);</script><p>Hello</p>'`` comes ``'<p>Hello</p>'``).
+
+        """
+        if self.type == 'html':
+            return sanitize_html(self.value)
+        elif self.type == 'text':
+            return cgi.escape(self.value, quote=True).replace('\n', '<br>\n')
+
     def __eq__(self, other):
         return (isinstance(other, type(self)) and
                 self.type == other.type and self.value == other.value)
@@ -76,7 +70,7 @@ class Text(Element):
         if not self.value:
             return ''
         elif self.type == 'html':
-            return MarkupTagCleaner.clean(self.value)
+            return clean_html(self.value)
         elif self.type == 'text':
             return self.value
 
@@ -86,10 +80,7 @@ class Text(Element):
         __str__ = lambda self: unicode(self).encode('utf-8')
 
     def __html__(self):
-        if self.type == 'html':
-            return self.value
-        elif self.type == 'text':
-            return cgi.escape(self.value, quote=True).replace('\n', '<br>\n')
+        return self.sanitized_html
 
     def __repr__(self):
         return '{0.__module__}.{0.__name__}(type={1!r}, value={2!r})'.format(

@@ -42,7 +42,7 @@ def get_feed(feed_url):
         parser = get_format(feed_xml)
         return feed_url, parser(feed_xml, feed_url)
     except:
-        return CrawlError(
+        raise CrawlError(
             'Crawling, {0} failed: {1}'.format(feed_url, sys.exc_info()[0]))
 
 

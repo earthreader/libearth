@@ -34,6 +34,10 @@ string_type = str if PY3 else basestring
 #: :class:`unicode` in Python 2 and :class:`str` in Python 3.
 text_type = str if PY3 else unicode
 
+#: The function that takes a Unicode codepoint and returns the corresponding
+#: Unicode character.
+unichr = chr if PY3 else unichr
+
 
 def binary(string, var=None):
     """Makes ``string`` to :class:`str` in Python 2.

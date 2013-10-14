@@ -5,7 +5,7 @@ from pytest import fixture, raises
 
 from libearth.compat import text_type
 from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
-                           MarkupTagCleaner, Person, Source, Text)
+                           Person, Source, Text)
 from libearth.schema import read
 from libearth.tz import utc
 
@@ -14,12 +14,6 @@ def u(text):
     if isinstance(text, text_type):
         return text
     return text.decode('utf-8')
-
-
-def test_markup_tag_cleaner():
-    assert MarkupTagCleaner.clean('<b>Hello</b>') == 'Hello'
-    assert MarkupTagCleaner.clean('<p><b>Hello</b></p>') == 'Hello'
-    assert MarkupTagCleaner.clean('<p>Hello <b>world</b></p>') == 'Hello world'
 
 
 def test_text_str():
@@ -31,15 +25,30 @@ def test_text_str():
             == 'Hello world')
 
 
-def test_text_html():
-    assert Text(type='text', value='Hello world').__html__() == 'Hello world'
-    assert (Text(type='text', value='Hello\nworld').__html__() ==
+def test_sanitized_html():
+    assert (Text(type='text', value='Hello world').sanitized_html ==
+            'Hello world')
+    assert (Text(type='text', value='Hello\nworld').sanitized_html ==
             'Hello<br>\nworld')
-    assert (Text(type='text', value='<p>Hello <em>world</em></p>').__html__()
-            == '&lt;p&gt;Hello &lt;em&gt;world&lt;/em&gt;&lt;/p&gt;')
-    assert Text(type='html', value='Hello world').__html__() == 'Hello world'
-    assert (Text(type='html', value='<p>Hello <em>world</em></p>').__html__()
-            == '<p>Hello <em>world</em></p>')
+    assert (
+        Text(type='text', value='<p>Hello <em>world</em></p>').sanitized_html
+        == '&lt;p&gt;Hello &lt;em&gt;world&lt;/em&gt;&lt;/p&gt;'
+    )
+    assert (Text(type='html', value='Hello world').sanitized_html ==
+            'Hello world')
+    assert (
+        Text(type='html', value='<p>Hello <em>world</em></p>').sanitized_html
+        == '<p>Hello <em>world</em></p>'
+    )
+    assert (
+        Text(type='html',
+             value='<p>Hello</p><script>alert(1);</script>').sanitized_html
+        == '<p>Hello</p>'
+    )
+    assert (
+        Text(type='html', value='<p>Hello</p><hr noshade>').sanitized_html
+        == '<p>Hello</p><hr noshade>'
+    )
 
 
 def test_person_str():
