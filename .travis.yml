@@ -5,11 +5,47 @@ python:
 - 2.7
 - 3.2
 - 3.3
+env:
+- JYTHON=true
+- JYTHON=false
+matrix:
+  exclude:
+  - python: pypy
+    env: JYTHON=true
+  - python: 2.6
+    env: JYTHON=true
+  - python: 3.2
+    env: JYTHON=true
+  - python: 3.3
+    env: JYTHON=true
 install:
-- pip install pytest pytest-cov pep8 coveralls
+- if [ "$JYTHON" != "true" ]; then
+    pip install pytest pytest-cov pep8 coveralls;
+  fi
+- if [ "$JYTHON" = "true" ]; then
+    mkdir $HOME/bin;
+    wget -O $HOME/bin/jython.jar http://search.maven.org/remotecontent?filepath=org/python/jython-standalone/2.7-b1/jython-standalone-2.7-b1.jar;
+    echo "#!/bin/bash" > $HOME/bin/jython;
+    echo 'java -Dpython.executable="$0" -jar $HOME/bin/jython.jar "$@"' >> $HOME/bin/jython;
+    chmod +x $HOME/bin/jython;
+    cd /tmp;
+    wget -O - https://pypi.python.org/packages/source/s/setuptools/setuptools-1.1.6.tar.gz | tar xvfz -;
+    cd setuptools-*;
+    $HOME/bin/jython setup.py install;
+    # Jython's ssl module is not fully compatible to CPython's, and
+    # it makes a bug when to run easy_install.  So we workaround this
+    # by using non-SSL PyPI mirror here:
+    $HOME/bin/bin/easy_install -i http://pypi.gocept.com/simple/ pytest;
+  fi
 script:
-- python -mlibearth.version
-- py.test --cov libearth --durations=20
+- if [ "$JYTHON" != "true" ]; then
+    python -mlibearth.version;
+    py.test --cov libearth --durations=20;
+  fi
+- if [ "$JYTHON" != "true" ]; then
+    $HOME/bin/jython -m libearth.version;
+    $HOME/bin/bin/py.test*
+  fi
 - if [ `python -c 'from platform import *; print(python_implementation())'` != 'PyPy' ]; then pep8; fi
 - python docs/coverage.py
 after_success:
