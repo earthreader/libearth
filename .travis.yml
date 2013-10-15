@@ -22,16 +22,17 @@ install:
 - if [ "$JYTHON" != "true" ]; then
     pip install pytest pytest-cov pep8 coveralls;
   fi
-- if [ "$JYTHON" = "true" ]; then
+- if [ "$JYTHON" == "true" ]; then
     mkdir $HOME/bin;
     wget -O $HOME/bin/jython.jar http://search.maven.org/remotecontent?filepath=org/python/jython-standalone/2.7-b1/jython-standalone-2.7-b1.jar;
     echo "#!/bin/bash" > $HOME/bin/jython;
     echo 'java -Dpython.executable="$0" -jar $HOME/bin/jython.jar "$@"' >> $HOME/bin/jython;
     chmod +x $HOME/bin/jython;
-    cd /tmp;
+    pushd /tmp;
     wget -O - https://pypi.python.org/packages/source/s/setuptools/setuptools-1.1.6.tar.gz | tar xvfz -;
     cd setuptools-*;
     $HOME/bin/jython setup.py install;
+    popd;
     echo "Jython's ssl module is not fully compatible to CPython's, and ";
     echo "it makes a bug when to run easy_install.  So we workaround this ";
     echo "by using non-SSL PyPI mirror here:";
