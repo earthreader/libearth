@@ -32,9 +32,9 @@ install:
     wget -O - https://pypi.python.org/packages/source/s/setuptools/setuptools-1.1.6.tar.gz | tar xvfz -;
     cd setuptools-*;
     $HOME/bin/jython setup.py install;
-    # Jython's ssl module is not fully compatible to CPython's, and
-    # it makes a bug when to run easy_install.  So we workaround this
-    # by using non-SSL PyPI mirror here:
+    echo "Jython's ssl module is not fully compatible to CPython's, and ";
+    echo "it makes a bug when to run easy_install.  So we workaround this ";
+    echo "by using non-SSL PyPI mirror here:";
     $HOME/bin/bin/easy_install -i http://pypi.gocept.com/simple/ pytest;
   fi
 script:
