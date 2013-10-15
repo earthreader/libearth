@@ -215,15 +215,17 @@ class Rfc822(Codec):
         return res
 
     def decode(self, text):
+        text = text.strip()
         timestamp = text[:25]
         timezone = text[26:]
         try:
             res = datetime.datetime.strptime(timestamp, "%a, %d %b %Y %H:%M:%S")
-            matched = re.match(r'\+([0-9]{2})([0-9]{2})', timezone)
+            matched = re.match(r'([\+\-])([0-9]{2})([0-9]{2})', timezone)
             if matched:
                 offset = FixedOffset(
-                    int(matched.group(1)) * 60 +
-                    int(matched.group(2))
+                    int(matched.group(2)) * 60 +
+                    int(matched.group(3)) *
+                    (1 if matched.group(1) == '+' else -1)
                 )
                 res = res.replace(tzinfo=offset)
             elif timezone in self.TIMEZONES:
