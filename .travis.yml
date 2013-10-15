@@ -44,7 +44,7 @@ script:
   fi
 - if [ "$JYTHON" != "true" ]; then
     $HOME/bin/jython -m libearth.version;
-    $HOME/bin/bin/py.test*
+    $HOME/bin/bin/py.test*;
   fi
 - if [ `python -c 'from platform import *; print(python_implementation())'` != 'PyPy' ]; then pep8; fi
 - python docs/coverage.py
