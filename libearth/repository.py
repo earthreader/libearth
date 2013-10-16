@@ -17,6 +17,14 @@ class Repository(object):
     :class:`~libearth.stage.Stage` objects can deal with documents to be stored
     using the interface.
 
+    Every content in repositories is accessible using *keys*.  It actually
+    abstracts out "filenames" in "file systems", hence keys share the common
+    concepts with filenames.  Keys are hierarchical, like file paths, so
+    consists of multiple sequential strings e.g. ``['dir', 'subdir', 'key']``.
+    You can :meth:`list()` all subkeys in the upper key as well e.g.::
+
+        repository.list(['dir', 'subdir'])
+
     """
 
     def read(self, key):
@@ -82,6 +90,11 @@ class Repository(object):
         :rtype: :class:`collections.Set`
         :raises RepositoryKeyError: the ``key`` cannot be found in
                                     the repository
+
+        .. note::
+
+           Every subclass of :class:`Repository` has to override
+           :meth:`list()` method to implement details.
 
         """
         if not isinstance(key, collections.Sequence):
