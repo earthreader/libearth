@@ -19,6 +19,10 @@ class RepositoryImplemented(Repository):
     def write(self, key, iterable):
         super(RepositoryImplemented, self).write(key, iterable)
 
+    def list(self, key):
+        super(RepositoryImplemented, self).list(key)
+        return frozenset()
+
 
 def test_not_implemented_error():
     r = RepositoryNotImplemented()
@@ -26,9 +30,12 @@ def test_not_implemented_error():
         r.read(['key'])
     with raises(NotImplementedError):
         r.write(['key'], '')
+    with raises(NotImplementedError):
+        r.list(['key'])
     r2 = RepositoryImplemented()
     assert r2.read(['key']) == ''
     r2.write(['key'], '')
+    assert r2.list(['key']) == frozenset()
 
 
 def test_file_read(tmpdir):
@@ -53,6 +60,17 @@ def test_file_write(tmpdir):
     assert tmpdir.join('dir', 'dir2', 'key').read() == 'deep file content'
     with raises(RepositoryKeyError):
         f.write([], [b'file ', b'content'])
+
+
+def test_file_list(tmpdir):
+    f = FileSystemRepository(str(tmpdir))
+    d = tmpdir.mkdir('dir')
+    for i in range(100):
+        d.mkdir('d{0}'.format(i))
+    assert (frozenset(f.list(['dir'])) ==
+            frozenset('d{0}'.format(i) for i in range(100)))
+    with raises(RepositoryKeyError):
+        f.list(['not-exist'])
 
 
 def test_file_not_found(tmpdir):

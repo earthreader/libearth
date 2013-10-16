@@ -73,6 +73,25 @@ class Repository(object):
                 'implement write() method'.format(Repository)
             )
 
+    def list(self, key):
+        """List all subkeys in the ``key``.
+
+        :param key: the incomplete key that might have subkeys
+        :type key: :class:`collections.Sequence`
+        :returns: the set of subkeys (set of strings, not set of string lists)
+        :rtype: :class:`collections.Set`
+        :raises RepositoryKeyError: the ``key`` cannot be found in
+                                    the repository
+
+        """
+        if not isinstance(key, collections.Sequence):
+            raise TypeError('key must be a sequence, not ' + repr(key))
+        if hash(type(self).list) == hash(Repository.list):
+            raise NotImplementedError(
+                'every subclass of {0.__module__}.{0.__name__} has to '
+                'implement list() method'.format(Repository)
+            )
+
     def __repr__(self):
         return '{0.__module__}.{0.__name__}()'.format(type(self))
 
@@ -141,6 +160,14 @@ class FileSystemRepository(Repository):
         with open(os.path.join(self.path, *key), 'wb') as f:
             for chunk in iterable:
                 f.write(chunk)
+
+    def list(self, key):
+        super(FileSystemRepository, self).list(key)
+        try:
+            names = os.listdir(os.path.join(self.path, *key))
+        except (IOError, OSError) as e:
+            raise RepositoryKeyError(key, str(e))
+        return frozenset(name for name in names if name != '..' or name != '.')
 
     def __repr__(self):
         return '{0.__module__}.{0.__name__}({1!r})'.format(type(self),
