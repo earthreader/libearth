@@ -1,23 +1,22 @@
 try:
-    from HTMLParser import HTMLParser
+    import HTMLParser
 except ImportError:
-    from html.parser import HTMLParser
+    import html.parser as HTMLParser
 try:
-    from StringIO import StringIO
+    import StringIO
 except ImportError:
-    from io import StringIO
+    import io as StringIO
+import datetime
 try:
     import urllib2
 except ImportError:
     import urllib.request as urllib2
-import datetime
-import sys
 
 from pytest import raises, mark
 
 from libearth.feed import Feed
 from libearth.parser import atom, rss2
-from libearth.parser.autodiscovery import autodiscovery, FeedUrlNotFoundError
+from libearth.parser.autodiscovery import FeedUrlNotFoundError, autodiscovery
 from libearth.schema import read, write
 from libearth.tz import utc
 
@@ -157,7 +156,7 @@ autodiscovery_with_regex = '''
 @mark.skipif('sys.version_info >= (3, 0)', reason='Error occurs under Python 3')
 def test_autodiscovery_with_regex():
 
-    class TestHTMLParser(HTMLParser):
+    class TestHTMLParser(HTMLParser.HTMLParser):
 
         def handle_starttag(self, tag, attrs):
             pass
@@ -345,7 +344,8 @@ def test_autodiscovery_when_rss2():
 
 def mock_response(req):
     if req.get_full_url() == 'http://sourcetest.com/rss.xml':
-        resp = urllib2.addinfourl(StringIO(rss_source_xml), 'mock message',
+        resp = urllib2.addinfourl(StringIO.StringIO(rss_source_xml),
+                                  'mock message',
                                   req.get_full_url())
         resp.code = 200
         resp.msg = "OK"

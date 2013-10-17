@@ -4,18 +4,21 @@
 This module provides functions to autodiscovery feed url in document.
 
 """
+try:
+    import HTMLParser
+except ImportError:
+    import html.parser as HTMLParser
+import collections
 import re
-from libearth.compat import PY3, text
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
+
+from libearth.compat import text
 from libearth.parser.heuristic import get_format
 from libearth.parser import atom, rss2
 
-if PY3:
-    import urllib.parse as urlparse
-    from html.parser import HTMLParser
-else:
-    import urlparse
-    from HTMLParser import HTMLParser
-from collections import namedtuple
 
 __all__ = 'autodiscovery',
 
@@ -27,7 +30,7 @@ RSS_TYPE = 'application/rss+xml'
 ATOM_TYPE = 'application/atom+xml'
 
 
-link_tuple = namedtuple('link_tuple', 'type url')
+link_tuple = collections.namedtuple('link_tuple', 'type url')
 
 
 def autodiscovery(document, url):
@@ -71,7 +74,7 @@ def autodiscovery(document, url):
             return [link_tuple(RSS_TYPE, url)]
 
 
-class AutoDiscovery(HTMLParser):
+class AutoDiscovery(HTMLParser.HTMLParser):
     """Parse the given HTML and try finding the actual feed urls from it."""
 
     def __init__(self):
