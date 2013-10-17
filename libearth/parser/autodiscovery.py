@@ -46,7 +46,7 @@ def autodiscovery(document, url):
                 if feed url is in html and represented in relative url,
                 it will be rebuilt on top of the ``url``
     :type url: :class:`str`
-    :returns: list of :class:`link_tuple`
+    :returns: list of `namedtuple('link_tuple', 'type url')`
     :rtype: :class:`collections.MutableSequence`
 
     """
