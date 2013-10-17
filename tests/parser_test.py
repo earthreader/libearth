@@ -31,8 +31,10 @@ atom_blog = '''
 
 
 def test_autodiscovery_atom():
-    assert autodiscovery(atom_blog, None)[0] == \
-        ('application/atom+xml', 'http://vio.atomtest.com/feed/atom/')
+    feedlink = autodiscovery(atom_blog, None)[0]
+    assert feedlink.type == 'application/atom+xml'
+    assert feedlink.url == 'http://vio.atomtest.com/feed/atom/'
+
 
 rss_blog = '''
 <html>
@@ -48,8 +50,9 @@ rss_blog = '''
 
 
 def test_autodiscovery_rss2():
-    assert autodiscovery(rss_blog, None)[0] == \
-        ('application/rss+xml', 'http://vio.rsstest.com/feed/rss/')
+    feedlink = autodiscovery(rss_blog, None)[0]
+    assert feedlink.type == 'application/rss+xml'
+    assert feedlink.url == 'http://vio.rsstest.com/feed/rss/'
 
 
 html_with_no_feed_url = b'''
@@ -81,8 +84,9 @@ binary_rss_blog = b'''
 
 
 def test_autodiscovery_with_binary():
-    assert autodiscovery(binary_rss_blog, None)[0] == \
-        ('application/rss+xml', 'http://vio.rsstest.com/feed/rss/')
+    feedlink = autodiscovery(binary_rss_blog, None)[0]
+    assert feedlink.type == 'application/rss+xml'
+    assert feedlink.url == 'http://vio.rsstest.com/feed/rss/'
 
 
 blog_with_two_feeds = '''
@@ -101,11 +105,11 @@ blog_with_two_feeds = '''
 
 
 def test_autodiscovery_with_two_feeds():
-    feed_urls = autodiscovery(blog_with_two_feeds, None)
-    assert feed_urls[0] == \
-        ('application/atom+xml', 'http://vio.atomtest.com/feed/atom/')
-    assert feed_urls[1] == \
-        ('application/rss+xml', 'http://vio.rsstest.com/feed/rss/')
+    feedlinks = autodiscovery(blog_with_two_feeds, None)
+    assert feedlinks[0].type == 'application/atom+xml'
+    assert feedlinks[0].url == 'http://vio.atomtest.com/feed/atom/'
+    assert feedlinks[1].type == 'application/rss+xml'
+    assert feedlinks[1].url == 'http://vio.rsstest.com/feed/rss/'
 
 
 atom_xml = """

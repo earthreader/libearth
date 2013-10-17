@@ -41,7 +41,7 @@ def autodiscovery(document, url):
                 if feed url is in html and represented in relative url,
                 it will be rebuilt on top of the ``url``
     :type url: :class:`str`
-    :returns: list of (feed_type, feed url)
+    :returns: list of :class:`FeedLink`
     :rtype: :class:`collections.MutableSequence`
 
     """
@@ -49,13 +49,13 @@ def autodiscovery(document, url):
     document_type = get_format(document)
     if document_type is None:
         parser = AutoDiscovery()
-        feed_urls = parser.find_feed_url(document)
-        if not feed_urls:
+        feed_links = parser.find_feed_url(document)
+        if not feed_links:
             raise FeedUrlNotFoundError('Cannot find feed url')
-        for rss_url in feed_urls:
-            if rss_url[1].startswith('/'):
-                rss_url[1] = urlparse.urljoin(url, rss_url)
-        return feed_urls
+        for link in feed_links:
+            if link.url.startswith('/'):
+                link.url = urlparse.urljoin(url, link.url)
+        return feed_links
     else:
         return url
 
@@ -64,13 +64,13 @@ class AutoDiscovery(HTMLParser):
     """Parse the given HTML and try finding the actual feed urls from it."""
 
     def __init__(self):
-        self.feed_urls = []
+        self.feed_links = []
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if tag == 'link' and 'rel' in attrs and attrs['rel'] == 'alternate' \
                 and 'type' in attrs and attrs['type'] in RSS_TYPE+ATOM_TYPE:
-            self.feed_urls.append((attrs['type'], attrs['href']))
+            self.feed_links.append(FeedLink(attrs['type'], attrs['href']))
 
     def find_feed_url(self, document):
         match = re.match('.+</head>', document)
@@ -84,8 +84,8 @@ class AutoDiscovery(HTMLParser):
                 self.feed(chunk)
             except:
                 self.find_feed_url_with_regex(chunk)
-        self.feed_urls = sorted(self.feed_urls, key=lambda feed: feed[0])
-        return self.feed_urls
+        self.feed_links = sorted(self.feed_links, key=lambda link: link.type)
+        return self.feed_links
 
     def find_feed_url_with_regex(self, chunk):
         if (re.search('rel\s?=\s?(\'|")?alternate[\'"\s>]', chunk) and
@@ -94,7 +94,21 @@ class AutoDiscovery(HTMLParser):
                                  chunk).group(1)
             feed_type = re.search('type\s?=\s?(?:\'|\")?([^\'"\s>]+)',
                                   chunk).group(1)
-            self.feed_urls.append((feed_type, feed_url))
+            self.feed_links.append(FeedLink(feed_type, feed_url))
+
+
+class FeedLink(object):
+    """Class which stores feed type and feed url"""
+
+    #: (:class:`str`) The feed type.
+    type = None
+
+    #: (:class:`url`) The feed url
+    url = None
+
+    def __init__(self, type, url):
+        self.type = type
+        self.url = url
 
 
 class FeedUrlNotFoundError(Exception):
