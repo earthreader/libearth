@@ -30,7 +30,9 @@ def autodiscovery(document, url):
     without any change.
 
     If the given url is a url of an ordinary web page
-    (i.e. :mimetype:`text/html`), it finds the url of the corresponding feed.
+    (i.e. :mimetype:`text/html`), it finds the urls of the corresponding feed.
+    It sorts feed urls in lexicographical order of feed types and return urls.
+
     If autodiscovery failed, it raise :exc:`FeedUrlNotFoundError`.
 
     :param document: html, or xml strings
@@ -39,58 +41,60 @@ def autodiscovery(document, url):
                 if feed url is in html and represented in relative url,
                 it will be rebuilt on top of the ``url``
     :type url: :class:`str`
-    :returns: feed url
-    :rtype: :class:`str`
+    :returns: list of (feed_type, feed url)
+    :rtype: :class:`collections.MutableSequence`
 
     """
     document = text(document)
     document_type = get_format(document)
     if document_type is None:
         parser = AutoDiscovery()
-        rss_url = parser.find_feed_url(document)
-        if rss_url is None:
+        feed_urls = parser.find_feed_url(document)
+        if not feed_urls:
             raise FeedUrlNotFoundError('Cannot find feed url')
-        if rss_url.startswith('/'):
-            rss_url = urlparse.urljoin(url, rss_url)
-        return rss_url
+        for rss_url in feed_urls:
+            if rss_url[1].startswith('/'):
+                rss_url[1] = urlparse.urljoin(url, rss_url)
+        return feed_urls
     else:
         return url
 
 
 class AutoDiscovery(HTMLParser):
-    """Parse the given HTML and try finding the actual feed url from it."""
+    """Parse the given HTML and try finding the actual feed urls from it."""
 
-    feed_url = None
+    def __init__(self):
+        self.feed_urls = []
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if tag == 'link' and 'rel' in attrs and attrs['rel'] == 'alternate' \
                 and 'type' in attrs and attrs['type'] in RSS_TYPE+ATOM_TYPE:
-            self.feed_url = attrs['href']
+            self.feed_urls.append((attrs['type'], attrs['href']))
 
     def find_feed_url(self, document):
-        chunks = re.findall('[^>]*(?:>|$)', document)
+        match = re.match('.+</head>', document)
+        if match:
+            head = match.group(0)
+        else:
+            head = document
+        chunks = re.findall('[^>]*(?:>|$)', head)
         for chunk in chunks:
-            if self.feed_url is None:
-                try:
-                    self.feed(chunk)
-                except:
-                    self.find_feed_url_with_regex(document)
-            else:
-                return self.feed_url
+            try:
+                self.feed(chunk)
+            except:
+                self.find_feed_url_with_regex(chunk)
+        self.feed_urls = sorted(self.feed_urls, key=lambda feed: feed[0])
+        return self.feed_urls
 
-    def find_feed_url_with_regex(self, document):
-        document = str(document)
-        head_pattern = re.compile('<head.+/head>', re.DOTALL)
-        head = re.search(head_pattern, document).group(0)
-        link_tags = re.findall('<link[^>]+>', head)
-        for link_tag in link_tags:
-            if (re.search('rel\s?=\s?(\'|")?alternate[\'"\s>]', link_tag) and
-                    (RSS_TYPE in link_tag) or (ATOM_TYPE in link_tag)):
-                feed_url = re.search('href\s?=\s?(\'|")?([^\'"\s>]+)',
-                                     link_tag).group(2)
-                self.feed_url = str(feed_url)
-                return
+    def find_feed_url_with_regex(self, chunk):
+        if (re.search('rel\s?=\s?(\'|")?alternate[\'"\s>]', chunk) and
+                (RSS_TYPE in chunk) or (ATOM_TYPE in chunk)):
+            feed_url = re.search('href\s?=\s?(?:\'|")?([^\'"\s>]+)',
+                                 chunk).group(1)
+            feed_type = re.search('type\s?=\s?(?:\'|\")?([^\'"\s>]+)',
+                                  chunk).group(1)
+            self.feed_urls.append((feed_type, feed_url))
 
 
 class FeedUrlNotFoundError(Exception):

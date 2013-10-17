@@ -17,7 +17,7 @@ from libearth.schema import read, write
 from libearth.tz import utc
 
 
-atom_blog = """
+atom_blog = '''
 <html>
     <head>
         <link rel="alternate" type="application/atom+xml"
@@ -27,14 +27,14 @@ atom_blog = """
         Test
     </body>
 </html>
-"""
+'''
 
 
 def test_autodiscovery_atom():
-    assert autodiscovery(atom_blog, None) == \
-        'http://vio.atomtest.com/feed/atom/'
+    assert autodiscovery(atom_blog, None)[0] == \
+        ('application/atom+xml', 'http://vio.atomtest.com/feed/atom/')
 
-rss_blog = """
+rss_blog = '''
 <html>
     <head>
         <link rel="alternate" type="application/rss+xml"
@@ -44,12 +44,12 @@ rss_blog = """
         Test
     </body>
 </html>
-"""
+'''
 
 
 def test_autodiscovery_rss2():
-    assert autodiscovery(rss_blog, None) == \
-        'http://vio.rsstest.com/feed/rss/'
+    assert autodiscovery(rss_blog, None)[0] == \
+        ('application/rss+xml', 'http://vio.rsstest.com/feed/rss/')
 
 
 html_with_no_feed_url = b'''
@@ -62,9 +62,50 @@ html_with_no_feed_url = b'''
 '''
 
 
-def test_autodiscovery_with_binary():
+def test_autodiscovery_with_no_feed_url():
     with raises(FeedUrlNotFoundError):
         autodiscovery(html_with_no_feed_url, None)
+
+
+binary_rss_blog = b'''
+<html>
+    <head>
+        <link rel="alternate" type="application/rss+xml"
+            href="http://vio.rsstest.com/feed/rss/" />
+    </head>
+    <body>
+        Test
+    </body>
+</html>
+'''
+
+
+def test_autodiscovery_with_binary():
+    assert autodiscovery(binary_rss_blog, None)[0] == \
+        ('application/rss+xml', 'http://vio.rsstest.com/feed/rss/')
+
+
+blog_with_two_feeds = '''
+<html>
+    <head>
+        <link rel="alternate" type="application/rss+xml"
+            href="http://vio.rsstest.com/feed/rss/" />
+        <link rel="alternate" type="application/atom+xml"
+            href="http://vio.atomtest.com/feed/atom/" />
+    </head>
+    <body>
+        Test
+    </body>
+</html>
+'''
+
+
+def test_autodiscovery_with_two_feeds():
+    feed_urls = autodiscovery(blog_with_two_feeds, None)
+    assert feed_urls[0] == \
+        ('application/atom+xml', 'http://vio.atomtest.com/feed/atom/')
+    assert feed_urls[1] == \
+        ('application/rss+xml', 'http://vio.rsstest.com/feed/rss/')
 
 
 atom_xml = """
