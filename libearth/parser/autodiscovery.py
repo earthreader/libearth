@@ -7,6 +7,7 @@ This module provides functions to autodiscovery feed url in document.
 import re
 from libearth.compat import PY3, text
 from libearth.parser.heuristic import get_format
+from libearth.parser import atom, rss2
 
 if PY3:
     import urllib.parse as urlparse
@@ -57,7 +58,10 @@ def autodiscovery(document, url):
                 link.url = urlparse.urljoin(url, link.url)
         return feed_links
     else:
-        return url
+        if document_type == atom.parse_atom:
+            return [FeedLink(ATOM_TYPE, url)]
+        elif document_type == rss2.parse_rss:
+            return [FeedLink(RSS_TYPE, url)]
 
 
 class AutoDiscovery(HTMLParser):

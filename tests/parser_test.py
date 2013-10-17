@@ -225,6 +225,12 @@ atom_xml = """
 """
 
 
+def test_autodiscovery_when_atom():
+    feed_link = autodiscovery(atom_xml, 'http://vio.atomtest.com/feed/atom')[0]
+    assert feed_link.type == 'application/atom+xml'
+    assert feed_link.url == 'http://vio.atomtest.com/feed/atom'
+
+
 def test_atom_parser():
     url = 'http://vio.atomtest.com/feed/atom'
     crawled_feed, _ = atom.parse_atom(atom_xml, url)
@@ -329,6 +335,12 @@ rss_source_xml = """
     </channel>
 </rss>
 """
+
+
+def test_autodiscovery_when_rss2():
+    feed_link = autodiscovery(rss_xml, 'http://vio.rsstest.com/feed')[0]
+    assert feed_link.type == 'application/rss+xml'
+    assert feed_link.url == 'http://vio.rsstest.com/feed'
 
 
 def mock_response(req):
