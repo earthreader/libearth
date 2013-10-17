@@ -1,4 +1,8 @@
 try:
+    from HTMLParser import HTMLParser
+except ImportError:
+    from html.parser import HTMLParser
+try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
@@ -7,8 +11,9 @@ try:
 except ImportError:
     import urllib.request as urllib2
 import datetime
+import sys
 
-from pytest import raises
+from pytest import raises, mark
 
 from libearth.feed import Feed
 from libearth.parser import atom, rss2
@@ -110,6 +115,65 @@ def test_autodiscovery_with_two_feeds():
     assert feedlinks[0].url == 'http://vio.atomtest.com/feed/atom/'
     assert feedlinks[1].type == 'application/rss+xml'
     assert feedlinks[1].url == 'http://vio.rsstest.com/feed/rss/'
+
+
+relative_feed_url = '''
+<html>
+    <head>
+        <link rel="alternate" type="application/atom+xml"
+            href="/feed/atom/" />
+    </head>
+    <body>
+        Test
+    </body>
+</html>
+'''
+
+
+def test_autodiscovery_of_relative_url():
+    feed_link = autodiscovery(relative_feed_url, 'http://vio.atomtest.com/')[0]
+    assert feed_link.type == 'application/atom+xml'
+    assert feed_link.url == 'http://vio.atomtest.com/feed/atom/'
+
+
+autodiscovery_with_regex = '''
+<meta name="twitter:description" content="&lt;p&gt;\xed\x94\x84\xeb\xa1\x9c
+\xea\xb7\xb8\xeb\x9e\x98\xeb\xb0\x8d \xec\x96\xb8\xec\x96\xb4 \xec\x98\xa4\xed
+\x83\x80\xec\xbf\xa0 &lt;a href=&quot;http://dahlia.kr/&quot;&gt;\xed\x99\x8d
+\xeb\xaf\xbc\xed\x9d\xac&lt;/a&gt;\xec\x9d\x98 \xeb\xb8\x94\xeb\xa1\x9c\xea
+\xb7\xb8&lt;/p&gt;" />
+<html>
+    <head>
+        <link rel="alternate" type="application/atom+xml"
+            href="http://vio.atomtest.com/feed/atom/" />
+    </head>
+    <body>
+        Test
+    </body>
+</html>
+'''
+
+
+@mark.skipif(sys.version_info >= (3, 0), reason='Error occurs under Python 3')
+def test_autodiscovery_with_regex():
+
+    class TestHTMLParser(HTMLParser):
+
+        def handle_starttag(self, tag, attrs):
+            pass
+
+        def handle_endtag(self, tag):
+            pass
+
+        def handle_data(self, data):
+            pass
+
+    parser = TestHTMLParser()
+    with raises(UnicodeDecodeError):
+        parser.feed(autodiscovery_with_regex)
+    feed_link = autodiscovery(autodiscovery_with_regex, None)[0]
+    feed_link.type == 'application/atom+xml'
+    feed_link.url == 'http://vio.atomtest.com/feed/atom/'
 
 
 atom_xml = """
