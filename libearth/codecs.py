@@ -220,7 +220,7 @@ class Rfc822(Codec):
         timezone = text[26:]
         try:
             res = datetime.datetime.strptime(timestamp, "%a, %d %b %Y %H:%M:%S")
-            matched = re.match(r'([\+\-])([0-9]{2})([0-9]{2})', timezone)
+            matched = re.match(r'^([\+\-])([0-9]{2})([0-9]{2})$', timezone)
             if matched:
                 offset = FixedOffset(
                     int(matched.group(2)) * 60 +

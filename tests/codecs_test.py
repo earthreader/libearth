@@ -54,11 +54,16 @@ def test_rfc822():
     codec = Rfc822()
 
     kst_string = 'Sat, 07 Sep 2013 01:20:43 +0900'
+    invalid_kst_string = 'Sat, 07 Sep 2013 01:20:43 +0900w'
+
     kst_datetime = datetime.datetime(2013, 9, 7, 1, 20, 43,
                                      tzinfo=FixedOffset(9 * 60))
 
     assert codec.decode(kst_string) == kst_datetime
     assert codec.encode(kst_datetime) == kst_string
+    with raises(DecodeError):
+        decoded = codec.decode(invalid_kst_string)
+        print(decoded)
 
 
 def test_rfc822_minus_tz():
