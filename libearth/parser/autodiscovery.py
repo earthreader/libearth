@@ -15,6 +15,7 @@ if PY3:
 else:
     import urlparse
     from HTMLParser import HTMLParser
+from collections import namedtuple
 
 __all__ = 'autodiscovery',
 
@@ -24,6 +25,9 @@ RSS_TYPE = 'application/rss+xml'
 
 #: (:class:`str`) The MIME type of Atom format.
 ATOM_TYPE = 'application/atom+xml'
+
+
+link_tuple = namedtuple('link_tuple', 'type url')
 
 
 def autodiscovery(document, url):
@@ -42,7 +46,7 @@ def autodiscovery(document, url):
                 if feed url is in html and represented in relative url,
                 it will be rebuilt on top of the ``url``
     :type url: :class:`str`
-    :returns: list of :class:`FeedLink`
+    :returns: list of :class:`link_tuple`
     :rtype: :class:`collections.MutableSequence`
 
     """
@@ -55,13 +59,16 @@ def autodiscovery(document, url):
             raise FeedUrlNotFoundError('Cannot find feed url')
         for link in feed_links:
             if link.url.startswith('/'):
-                link.url = urlparse.urljoin(url, link.url)
+                absolute_url = urlparse.urljoin(url, link.url)
+                feed_links.insert(feed_links.index(link),
+                                  link_tuple(link.type, absolute_url))
+                feed_links.remove(link)
         return feed_links
     else:
         if document_type == atom.parse_atom:
-            return [FeedLink(ATOM_TYPE, url)]
+            return [link_tuple(ATOM_TYPE, url)]
         elif document_type == rss2.parse_rss:
-            return [FeedLink(RSS_TYPE, url)]
+            return [link_tuple(RSS_TYPE, url)]
 
 
 class AutoDiscovery(HTMLParser):
@@ -74,7 +81,7 @@ class AutoDiscovery(HTMLParser):
         attrs = dict(attrs)
         if tag == 'link' and 'rel' in attrs and attrs['rel'] == 'alternate' \
                 and 'type' in attrs and attrs['type'] in RSS_TYPE+ATOM_TYPE:
-            self.feed_links.append(FeedLink(attrs['type'], attrs['href']))
+            self.feed_links.append(link_tuple(attrs['type'], attrs['href']))
 
     def find_feed_url(self, document):
         match = re.match('.+</head>', document)
@@ -98,21 +105,7 @@ class AutoDiscovery(HTMLParser):
                                  chunk).group(1)
             feed_type = re.search('type\s?=\s?(?:\'|\")?([^\'"\s>]+)',
                                   chunk).group(1)
-            self.feed_links.append(FeedLink(feed_type, feed_url))
-
-
-class FeedLink(object):
-    """Class which stores feed type and feed url"""
-
-    #: (:class:`str`) The feed type.
-    type = None
-
-    #: (:class:`url`) The feed url
-    url = None
-
-    def __init__(self, type, url):
-        self.type = type
-        self.url = url
+            self.feed_links.append(link_tuple(feed_type, feed_url))
 
 
 class FeedUrlNotFoundError(Exception):
