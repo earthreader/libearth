@@ -81,6 +81,30 @@ class Repository(object):
                 'implement write() method'.format(Repository)
             )
 
+    def exists(self, key):
+        """Return whether the ``key`` exists or not.  It returns :const:`False`
+        if it doesn't exist instead of raising :exc:`RepositoryKeyError`.
+
+        :param key: the key to find whether it exists
+        :type key: :class:`collections.Sequence`
+        :returns: :const:`True` only if the given ``key`` exists,
+                  or :const:`False` if not exists
+        :rtype: :class:`bool`
+
+        .. note::
+
+           Every subclass of :class:`Repository` has to override
+           :meth:`exists()` method to implement details.
+
+        """
+        if not isinstance(key, collections.Sequence):
+            raise TypeError('key must be a sequence, not ' + repr(key))
+        if hash(type(self).exists) == hash(Repository.exists):
+            raise NotImplementedError(
+                'every subclass of {0.__module__}.{0.__name__} has to '
+                'implement exists() method'.format(Repository)
+            )
+
     def list(self, key):
         """List all subkeys in the ``key``.
 
@@ -173,6 +197,10 @@ class FileSystemRepository(Repository):
         with open(os.path.join(self.path, *key), 'wb') as f:
             for chunk in iterable:
                 f.write(chunk)
+
+    def exists(self, key):
+        super(FileSystemRepository, self).exists(key)
+        return os.path.exists(os.path.join(self.path, *key))
 
     def list(self, key):
         super(FileSystemRepository, self).list(key)

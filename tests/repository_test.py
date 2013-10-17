@@ -19,6 +19,10 @@ class RepositoryImplemented(Repository):
     def write(self, key, iterable):
         super(RepositoryImplemented, self).write(key, iterable)
 
+    def exists(self, key):
+        super(RepositoryImplemented, self).exists(key)
+        return True
+
     def list(self, key):
         super(RepositoryImplemented, self).list(key)
         return frozenset()
@@ -31,10 +35,13 @@ def test_not_implemented_error():
     with raises(NotImplementedError):
         r.write(['key'], '')
     with raises(NotImplementedError):
+        r.exists(['key'])
+    with raises(NotImplementedError):
         r.list(['key'])
     r2 = RepositoryImplemented()
     assert r2.read(['key']) == ''
     r2.write(['key'], '')
+    assert r2.exists(['key'])
     assert r2.list(['key']) == frozenset()
 
 
@@ -60,6 +67,17 @@ def test_file_write(tmpdir):
     assert tmpdir.join('dir', 'dir2', 'key').read() == 'deep file content'
     with raises(RepositoryKeyError):
         f.write([], [b'file ', b'content'])
+
+
+def test_file_exists(tmpdir):
+    f = FileSystemRepository(str(tmpdir))
+    tmpdir.mkdir('dir').join('file').write('content')
+    tmpdir.join('file').write('content')
+    assert f.exists(['dir'])
+    assert f.exists(['dir', 'file'])
+    assert f.exists(['file'])
+    assert not f.exists(['dir', 'file-not-exist'])
+    assert not f.exists(['dir-not-exist'])
 
 
 def test_file_list(tmpdir):

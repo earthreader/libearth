@@ -13,5 +13,6 @@
       libearth/repository
       libearth/schema
       libearth/session
+      libearth/stage
       libearth/tz
       libearth/version
