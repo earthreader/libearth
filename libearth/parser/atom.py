@@ -157,7 +157,7 @@ def atom_get_entry_data(entries, feed_url):
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'source':
                 entry_data.source = atom_get_source_tag(data)
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'summary':
-                entry_data.summary == atom_get_summary_tag(data)
+                entry_data.summary = atom_get_summary_tag(data)
         entries_data.append(entry_data)
     return entries_data
 

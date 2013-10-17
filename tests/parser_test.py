@@ -101,6 +101,7 @@ atom_xml = """
         <category scheme="http://vio.atomtest.com" term="Category One" />
         <category scheme="http://vio.atomtest.com" term="Category Two" />
         <content>Hello World</content>
+        <summary>This is a summary</summary>
     </entry>
     <entry xml:base="http://basetest.com/">
         <id>two</id>
@@ -168,6 +169,8 @@ def test_atom_parser():
     assert entries[0].categories[1].term == feed.entries[0].categories[1].term
     assert entries[0].content.type == feed.entries[0].content.type
     assert entries[0].content.value == feed.entries[0].content.value
+    assert entries[0].summary.type == feed.entries[0].summary.type
+    assert entries[0].summary.value == feed.entries[0].summary.value
     assert entries[1].id == feed.entries[1].id
     assert entries[1].authors[0].name == feed.entries[1].authors[0].name
     assert entries[1].title.type == feed.entries[1].title.type
