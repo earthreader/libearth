@@ -50,6 +50,18 @@ def test_rfc3339_encode(rfc3339_string, dt):
             codec.encode(dt.astimezone(utc)))
 
 
+def test_rfc3339_with_white_spaces():
+    codec = Rfc3339()
+
+    rfc_string = '''
+        2003-12-13T18:30:02+01:00
+    '''
+    rfc_datetime = datetime.datetime(2003, 12, 13, 18, 30, 2,
+                                     tzinfo=FixedOffset(60))
+
+    assert codec.decode(rfc_string) == rfc_datetime
+
+
 def test_rfc822():
     codec = Rfc822()
 

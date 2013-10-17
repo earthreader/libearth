@@ -120,6 +120,7 @@ class Rfc3339(Codec):
         return dt
 
     def decode(self, text):
+        text = text.strip()
         match = self.PATTERN.match(text)
         if not match:
             raise DecodeError(repr(text) +
