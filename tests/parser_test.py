@@ -154,7 +154,7 @@ autodiscovery_with_regex = '''
 '''
 
 
-@mark.skipif(sys.version_info >= (3, 0), reason='Error occurs under Python 3')
+@mark.skipif('sys.version_info >= (3, 0)', reason='Error occurs under Python 3')
 def test_autodiscovery_with_regex():
 
     class TestHTMLParser(HTMLParser):
