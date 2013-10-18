@@ -73,7 +73,7 @@ def rss_get_channel_data(root, feed_url):
     for data in root:
         if data.tag == 'title':
             feed_data.title = Text()
-            feed_data.title.value = data.text
+            feed_data.title.value = data.text or ''
         elif data.tag == 'link':
             link = Link()
             link.uri = data.text
