@@ -30,7 +30,7 @@ RSS_TYPE = 'application/rss+xml'
 #: (:class:`str`) The MIME type of Atom format.
 ATOM_TYPE = 'application/atom+xml'
 
-#: (:class:`dict`) The mapping table of feed types
+#: (:class:`collections.Mapping`) The mapping table of feed types
 TYPE_TABLE = {atom.parse_atom: ATOM_TYPE, rss2.parse_rss: RSS_TYPE}
 
 #: Namedtuple which is a pair of ``type` and ``url``
