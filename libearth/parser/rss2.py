@@ -20,6 +20,7 @@ except ImportError:
 from ..codecs import Rfc822
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Text)
+from ..tz import now
 
 
 def parse_rss(xml, feed_url=None, parse_entry=True):
@@ -41,11 +42,21 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
     feed_data, crawler_hints = rss_get_channel_data(channel, feed_url)
     if parse_entry:
         feed_data.entries = rss_get_item_data(items)
-        if feed_data.updated_at is None:
-            feed_data.updated_at = max(entry.updated_at
-                                       for entry in feed_data.entries
-                                       if entry.updated_at)
+    check_valid_as_atom(feed_data)
     return feed_data, crawler_hints
+
+
+def check_valid_as_atom(feed_data):
+    if feed_data.updated_at is None:
+        if feed_data.entries:
+            try:
+                feed_data.updated_at = max(entry.updated_at
+                                           for entry in feed_data.entries
+                                           if entry.updated_at)
+            except ValueError:
+                feed_data.updated_at = now()
+        else:
+            feed_data.updated_at = now()
 
 
 def rss_get_channel_data(root, feed_url):

@@ -429,3 +429,21 @@ category_with_no_term = '''
 def test_category_with_no_term():
     crawled_feed, crawler_hints = atom.parse_atom(category_with_no_term, None)
     assert not crawled_feed.categories
+
+
+rss_with_no_pubDate = '''
+<rss version="2.0">
+    <channel>
+        <title>Updated Test</title>
+        <link>http://updatedtest.com/</link>
+        <description>for source tag test</description>
+        <item>
+            <title>It will not be parsed</title>
+        </item>
+    </channel>
+</rss>
+'''
+
+def test_rss_with_no_pubDate():
+    feed_data, crawler_hints = rss2.parse_rss(rss_with_no_pubDate)
+    assert feed_data.updated_at
