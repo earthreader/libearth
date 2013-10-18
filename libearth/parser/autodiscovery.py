@@ -30,8 +30,10 @@ RSS_TYPE = 'application/rss+xml'
 #: (:class:`str`) The MIME type of Atom format.
 ATOM_TYPE = 'application/atom+xml'
 
+#: (:class:`dict`) The mapping table of feed types
 TYPE_TABLE = {atom.parse_atom: ATOM_TYPE, rss2.parse_rss: RSS_TYPE}
 
+#: Namedtuple which is a pair of ``type` and ``url``
 FeedLink = collections.namedtuple('FeedLink', 'type url')
 
 
@@ -51,7 +53,7 @@ def autodiscovery(document, url):
                 if feed url is in html and represented in relative url,
                 it will be rebuilt on top of the ``url``
     :type url: :class:`str`
-    :returns: list of :class:`FeedLink` which has a pair of ``type`` and ``url``
+    :returns: list of :class:`FeedLink` objects
     :rtype: :class:`collections.MutableSequence`
 
     """
