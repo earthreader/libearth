@@ -155,7 +155,7 @@ def atom_get_entry_data(entries, feed_url):
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'rights':
                 entry_data['rigths'] = atom_get_rights_tag(data)
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'source':
-                entry_data.source = atom_get_source_tag(data)
+                entry_data.source = atom_get_source_tag(data, xml_base)
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'summary':
                 entry_data.summary = atom_get_summary_tag(data)
         entries_data.append(entry_data)
@@ -277,7 +277,7 @@ def atom_get_source_tag(data_dump, xml_base):
             links.append(atom_get_link_tag(data, xml_base))
             source.links = links
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'id':
-            source.id = atom_get_id_tag(data)
+            source.id = atom_get_id_tag(data, xml_base)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'title':
             source.title = atom_get_title_tag(data)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'updated':
