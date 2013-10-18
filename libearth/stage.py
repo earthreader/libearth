@@ -15,6 +15,7 @@ import re
 from .repository import Repository, RepositoryKeyError
 from .schema import read, write
 from .session import MergeableDocumentElement, Session
+from .tz import now
 
 __all__ = 'BaseStage', 'Directory', 'Route', 'compile_format_to_pattern'
 
@@ -47,6 +48,30 @@ class BaseStage(object):
             )
         self.session = session
         self.repository = repository
+        self.touch()
+
+    @property
+    def sessions(self):
+        """(:class:`collections.Set`) List all sessions associated to
+         the :attr:`repository`.  It includes the session of the current stage.
+
+        """
+        identifiers = self.repository.list(['.sessions'])
+        return frozenset(Session(identifier=ident) for ident in identifiers)
+
+    def touch(self):
+        """Touch the latest staged time of the current :attr:`session`
+        into the :attr:`repository`.
+
+        .. note::
+
+           This method is intended to be internal.
+
+        """
+        self.repository.write(
+            ['.sessions', self.session.identifier],
+            [now().isoformat()]
+        )
 
     def read(self, document_type, key):
         """Read a document of ``document_type`` by the given ``key``
@@ -81,6 +106,7 @@ class BaseStage(object):
                 )
             )
         document = read(document_type, self.repository.read(key))
+        self.touch()
         return self.session.pull(document)
 
     def write(self, key, document):
@@ -100,6 +126,7 @@ class BaseStage(object):
         """
         document = self.session.pull(document)
         self.repository.write(key, write(document))
+        self.touch()
 
     def __repr__(self):
         return '{0.__module__}.{0.__name__}({1!r}, {2!r})'.format(

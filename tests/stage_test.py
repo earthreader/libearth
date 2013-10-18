@@ -128,7 +128,7 @@ class TestRepository(Repository):
         super(TestRepository, self).write(key, iterable)
         data = self.data
         for k in key[:-1]:
-            data = data.setdefalt(k, {})
+            data = data.setdefault(k, {})
         data[key[-1]] = ''.join(iterable)
 
     def exists(self, key):
@@ -167,6 +167,21 @@ def fx_session():
 @fixture
 def fx_stage(fx_repo, fx_session):
     return TestStage(fx_session, fx_repo)
+
+
+@fixture
+def fx_other_session():
+    return Session(identifier='SESSID2')
+
+
+@fixture
+def fx_other_stage(fx_repo, fx_other_session):
+    return TestStage(fx_other_session, fx_repo)
+
+
+def test_stage_sessions(fx_session, fx_stage, fx_other_session, fx_other_stage):
+    assert fx_stage.sessions == frozenset([fx_session, fx_other_session])
+    assert fx_other_stage.sessions == frozenset([fx_session, fx_other_session])
 
 
 def test_stage_read(fx_session, fx_stage):
