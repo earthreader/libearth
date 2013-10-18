@@ -29,6 +29,7 @@ RSS_TYPE = 'application/rss+xml'
 #: (:class:`str`) The MIME type of Atom format.
 ATOM_TYPE = 'application/atom+xml'
 
+TYPE_TABLE = {atom.parse_atom: ATOM_TYPE, rss2.parse_rss: RSS_TYPE}
 
 link_tuple = collections.namedtuple('link_tuple', 'type url')
 
@@ -63,15 +64,11 @@ def autodiscovery(document, url):
         for link in feed_links:
             if link.url.startswith('/'):
                 absolute_url = urlparse.urljoin(url, link.url)
-                feed_links.insert(feed_links.index(link),
-                                  link_tuple(link.type, absolute_url))
-                feed_links.remove(link)
+                feed_links[feed_links.index(link)] = \
+                    FeedLink(link.type, absolute_url)
         return feed_links
     else:
-        if document_type == atom.parse_atom:
-            return [link_tuple(ATOM_TYPE, url)]
-        elif document_type == rss2.parse_rss:
-            return [link_tuple(RSS_TYPE, url)]
+            return [FeedLink(TYPE_TABLE[document_type], url)]
 
 
 class AutoDiscovery(HTMLParser.HTMLParser):
