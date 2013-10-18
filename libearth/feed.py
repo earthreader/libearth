@@ -342,6 +342,13 @@ class Generator(Element):
     #: (:class:`str`) The human-readable name for the generating agent.
     value = ContentValue()
 
+    def __eq__(self, other):
+        return (self.uri == other.uri and self.version == other.version and
+                self.value == other.value)
+
+    def __ne__(self, other):
+        return not (self == other)
+
     def __unicode__(self):
         if self.version:
             return '{0} {1}'.format(self.value, self.version)

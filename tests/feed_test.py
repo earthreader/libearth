@@ -316,3 +316,11 @@ def test_feed_read(fx_feed):
                                                       tzinfo=utc)
     assert entries[1].summary == Text(value="Don't Panic!")
     assert len(entries) == 2
+
+
+def test_generator_eq():
+    generator_one = Generator()
+    generator_two = Generator()
+    generator_one.value = 'generator'
+    generator_two.value = 'generator'
+    assert generator_one == generator_two
