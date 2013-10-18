@@ -56,6 +56,16 @@ def test_compile_format_to_pattern():
     assert not p6.match('preandin'), p6_msg
     assert not p6.match('preandinandpost'), p6_msg
     assert p6.match('pre,and{1}post'), p6_msg
+    p7 = compile_format_to_pattern('pre{0}in{session.identifier}post')
+    p7_msg = 'p7.pattern = ' + repr(p7.pattern)
+    assert not p7.match('something'), p7_msg
+    assert not p7.match('no-match'), p7_msg
+    assert not p7.match('preonly'), p7_msg
+    assert not p7.match('onlypost'), p7_msg
+    assert not p7.match('preandpost'), p7_msg
+    assert not p7.match('inandpost'), p7_msg
+    assert not p7.match('preandin'), p7_msg
+    assert p7.match('preandinandpost'), p7_msg
 
 
 class TestDoc(MergeableDocumentElement):

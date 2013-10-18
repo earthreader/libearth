@@ -225,7 +225,7 @@ def compile_format_to_pattern(format_string):
     """
     pattern = ['^']
     i = 0
-    for match in re.finditer(r'(^|[^{])\{\d+\}|(\{\{)|(\}\})', format_string):
+    for match in re.finditer(r'(^|[^{])\{[^}]+\}|(\{\{)|(\}\})', format_string):
         if match.group(2):
             j = match.start()
             chunk = r'\{'
