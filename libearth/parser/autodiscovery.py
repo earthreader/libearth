@@ -20,8 +20,8 @@ from libearth.parser.heuristic import get_format
 from libearth.parser import atom, rss2
 
 
-__all__ = ('ATOM_TYPE', 'AutoDiscovery', 'FeedLink', 'FeedUrlNotFoundError',
-           'RSS_TYPE', 'autodiscovery')
+__all__ = ('ATOM_TYPE', 'RSS_TYPE', 'TYPE_TABLE', 'AutoDiscovery', 'FeedLink',
+           'FeedUrlNotFoundError', 'autodiscovery')
 
 
 #: (:class:`str`) The MIME type of RSS 2.0 format.
