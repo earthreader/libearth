@@ -31,7 +31,7 @@ ATOM_TYPE = 'application/atom+xml'
 
 TYPE_TABLE = {atom.parse_atom: ATOM_TYPE, rss2.parse_rss: RSS_TYPE}
 
-link_tuple = collections.namedtuple('link_tuple', 'type url')
+FeedLink = collections.namedtuple('FeedLink', 'type url')
 
 
 def autodiscovery(document, url):
@@ -50,7 +50,7 @@ def autodiscovery(document, url):
                 if feed url is in html and represented in relative url,
                 it will be rebuilt on top of the ``url``
     :type url: :class:`str`
-    :returns: list of `namedtuple('link_tuple', 'type url')`
+    :returns: list of :class:`FeedLink` which has a pair of ``type`` and ``url``
     :rtype: :class:`collections.MutableSequence`
 
     """
@@ -81,7 +81,7 @@ class AutoDiscovery(HTMLParser.HTMLParser):
         attrs = dict(attrs)
         if tag == 'link' and 'rel' in attrs and attrs['rel'] == 'alternate' \
                 and 'type' in attrs and attrs['type'] in RSS_TYPE+ATOM_TYPE:
-            self.feed_links.append(link_tuple(attrs['type'], attrs['href']))
+            self.feed_links.append(FeedLink(attrs['type'], attrs['href']))
 
     def find_feed_url(self, document):
         match = re.match('.+</head>', document)
@@ -105,7 +105,7 @@ class AutoDiscovery(HTMLParser.HTMLParser):
                                  chunk).group(1)
             feed_type = re.search('type\s?=\s?(?:\'|\")?([^\'"\s>]+)',
                                   chunk).group(1)
-            self.feed_links.append(link_tuple(feed_type, feed_url))
+            self.feed_links.append(FeedLink(feed_type, feed_url))
 
 
 class FeedUrlNotFoundError(Exception):
