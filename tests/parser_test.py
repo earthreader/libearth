@@ -448,3 +448,21 @@ rss_with_no_pubDate = '''
 def test_rss_with_no_pubDate():
     feed_data, crawler_hints = rss2.parse_rss(rss_with_no_pubDate)
     assert feed_data.updated_at
+
+
+rss_with_empty_title = '''
+<rss version="2.0" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/"
+	xmlns:activity="http://activitystrea.ms/spec/1.0/" >
+    <channel>
+        <title></title>
+    </channel>
+</rss>
+'''
+
+
+def test_rss_with_empty_title():
+    """Empty title should be empty string, not :const:`None`."""
+    feed, crawler_hints = rss2.parse_rss(rss_with_empty_title)
+    assert feed.title.value == ''
