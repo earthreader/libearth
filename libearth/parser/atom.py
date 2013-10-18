@@ -10,7 +10,7 @@ Parsing Atom feed. Atom specification is :rfc:`4287`
 """
 try:
     import urlparse
-except:
+except ImportError:
     import urllib.parse as urlparse
 
 try:

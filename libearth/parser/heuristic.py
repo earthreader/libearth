@@ -34,7 +34,7 @@ def get_format(document):
     """
     try:
         root = etree.fromstring(document)
-    except:
+    except Exception:
         return None
     if root.tag == '{http://www.w3.org/2005/Atom}feed':
         return parse_atom

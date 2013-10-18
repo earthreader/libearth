@@ -96,7 +96,7 @@ class AutoDiscovery(HTMLParser.HTMLParser):
         for chunk in chunks:
             try:
                 self.feed(chunk)
-            except:
+            except Exception:
                 self.find_feed_url_with_regex(chunk)
         self.feed_links = sorted(self.feed_links, key=lambda link: link.type)
         return self.feed_links
