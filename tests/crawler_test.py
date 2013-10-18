@@ -130,14 +130,13 @@ class TestHTTPHandler(urllib2.HTTPHandler):
         try:
             status_code, content = mock_urls[url]
         except KeyError:
-            pass
-        else:
-            resp = urllib2.addinfourl(StringIO(content),
-                                      'mock message',
-                                      url)
-            resp.code = status_code
-            resp.msg = httplib.responses[status_code]
-            return resp
+            return urllib2.HTTPHandler.http_open(self, req)
+        resp = urllib2.addinfourl(StringIO(content),
+                                  'mock message',
+                                  url)
+        resp.code = status_code
+        resp.msg = httplib.responses[status_code]
+        return resp
 
 
 def test_crawler():
@@ -160,9 +159,15 @@ def test_crawler():
 
 
 def test_crawl_error():
+    # broken feed
     my_opener = urllib2.build_opener(TestHTTPHandler)
     urllib2.install_opener(my_opener)
     feeds = ['http://brokenrss.com/rss']
+    generator = crawl(feeds, 2)
+    with raises(CrawlError):
+        next(generator)
+    # unreachable url
+    feeds = ['http://not-exists.com/rss']
     generator = crawl(feeds, 2)
     with raises(CrawlError):
         next(generator)
