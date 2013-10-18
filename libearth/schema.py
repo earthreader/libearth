@@ -283,7 +283,7 @@ class Child(Descriptor):
             else:
                 if isinstance(value, self.element_type):
                     obj._data[self] = value
-                else:
+                elif value is not None:
                     raise TypeError(
                         'expected an instance of {0.__module__}.{0.__name__}, '
                         'not {1!r}'.format(self.element_type, value)
@@ -806,18 +806,49 @@ class Element(object):
         """
         return self
 
+    def __merge_entities__(self, other):
+        """Merge two entities (``self`` and ``other``).  It can return one
+        of the two, or even a new entity object.  This method is used by
+        :class:`~libearth.session.Session` objects to merge conflicts between
+        concurrent updates.
+
+        :param other: other entity to merge.  it's guaranteed that it's
+                      older session's (note that it doesn't mean this entity
+                      is older than ``self``, but the session's last update
+                      is)
+        :type other: :class:`Element`
+        :returns: on of the two, or even an new entity object that merges
+                  two entities
+        :rtype: :class:`Element`
+
+        .. note::
+
+           The default implementation simply returns ``self``.
+           That means the entity of the newer session will always win
+           unless the method is overridden.
+
+        """
+        return self
+
 
 class DocumentElement(Element):
-    """The root element of the document."""
+    """The root element of the document.
+
+    .. attribute:: __tag__
+
+       (:class:`str`) Every :class:`DocumentElement` subtype has to define
+       this attribute to the root tag name.
+
+    .. attribute:: __xmlns__
+
+       (:class:`str`) A :class:`DocumentElement` subtype may define this
+       attribute to the XML namespace of the document element.
+
+    """
 
     __slots__ = '_parser', '_iterator', '_handler'
 
-    #: (:class:`str`) Every :class:`DocumentElement` subtype has to define
-    #: this attribute to the root tag name.
     __tag__ = NotImplemented
-
-    #: (:class:`str`) A :class:`DocumentElement` subtype may define this
-    #: attribute to the XML namespace of the document element.
     __xmlns__ = None
 
     def __init__(self, _parent=None, **kwargs):

@@ -14,5 +14,6 @@
       libearth/sanitizer
       libearth/schema
       libearth/session
+      libearth/stage
       libearth/tz
       libearth/version
