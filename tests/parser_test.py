@@ -1,23 +1,27 @@
 try:
-    from StringIO import StringIO
+    import HTMLParser
 except ImportError:
-    from io import StringIO
+    import html.parser as HTMLParser
+try:
+    import StringIO
+except ImportError:
+    import io as StringIO
+import datetime
 try:
     import urllib2
 except ImportError:
     import urllib.request as urllib2
-import datetime
 
-from pytest import raises
+from pytest import raises, mark
 
 from libearth.feed import Feed
 from libearth.parser import atom, rss2
-from libearth.parser.autodiscovery import autodiscovery, FeedUrlNotFoundError
+from libearth.parser.autodiscovery import FeedUrlNotFoundError, autodiscovery
 from libearth.schema import read, write
 from libearth.tz import utc
 
 
-atom_blog = """
+atom_blog = '''
 <html>
     <head>
         <link rel="alternate" type="application/atom+xml"
@@ -27,14 +31,16 @@ atom_blog = """
         Test
     </body>
 </html>
-"""
+'''
 
 
 def test_autodiscovery_atom():
-    assert autodiscovery(atom_blog, None) == \
-        'http://vio.atomtest.com/feed/atom/'
+    feedlink = autodiscovery(atom_blog, None)[0]
+    assert feedlink.type == 'application/atom+xml'
+    assert feedlink.url == 'http://vio.atomtest.com/feed/atom/'
 
-rss_blog = """
+
+rss_blog = '''
 <html>
     <head>
         <link rel="alternate" type="application/rss+xml"
@@ -44,12 +50,13 @@ rss_blog = """
         Test
     </body>
 </html>
-"""
+'''
 
 
 def test_autodiscovery_rss2():
-    assert autodiscovery(rss_blog, None) == \
-        'http://vio.rsstest.com/feed/rss/'
+    feedlink = autodiscovery(rss_blog, None)[0]
+    assert feedlink.type == 'application/rss+xml'
+    assert feedlink.url == 'http://vio.rsstest.com/feed/rss/'
 
 
 html_with_no_feed_url = b'''
@@ -62,9 +69,110 @@ html_with_no_feed_url = b'''
 '''
 
 
-def test_autodiscovery_with_binary():
+def test_autodiscovery_with_no_feed_url():
     with raises(FeedUrlNotFoundError):
         autodiscovery(html_with_no_feed_url, None)
+
+
+binary_rss_blog = b'''
+<html>
+    <head>
+        <link rel="alternate" type="application/rss+xml"
+            href="http://vio.rsstest.com/feed/rss/" />
+    </head>
+    <body>
+        Test
+    </body>
+</html>
+'''
+
+
+def test_autodiscovery_with_binary():
+    feedlink = autodiscovery(binary_rss_blog, None)[0]
+    assert feedlink.type == 'application/rss+xml'
+    assert feedlink.url == 'http://vio.rsstest.com/feed/rss/'
+
+
+blog_with_two_feeds = '''
+<html>
+    <head>
+        <link rel="alternate" type="application/rss+xml"
+            href="http://vio.rsstest.com/feed/rss/" />
+        <link rel="alternate" type="application/atom+xml"
+            href="http://vio.atomtest.com/feed/atom/" />
+    </head>
+    <body>
+        Test
+    </body>
+</html>
+'''
+
+
+def test_autodiscovery_with_two_feeds():
+    feedlinks = autodiscovery(blog_with_two_feeds, None)
+    assert feedlinks[0].type == 'application/atom+xml'
+    assert feedlinks[0].url == 'http://vio.atomtest.com/feed/atom/'
+    assert feedlinks[1].type == 'application/rss+xml'
+    assert feedlinks[1].url == 'http://vio.rsstest.com/feed/rss/'
+
+
+relative_feed_url = '''
+<html>
+    <head>
+        <link rel="alternate" type="application/atom+xml"
+            href="/feed/atom/" />
+    </head>
+    <body>
+        Test
+    </body>
+</html>
+'''
+
+
+def test_autodiscovery_of_relative_url():
+    feed_link = autodiscovery(relative_feed_url, 'http://vio.atomtest.com/')[0]
+    assert feed_link.type == 'application/atom+xml'
+    assert feed_link.url == 'http://vio.atomtest.com/feed/atom/'
+
+
+autodiscovery_with_regex = '''
+<meta name="twitter:description" content="&lt;p&gt;\xed\x94\x84\xeb\xa1\x9c
+\xea\xb7\xb8\xeb\x9e\x98\xeb\xb0\x8d \xec\x96\xb8\xec\x96\xb4 \xec\x98\xa4\xed
+\x83\x80\xec\xbf\xa0 &lt;a href=&quot;http://dahlia.kr/&quot;&gt;\xed\x99\x8d
+\xeb\xaf\xbc\xed\x9d\xac&lt;/a&gt;\xec\x9d\x98 \xeb\xb8\x94\xeb\xa1\x9c\xea
+\xb7\xb8&lt;/p&gt;" />
+<html>
+    <head>
+        <link rel="alternate" type="application/atom+xml"
+            href="http://vio.atomtest.com/feed/atom/" />
+    </head>
+    <body>
+        Test
+    </body>
+</html>
+'''
+
+
+@mark.skipif('sys.version_info >= (3, 0)', reason='Error occurs under Python 3')
+def test_autodiscovery_with_regex():
+
+    class TestHTMLParser(HTMLParser.HTMLParser):
+
+        def handle_starttag(self, tag, attrs):
+            pass
+
+        def handle_endtag(self, tag):
+            pass
+
+        def handle_data(self, data):
+            pass
+
+    parser = TestHTMLParser()
+    with raises(UnicodeDecodeError):
+        parser.feed(autodiscovery_with_regex)
+    feed_link = autodiscovery(autodiscovery_with_regex, None)[0]
+    feed_link.type == 'application/atom+xml'
+    feed_link.url == 'http://vio.atomtest.com/feed/atom/'
 
 
 atom_xml = """
@@ -114,6 +222,12 @@ atom_xml = """
     </entry>
 </feed>
 """
+
+
+def test_autodiscovery_when_atom():
+    feed_link = autodiscovery(atom_xml, 'http://vio.atomtest.com/feed/atom')[0]
+    assert feed_link.type == 'application/atom+xml'
+    assert feed_link.url == 'http://vio.atomtest.com/feed/atom'
 
 
 def test_atom_parser():
@@ -222,9 +336,16 @@ rss_source_xml = """
 """
 
 
+def test_autodiscovery_when_rss2():
+    feed_link = autodiscovery(rss_xml, 'http://vio.rsstest.com/feed')[0]
+    assert feed_link.type == 'application/rss+xml'
+    assert feed_link.url == 'http://vio.rsstest.com/feed'
+
+
 def mock_response(req):
     if req.get_full_url() == 'http://sourcetest.com/rss.xml':
-        resp = urllib2.addinfourl(StringIO(rss_source_xml), 'mock message',
+        resp = urllib2.addinfourl(StringIO.StringIO(rss_source_xml),
+                                  'mock message',
                                   req.get_full_url())
         resp.code = 200
         resp.msg = "OK"
