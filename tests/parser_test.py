@@ -444,6 +444,7 @@ rss_with_no_pubDate = '''
 </rss>
 '''
 
+
 def test_rss_with_no_pubDate():
     feed_data, crawler_hints = rss2.parse_rss(rss_with_no_pubDate)
     assert feed_data.updated_at
