@@ -88,7 +88,7 @@ class HtmlSanitizer(HTMLParser.HTMLParser):
     #: (:class:`re.RegexObject`) The regular expression pattern that matches to
     #: disallowed CSS properties.
     DISALLOWED_STYLE_PATTERN = re.compile(
-        r'(^|;)\s*display\s*:\s*none\s*(?:;\s*|$)',
+        r'(^|;)\s*display\s*:\s*[a-z-]+\s*(?:;\s*|$)',
         re.IGNORECASE
     )
 
