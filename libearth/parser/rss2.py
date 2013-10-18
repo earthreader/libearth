@@ -191,6 +191,6 @@ def rss_get_item_data(entries):
             entry_data.updated_at = entry_data.published_at
         if entry_data.id is None:
             entry_data.id = entry_data.links[0].uri \
-            if entry_data.links else 'fuck'
+                if entry_data.links else ''
         entries_data.append(entry_data)
     return entries_data
