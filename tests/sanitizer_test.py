@@ -15,7 +15,7 @@ def test_sanitize_html():
     # <script> tags
     assert (sanitize_html('<b>Hello</b><script>alert(1)</script><b>1</b>') ==
             '<b>Hello</b><b>1</b>')
-    # ``display: none;`` styles
+    # ``display: xxxx;`` styles
     assert (sanitize_html('<b style="display: none;">Hello</b>') ==
             '<b style="">Hello</b>')
     assert (sanitize_html('<b style="  display:none">Hello</b>') ==
@@ -25,6 +25,14 @@ def test_sanitize_html():
     assert (sanitize_html('<b style="font-weight: normal; display:none; '
                           'color: red;">Hello</b>') ==
             '<b style="font-weight: normal;color: red;">Hello</b>')
+    assert (sanitize_html('<b style="font-weight: normal;'
+                          'display: inline-block; color: red;">Hello</b>') ==
+            '<b style="font-weight: normal;color: red;">Hello</b>')
+    assert (sanitize_html('<b style="font-weight: normal;'
+                          'display: block; color: red;">Hello</b>') ==
+            '<b style="font-weight: normal;color: red;">Hello</b>')
+    assert (sanitize_html('<b style="display:block">Hello</b>') ==
+            '<b style="">Hello</b>')
     # JavaScript event attributes
     assert sanitize_html('<b onclick="alert(1);">Hello</b>') == '<b>Hello</b>'
     assert (sanitize_html('<img onload="alert(1);" src="a.gif">') ==
