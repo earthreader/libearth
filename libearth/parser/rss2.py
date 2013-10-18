@@ -24,13 +24,19 @@ from ..tz import now
 
 
 def parse_rss(xml, feed_url=None, parse_entry=True):
-    """Parse RSS 2.0 XML.
+    """Parse RSS 2.0 XML and translate it into Atom.
 
-    :param xml: target rss 2.0 xml to parse
+    To make the feed data valid in Atom format, ``id`` and ``link[rel=self]``
+    fields would become the url of the feed.
+
+    If ``pubDate`` is not present, ``updated`` field will be from
+    the latest entry's ``updated`` time, or the time it's crawled instead.
+
+    :param xml: rss 2.0 xml string to parse
     :type xml: :class:`str`
-    :param parse_item: whether to parse inner items as well.
-                       it's useful to ignore items when retrieve
-                       ``<source>``.  :const:`True` by default.
+    :param parse_item: whether to parse items (entries) as well.
+                       it's useful when to ignore items when retrieve
+                       ``<source>``.  :const:`True` by default
     :type parse_item: :class:`bool`
     :returns: a pair of (:class:`~libearth.feed.Feed`, crawler hint)
     :rtype: :class:`tuple`
