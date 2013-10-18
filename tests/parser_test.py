@@ -467,3 +467,32 @@ def test_rss_with_empty_title():
     """Empty title should be empty string, not :const:`None`."""
     feed, crawler_hints = rss2.parse_rss(rss_with_empty_title)
     assert feed.title.value == ''
+
+
+
+rss_with_guid = '''
+<rss version="2.0" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/"
+     xmlns:activity="http://activitystrea.ms/spec/1.0/" >
+    <channel>
+        <item>
+            <guid>3F2504E0-4F89-11D3-9A0C-0305E82C3301</guid>
+        </item>
+        <item>
+            <guid>http://guidtest.com/1</guid>
+        </item>
+        <item>
+            <guid isPermalink="False">http://guidtest.com/1</guid>
+        </item>
+    </channel>
+</rss>
+'''
+
+
+def test_rss_item_guid():
+    feed_data, crawler_hints = rss2.parse_rss(rss_with_real_guid, None)
+    assert feed_data.entries[0].id == \
+        'urn:uuid:3F2504E0-4F89-11D3-9A0C-0305E82C3301'
+    assert feed_data.entries[1].id == 'http://guidtest.com/1'
+    assert feed_data.entries[2].id == 'fuck'

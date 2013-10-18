@@ -4,6 +4,7 @@
 Parsing RSS 2.0 feed.
 
 """
+import re
 try:
     import urllib2
 except ImportError:
@@ -21,6 +22,11 @@ from ..codecs import Rfc822
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Text)
 from ..tz import now
+
+
+GUID_PATTERN = re.compile('^(\{{0,1}([0-9a-fA-F]){8}-([0-9a-fA-F]){4}-([0-9'
+                          'a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){12}\}'
+                          '{0,1})$')
 
 
 def parse_rss(xml, feed_url=None, parse_entry=True):
@@ -162,7 +168,11 @@ def rss_get_item_data(entries):
                 links.append(link)
                 entry_data.links = links
             elif data.tag == 'guid':
-                entry_data.id = data.text
+                isPermalink = data.get('isPermalink')
+                if data.text.startswith('http://') and isPermalink != 'False':
+                    entry_data.id = data.text
+                elif GUID_PATTERN.match(data.text):
+                    entry_data.id = 'urn:uuid:' + data.text
             elif data.tag == 'pubDate':
                 entry_data.published_at = Rfc822().decode(data.text)
                 # TODO 'pubDate' is optional in RSS 2, but 'updated' in Atom
@@ -179,5 +189,8 @@ def rss_get_item_data(entries):
                 entry_data.source = source
         if entry_data.updated_at is None:
             entry_data.updated_at = entry_data.published_at
+        if entry_data.id is None:
+            entry_data.id = entry_data.links[0].uri \
+            if entry_data.links else 'fuck'
         entries_data.append(entry_data)
     return entries_data
