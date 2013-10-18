@@ -1,4 +1,12 @@
-from libearth.stage import compile_format_to_pattern
+import collections
+
+from pytest import fixture, raises
+
+from libearth.repository import Repository, RepositoryKeyError
+from libearth.schema import read
+from libearth.session import MergeableDocumentElement, Session
+from libearth.stage import (BaseStage, Directory, Route,
+                            compile_format_to_pattern)
 
 
 def test_compile_format_to_pattern():
@@ -48,3 +56,155 @@ def test_compile_format_to_pattern():
     assert not p6.match('preandin'), p6_msg
     assert not p6.match('preandinandpost'), p6_msg
     assert p6.match('pre,and{1}post'), p6_msg
+
+
+class TestDoc(MergeableDocumentElement):
+
+    __tag__ = 'test'
+
+
+class TestStage(BaseStage):
+
+    doc = Route(TestDoc, ['doc.{session.identifier}.xml'])
+    dir_docs = Route(
+        TestDoc,
+        ['dir', '{0}', '{session.identifier}.xml']
+    )
+    deep_docs = Route(
+        TestDoc,
+        ['dir2', 'pre{0}', '{1}post', '{session.identifier}.xml']
+    )
+
+
+class TestRepository(Repository):
+
+    DATA = {
+        'doc.SESSID.xml': '<test />',
+        'dir': {
+            'abc': {'SESSID.xml': '<test />'},
+            'def': {'SESSID.xml': '<test />'}
+        },
+        'dir2': {
+            'preabc': {
+                'xyzpost': {'SESSID.xml': '<test />'},
+                'xxxpost': {'SESSID.xml': '<test />'},
+                'invalid': {}
+            },
+            'predef': {
+                'xyzpost': {'SESSID.xml': '<test />'},
+                'xxxpost': {'SESSID.xml': '<test />'},
+                'invalid': {}
+            },
+            'invalid': {}
+        }
+    }
+
+    def __init__(self):
+        self.data = dict(self.DATA)
+
+    def read(self, key):
+        super(TestRepository, self).read(key)
+        data = self.data
+        for k in key:
+            try:
+                data = data[k]
+            except KeyError:
+                raise RepositoryKeyError(key)
+        if isinstance(key, collections.Mapping):
+            raise RepositoryKeyError(key)
+        return key
+
+    def write(self, key, iterable):
+        super(TestRepository, self).write(key, iterable)
+        data = self.data
+        for k in key[:-1]:
+            data = data.setdefalt(k, {})
+        data[key[-1]] = ''.join(iterable)
+
+    def exists(self, key):
+        super(TestRepository, self).exists(key)
+        data = self.data
+        for k in key:
+            try:
+                data = data[k]
+            except KeyError:
+                return False
+        return True
+
+    def list(self, key):
+        super(TestRepository, self).list(key)
+        data = self.data
+        for k in key:
+            try:
+                data = data[k]
+            except KeyError:
+                raise RepositoryKeyError(key)
+        if isinstance(data, collections.Mapping):
+            return frozenset(data)
+        raise RepositoryKeyError(key)
+
+
+@fixture
+def fx_repo():
+    return TestRepository()
+
+
+@fixture
+def fx_session():
+    return Session(identifier='SESSID')
+
+
+@fixture
+def fx_stage(fx_repo, fx_session):
+    return TestStage(fx_session, fx_repo)
+
+
+def test_stage_read(fx_session, fx_stage):
+    doc = fx_stage.read(TestDoc, ['doc.{0}.xml'.format(fx_session.identifier)])
+    assert isinstance(doc, TestDoc)
+    assert doc.__revision__.session is fx_session
+
+
+def test_stage_write(fx_repo, fx_session, fx_stage):
+    doc = TestDoc()
+    fx_stage.write(['doc.{0}.xml'.format(fx_session.identifier)], doc)
+    xml = fx_repo.data['doc.{0}.xml'.format(fx_session.identifier)]
+    read_doc = read(TestDoc, xml)
+    assert isinstance(read_doc, TestDoc)
+    assert read_doc.__revision__.session is fx_session
+
+
+def test_get_flat_route(fx_session, fx_stage):
+    doc = fx_stage.doc
+    assert isinstance(doc, TestDoc)
+    assert doc.__revision__.session is fx_session
+
+
+def test_get_dir_route(fx_session, fx_stage):
+    dir = fx_stage.dir_docs
+    assert isinstance(dir, Directory)
+    assert len(dir) == 2
+    assert frozenset(dir) == frozenset(['abc', 'def'])
+    with raises(KeyError):
+        dir['not-exist']
+    doc = dir['abc']
+    assert isinstance(doc, TestDoc)
+    assert doc.__revision__.session is fx_session
+
+
+def test_get_deep_route(fx_session, fx_stage):
+    dir = fx_stage.deep_docs
+    assert isinstance(dir, Directory)
+    assert len(dir) == 2
+    assert frozenset(dir) == frozenset(['abc', 'def'])
+    with raises(KeyError):
+        dir['not-exist']
+    dir2 = dir['abc']
+    assert isinstance(dir2, Directory)
+    assert len(dir2) == 2
+    assert frozenset(dir2) == frozenset(['xyz', 'xxx'])
+    with raises(KeyError):
+        dir2['not-exist']
+    doc = dir2['xyz']
+    assert isinstance(doc, TestDoc)
+    assert doc.__revision__.session is fx_session

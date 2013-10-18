@@ -436,7 +436,7 @@ class RevisionSetCodec(RevisionCodec):
 
     def decode(self, text):
         decode_pair = super(RevisionSetCodec, self).decode
-        pairs = self.SEPARATOR_PATTERN.split(text)
+        pairs = self.SEPARATOR_PATTERN.split(text) if text.strip() else []
         return RevisionSet(map(decode_pair, pairs))
 
 

@@ -35,7 +35,7 @@ class Repository(object):
         :returns: byte string chunks
         :rtype: :class:`collections.Iterable`
         :raises RepositoryKeyError: the ``key`` cannot be found in
-                                    the repository
+                                    the repository, or it's not a file
 
         .. note::
 
@@ -113,7 +113,7 @@ class Repository(object):
         :returns: the set of subkeys (set of strings, not set of string lists)
         :rtype: :class:`collections.Set`
         :raises RepositoryKeyError: the ``key`` cannot be found in
-                                    the repository
+                                    the repository, or it's not a directory
 
         .. note::
 
