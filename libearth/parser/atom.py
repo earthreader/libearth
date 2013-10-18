@@ -247,7 +247,7 @@ def atom_get_content_tag(data, xml_base):
     if content_type is not None:
         content.type = content_type
     if 'src' in data.attrib:
-        content.uri = urlparse.urljoin(xml_base, data.attrib['src'])
+        content.source_uri = urlparse.urljoin(xml_base, data.attrib['src'])
     return content
 
 
