@@ -220,6 +220,32 @@ atom_xml = """
         <published>2013-08-17T03:28:11Z</published>
         <updated>2013-08-17T03:28:11Z</updated>
     </entry>
+    <entry>
+        <id>three</id>
+        <author>
+            <name>dahlia</name>
+        </author>
+        <title>source tag test</title>
+        <updated>2013-10-19T00:33:30Z</updated>
+        <source>
+            <author>
+                <name>dahlia</name>
+            </author>
+            <category term="Test" />
+            <contributor>
+                <name>vio</name>
+            </contributor>
+            <link rel="self" href="http://sourcetest.com/atom.xml" />
+            <id>http://sourcetest.com/atom.xml</id>
+            <title>Source Test</title>
+            <updated>2013-10-19T00:33:30Z</updated>
+            <generator>vio generator</generator>
+            <icon>http://sourcetest.com/icon.jpg</icon>
+            <logo>http://sourcetest.com/logo.jpg</logo>
+            <rights>Vio companry all rights reserved</rights>
+            <subtitle>Hello World</subtitle>
+        </source>
+    </entry>
 </feed>
 """
 
@@ -291,6 +317,23 @@ def test_atom_parser():
     assert entries[1].title.type == feed.entries[1].title.type
     assert entries[1].title.value == feed.entries[1].title.value
     assert entries[1].updated_at == feed.entries[1].updated_at
+    assert entries[2].id == feed.entries[2].id
+    assert entries[2].authors[0].name == feed.entries[2].authors[0].name
+    assert entries[2].title.type == feed.entries[2].title.type
+    assert entries[2].title.value == feed.entries[2].title.value
+    assert entries[2].updated_at == feed.entries[2].updated_at
+    source = entries[2].source
+    feed_source = feed.entries[2].source
+    assert source.authors[0].name == feed_source.authors[0].name
+    assert source.categories[0].term == feed_source.categories[0].term
+    assert source.contributors[0].name == feed_source.contributors[0].name
+    assert source.links[0] == feed_source.links[0]
+    assert source.id == feed_source.id
+    assert source.generator == feed_source.generator
+    assert source.icon == feed_source.icon
+    assert source.logo == feed_source.logo
+    assert source.rights == feed_source.rights
+    assert source.subtitle == feed_source.subtitle
 
 
 rss_xml = """
