@@ -1517,8 +1517,9 @@ def write(document, validate=True, indent='  ', newline='\n',
                             for chunk in subiter:
                                 yield chunk
                 yield newline
-            for s in itertools.repeat(indent, depth):
-                yield s
+            if children:
+                for s in itertools.repeat(indent, depth):
+                    yield s
             yield '</'
             if xmlns:
                 yield xmlns_alias[xmlns]
