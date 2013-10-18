@@ -41,7 +41,7 @@ def autodiscovery(document, url):
 
     If the given url is a url of an ordinary web page
     (i.e. :mimetype:`text/html`), it finds the urls of the corresponding feed.
-    It sorts feed urls in lexicographical order of feed types and return urls.
+    It returns feed urls in feed types' lexicographical order.
 
     If autodiscovery failed, it raise :exc:`FeedUrlNotFoundError`.
 
