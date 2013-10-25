@@ -12,7 +12,7 @@ Coding style
   should have the docstring.
 
 
-.. PEP 8: http://www.python.org/dev/peps/pep-0008/
+.. _PEP 8: http://www.python.org/dev/peps/pep-0008/
 
 
 Tests
