@@ -12,12 +12,14 @@ the natural object-mapping interface instead.
 import collections
 import re
 
+from .feed import Feed
 from .repository import Repository, RepositoryKeyError
 from .schema import read, write
 from .session import MergeableDocumentElement, Session
 from .tz import now
 
-__all__ = 'BaseStage', 'Directory', 'Route', 'compile_format_to_pattern'
+__all__ = ('BaseStage', 'Directory', 'Route', 'Stage',
+           'compile_format_to_pattern')
 
 
 class BaseStage(object):
@@ -436,3 +438,11 @@ class Directory(collections.Mapping):
         return '<{0.__module__}.{0.__name__} {1!r}>'.format(
             type(self), self.key
         )
+
+
+class Stage(BaseStage):
+    """Staged documents of Earth Reader."""
+
+    #: (:class:`collections.MutableMapping`) The map of feed ids to
+    #: :class:`~libearth.feed.Feed` objects.
+    feeds = Route(Feed, ['feeds', '{0}', '{session.identifier}.xml'])
