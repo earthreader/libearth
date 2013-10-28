@@ -1,3 +1,3 @@
 
 .. automodule:: libearth.stage
-:members:
+   :members:
