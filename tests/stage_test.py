@@ -7,6 +7,7 @@ from libearth.schema import read
 from libearth.session import MergeableDocumentElement, Session
 from libearth.stage import (BaseStage, Directory, Route,
                             compile_format_to_pattern)
+from libearth.tz import now
 
 
 def test_compile_format_to_pattern():
@@ -56,6 +57,16 @@ def test_compile_format_to_pattern():
     assert not p6.match('preandin'), p6_msg
     assert not p6.match('preandinandpost'), p6_msg
     assert p6.match('pre,and{1}post'), p6_msg
+    p7 = compile_format_to_pattern('pre{0}in{session.identifier}post')
+    p7_msg = 'p7.pattern = ' + repr(p7.pattern)
+    assert not p7.match('something'), p7_msg
+    assert not p7.match('no-match'), p7_msg
+    assert not p7.match('preonly'), p7_msg
+    assert not p7.match('onlypost'), p7_msg
+    assert not p7.match('preandpost'), p7_msg
+    assert not p7.match('inandpost'), p7_msg
+    assert not p7.match('preandin'), p7_msg
+    assert p7.match('preandinandpost'), p7_msg
 
 
 class TestDoc(MergeableDocumentElement):
@@ -110,15 +121,15 @@ class TestRepository(Repository):
                 data = data[k]
             except KeyError:
                 raise RepositoryKeyError(key)
-        if isinstance(key, collections.Mapping):
+        if isinstance(data, collections.Mapping):
             raise RepositoryKeyError(key)
-        return key
+        return data
 
     def write(self, key, iterable):
         super(TestRepository, self).write(key, iterable)
         data = self.data
         for k in key[:-1]:
-            data = data.setdefalt(k, {})
+            data = data.setdefault(k, {})
         data[key[-1]] = ''.join(iterable)
 
     def exists(self, key):
@@ -159,6 +170,21 @@ def fx_stage(fx_repo, fx_session):
     return TestStage(fx_session, fx_repo)
 
 
+@fixture
+def fx_other_session():
+    return Session(identifier='SESSID2')
+
+
+@fixture
+def fx_other_stage(fx_repo, fx_other_session):
+    return TestStage(fx_other_session, fx_repo)
+
+
+def test_stage_sessions(fx_session, fx_stage, fx_other_session, fx_other_stage):
+    assert fx_stage.sessions == frozenset([fx_session, fx_other_session])
+    assert fx_other_stage.sessions == frozenset([fx_session, fx_other_session])
+
+
 def test_stage_read(fx_session, fx_stage):
     doc = fx_stage.read(TestDoc, ['doc.{0}.xml'.format(fx_session.identifier)])
     assert isinstance(doc, TestDoc)
@@ -167,17 +193,37 @@ def test_stage_read(fx_session, fx_stage):
 
 def test_stage_write(fx_repo, fx_session, fx_stage):
     doc = TestDoc()
-    fx_stage.write(['doc.{0}.xml'.format(fx_session.identifier)], doc)
+    min_ts = now()
+    wdoc = fx_stage.write(['doc.{0}.xml'.format(fx_session.identifier)], doc)
+    assert wdoc.__revision__.session is fx_session
+    assert min_ts <= wdoc.__revision__.updated_at <= now()
     xml = fx_repo.data['doc.{0}.xml'.format(fx_session.identifier)]
     read_doc = read(TestDoc, xml)
     assert isinstance(read_doc, TestDoc)
-    assert read_doc.__revision__.session is fx_session
+    assert read_doc.__revision__ == wdoc.__revision__
 
 
 def test_get_flat_route(fx_session, fx_stage):
     doc = fx_stage.doc
     assert isinstance(doc, TestDoc)
     assert doc.__revision__.session is fx_session
+    assert fx_stage.doc.__revision__ == doc.__revision__
+
+
+def test_set_flat_route(fx_session, fx_stage, fx_other_session, fx_other_stage):
+    fx_stage.doc = TestDoc()
+    doc_a = fx_stage.doc
+    assert doc_a.__revision__.session is fx_session
+    doc_b = fx_other_stage.doc
+    assert doc_b.__revision__.session is fx_other_session
+    fx_session.revise(doc_a)
+    assert (doc_b.__revision__.updated_at ==
+            fx_other_stage.doc.__revision__.updated_at)
+    assert (fx_other_stage.doc.__revision__.updated_at <=
+            doc_a.__revision__.updated_at)
+    fx_stage.doc = doc_a
+    assert (fx_other_stage.doc.__revision__.updated_at >=
+            doc_a.__revision__.updated_at)
 
 
 def test_get_dir_route(fx_session, fx_stage):
@@ -190,6 +236,22 @@ def test_get_dir_route(fx_session, fx_stage):
     doc = dir['abc']
     assert isinstance(doc, TestDoc)
     assert doc.__revision__.session is fx_session
+    assert dir['abc'].__revision__ == doc.__revision__
+
+
+def test_set_dir_route(fx_session, fx_stage, fx_other_session, fx_other_stage):
+    doc_a = fx_stage.dir_docs['abc']
+    assert doc_a.__revision__.session is fx_session
+    doc_b = fx_other_stage.dir_docs['abc']
+    assert doc_b.__revision__.session is fx_other_session
+    fx_session.revise(doc_a)
+    assert (doc_b.__revision__.updated_at ==
+            fx_other_stage.dir_docs['abc'].__revision__.updated_at)
+    assert (fx_other_stage.dir_docs['abc'].__revision__.updated_at <=
+            doc_a.__revision__.updated_at)
+    fx_stage.dir_docs['abc'] = doc_a
+    assert (fx_other_stage.dir_docs['abc'].__revision__.updated_at >=
+            doc_a.__revision__.updated_at)
 
 
 def test_get_deep_route(fx_session, fx_stage):

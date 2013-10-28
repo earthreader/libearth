@@ -11,10 +11,12 @@ the natural object-mapping interface instead.
 """
 import collections
 import re
+import itertools
 
 from .repository import Repository, RepositoryKeyError
 from .schema import read, write
 from .session import MergeableDocumentElement, Session
+from .tz import now
 
 __all__ = 'BaseStage', 'Directory', 'Route', 'compile_format_to_pattern'
 
@@ -29,6 +31,10 @@ class BaseStage(object):
     :type repository: :class:`~libearth.repository.Repository`
 
     """
+
+    #: (:class:`collections.Sequence`) The repository key of the directory
+    #: where session list are stored.
+    SESSION_DIRECTORY_KEY = ['.sessions']
 
     #: (:class:`~libearth.session.Session`) The current session of the stage.
     session = None
@@ -47,6 +53,30 @@ class BaseStage(object):
             )
         self.session = session
         self.repository = repository
+        self.touch()
+
+    @property
+    def sessions(self):
+        """(:class:`collections.Set`) List all sessions associated to
+         the :attr:`repository`.  It includes the session of the current stage.
+
+        """
+        identifiers = self.repository.list(self.SESSION_DIRECTORY_KEY)
+        return frozenset(Session(identifier=ident) for ident in identifiers)
+
+    def touch(self):
+        """Touch the latest staged time of the current :attr:`session`
+        into the :attr:`repository`.
+
+        .. note::
+
+           This method is intended to be internal.
+
+        """
+        self.repository.write(
+            self.SESSION_DIRECTORY_KEY + [self.session.identifier],
+            [now().isoformat()]
+        )
 
     def read(self, document_type, key):
         """Read a document of ``document_type`` by the given ``key``
@@ -81,7 +111,42 @@ class BaseStage(object):
                 )
             )
         document = read(document_type, self.repository.read(key))
-        return self.session.pull(document)
+        assert isinstance(document, MergeableDocumentElement)
+        self.touch()
+        not_stamped = document.__revision__ is None
+        if not_stamped:
+            return self.write(key, document)
+        return document
+
+    def read_merged_document(self, document_type, key_spec, key):
+        # FIXME: remove assumption that it always takes Session.identifier
+        complete_size = len(key)
+        pattern = compile_format_to_pattern(key_spec[complete_size])
+        for subkey in key_spec[complete_size + 1:]:
+            try:
+                subkey.format()
+            except IndexError:
+                raise  # FIXME: should return Directory instead
+        docs = []
+        for subkey in self.repository.list(key):
+            match = pattern.match(subkey)
+            if match:
+                k = key + [subkey] + key_spec[complete_size + 1:]
+                doc = self.read(document_type, k)
+                triple = match.group(1), doc, k
+                docs.append(triple)
+        session = self.session
+        if len(docs) == 1:
+            _, doc, key = docs[0]
+            if doc.__revision__.session is session:
+                return doc
+            return self.write(key, doc)
+        docs.sort(key=lambda pair: pair[0] == session.identifier,
+                  reverse=True)  # the current session comes first
+        if docs:
+            session_id, doc = reduce(lambda a, b: session.merge(a[1], b[1]),
+                                     docs)
+            return doc
 
     def write(self, key, document):
         """Save the ``document`` to the ``key`` in the staged
@@ -91,6 +156,8 @@ class BaseStage(object):
         :type key: :class:`collections.Sequence`
         :param document: the document to save
         :type document: :class:`~libearth.schema.MergeableDocumentElement`
+        :returns: actually written document
+        :rtype: :class:`~libearth.schema.MergeableDocumentElement`
 
         .. note::
 
@@ -100,6 +167,8 @@ class BaseStage(object):
         """
         document = self.session.pull(document)
         self.repository.write(key, write(document))
+        self.touch()
+        return document
 
     def __repr__(self):
         return '{0.__module__}.{0.__name__}({1!r}, {2!r})'.format(
@@ -201,6 +270,8 @@ class Route(object):
     def __get__(self, obj, cls=None):
         if isinstance(obj, type):
             return self
+        # Should be merged!
+        assert isinstance(obj, BaseStage)
         key = []
         for fmt in self.key_spec:
             try:
@@ -208,8 +279,21 @@ class Route(object):
             except IndexError:
                 return Directory(obj, self.document_type,
                                  self.key_spec, (), key)
-            key.append(chunk)
-        return obj.read(self.document_type, key)
+            try:
+                fmt.format()
+            except KeyError:
+                break
+            else:
+                key.append(chunk)
+        return obj.read_merged_document(self.document_type, self.key_spec, key)
+
+    def __set__(self, obj, value):
+        session = obj.session
+        try:
+            key = [fmt.format(session=session) for fmt in self.key_spec]
+        except IndexError:
+            raise AttributeError('cannot set the directory')
+        obj.write(key, value)
 
 
 def compile_format_to_pattern(format_string):
@@ -225,7 +309,7 @@ def compile_format_to_pattern(format_string):
     """
     pattern = ['^']
     i = 0
-    for match in re.finditer(r'(^|[^{])\{\d+\}|(\{\{)|(\}\})', format_string):
+    for match in re.finditer(r'(^|[^{])\{[^}]+\}|(\{\{)|(\}\})', format_string):
         if match.group(2):
             j = match.start()
             chunk = r'\{'
@@ -311,11 +395,31 @@ class Directory(collections.Mapping):
                     return Directory(stage, self.document_type,
                                      self.key_spec, indices, key)
                 raise KeyError(index)
-            key.append(chunk)
+            try:
+                fmt.format(*indices)
+            except KeyError:
+                break
+            else:
+                key.append(chunk)
         try:
-            return stage.read(self.document_type, key)
+            doc = stage.read_merged_document(self.document_type,
+                                             self.key_spec,
+                                             key)
         except RepositoryKeyError:
             raise KeyError(index)
+        if doc:
+            return doc
+        raise KeyError(index)
+
+    def __setitem__(self, index, doc):
+        indices = self.indices + (index,)
+        session = self.stage.session
+        try:
+            key = [fmt.format(*indices, session=session)
+                   for fmt in self.key_spec]
+        except IndexError:
+            raise TypeError('cannot set the directory')
+        self.stage.write(key, doc)
 
     def __iter__(self):
         it = self.stage.repository.list(self.key)
