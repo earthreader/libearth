@@ -6,14 +6,21 @@ python:
 - 3.2
 - 3.3
 install:
-- pip install pytest pytest-cov pep8 coveralls
+- pip install pytest;
+- if [ `python -c 'from platform import *; print(python_implementation())'` != 'PyPy' ]; then
+    pip install pytest pytest-cov pep8 coveralls;
+  fi
 script:
 - python -mlibearth.version
-- py.test --cov libearth --durations=20
-- if [ `python -c 'from platform import *; print(python_implementation())'` != 'PyPy' ]; then pep8; fi
-- python docs/coverage.py
+- if [ `python -c 'from platform import *; print(python_implementation())'` == 'PyPy' ]; then
+    py.test libearth --durations=20;
+  else
+    py.test --cov libearth --durations=20;
+    pep8;
+    python docs/coverage.py;
+  fi
 after_success:
-- coveralls
+- if [ `python -c 'from platform import *; print(python_implementation())'` != 'PyPy' ]; then coveralls; fi
 notifications:
   irc:
     channels:
