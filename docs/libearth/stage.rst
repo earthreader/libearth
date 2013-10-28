@@ -1,3 +1,3 @@
 
-.. automodule:: libearth.session
+.. automodule:: libearth.stage
 :members:
