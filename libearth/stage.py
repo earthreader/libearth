@@ -11,7 +11,6 @@ the natural object-mapping interface instead.
 """
 import collections
 import re
-import itertools
 
 from .repository import Repository, RepositoryKeyError
 from .schema import read, write
