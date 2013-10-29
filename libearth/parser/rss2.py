@@ -27,6 +27,7 @@ from ..tz import now
 GUID_PATTERN = re.compile('^(\{{0,1}([0-9a-fA-F]){8}-([0-9a-fA-F]){4}-([0-9'
                           'a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){12}\}'
                           '{0,1})$')
+CONTENT_XMLNS = '{http://purl.org/rss/1.0/modules/content/}'
 
 
 def parse_rss(xml, feed_url=None, parse_entry=True):
@@ -147,7 +148,9 @@ def rss_get_item_data(entries):
                 link.mimetype = 'text/html'
                 links.append(link)
                 entry_data.links = links
-            elif data.tag == 'description':
+            elif data.tag == 'description' and not entry_data.content:
+                entry_data.content = Content(type='html', value=data.text)
+            elif data.tag == CONTENT_XMLNS + 'encoded':
                 entry_data.content = Content(type='html', value=data.text)
             elif data.tag == 'author':
                 author = Person()
