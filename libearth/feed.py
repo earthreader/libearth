@@ -14,6 +14,7 @@ import re
 from .codecs import Enum, Rfc3339
 from .compat import UNICODE_BY_DEFAULT, text_type
 from .sanitizer import clean_html, sanitize_html
+from .session import MergeableDocumentElement
 from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
                      Element, Text as TextChild)
 
@@ -510,7 +511,7 @@ class Entry(DocumentElement, Metadata):
     source = Child('source', Source, xmlns=ATOM_XMLNS)
 
 
-class Feed(DocumentElement, Source):
+class Feed(MergeableDocumentElement, Source):
     """Atom feed document, acting as a container for metadata and data
     associated with the feed.
 
