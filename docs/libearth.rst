@@ -9,11 +9,11 @@
       libearth/crawler
       libearth/feed
       libearth/parser
-      libearth/feedlist
       libearth/repository
       libearth/sanitizer
       libearth/schema
       libearth/session
       libearth/stage
+      libearth/subscribe
       libearth/tz
       libearth/version

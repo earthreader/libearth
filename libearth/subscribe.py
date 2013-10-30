@@ -1,5 +1,5 @@
-""":mod:`libearth.feedlist` --- Feed list
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`libearth.subscribe` --- Subscription list
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Test opml here
 
@@ -23,7 +23,7 @@ Test opml here
 
 FeedList can import opml file:
 
->>> from libearth.feedlist import FeedList
+>>> from libearth.subscribe import FeedList
 >>> feedlist = FeedList('feedlist.opml')
 >>> print feedlist.title
 exported opml
@@ -38,7 +38,7 @@ http://feed1.com/rss
 
 change and save to file:
 
->>> from libearth.feedlist import FeedList
+>>> from libearth.subscribe import FeedList
 >>> feedlist = FeedList('feedlist.opml')
 >>> feedlist.title = "changed title"
 >>> feedlist.save_file()
@@ -49,7 +49,7 @@ with file name:
 
 create opml without import:
 
->>> from libearth.feedlist import Feed, FeedList
+>>> from libearth.subscribe import Feed, FeedList
 >>> feedlist = FeedList()
 >>> feed = Feed('rss2', 'title', 'http://feed1.com/rss', 'http://feed1.com/')
 >>> feedlist.append(feed)
@@ -57,15 +57,14 @@ create opml without import:
 
 or:
 
->>> from libearth.feedlist import Feed, FeedList
+>>> from libearth.subscribe import Feed, FeedList
 >>> feedlist = FeedList()
 >>> feedlist.add('rss2', 'title', 'http://feed1.com/rss', 'http://feed1.com/')
 >>> feedlist.save_file('/tmp/test.opml')
 
 """
-
-from collections import MutableSequence
-from datetime import datetime
+import collections
+import datetime
 
 from .codecs import Boolean, Integer, Rfc822, Version
 from .compat import text_type
@@ -74,7 +73,7 @@ from .schema import (Attribute, Child, Codec, DecodeError, DocumentElement,
 from .tz import now
 
 __all__ = ('AlreadyExistException', 'CommaSeparatedList', 'Feed',
-           'FeedCategory', 'FeedList', 'FeedTree', 'SaveOpmlError',)
+           'FeedCategory', 'FeedList', 'FeedTree', 'SaveOpmlError')
 
 
 class CommaSeparatedList(Codec):
@@ -123,7 +122,7 @@ class FeedTree(object):
         )
 
 
-class FeedCategory(FeedTree, MutableSequence):
+class FeedCategory(FeedTree, collections.MutableSequence):
     """Category of feeds to organize.  It can recursively contains other
     categories as well.  It implements :class:`~collections.MutableSequence`
     interface.
@@ -160,14 +159,16 @@ class FeedCategory(FeedTree, MutableSequence):
         self._type = type
         self.text = text or title
 
-        if created is not None and not isinstance(created, datetime):
+        if created is not None and not isinstance(created, datetime.datetime):
             try:
                 codec = Rfc822()
                 created = codec.decode(created)
             except DecodeError:
                 raise TypeError(
                     'Expected an instance of {0.__module__}.{0.__name__} or '
-                    'valid RFC822 string, not {1!r}'.format(datetime, created))
+                    'valid RFC822 string, not {1!r}'.format(datetime.datetime,
+                                                            created)
+                )
         else:
             self.created = created
 
@@ -336,7 +337,7 @@ class OpmlDoc(DocumentElement):
     version = Attribute('version', Version, default=(2, 0))
 
 
-class FeedList(MutableSequence):
+class FeedList(collections.MutableSequence):
     """Represent OPML document.
 
     :param path: file path to save the document.  if not present, the document
