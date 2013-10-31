@@ -45,15 +45,30 @@ if os.environ.get('READTHEDOCS'):
                               and not inspect.isroutine(member)
                               and not isinstance(member, class_types))
     AttributeDocumenter.can_document_member = classmethod(can_document_member)
+
+    html_context = {}
+
+    class PathList(list):
+        """Fake list to ignore ReadTheDocs.org's hack."""
+
+        def insert(self, index, value):
+            if index == 0:
+                index = 1
+                html_context['rtd_hack_templates_path'] = value
+            super(PathList, self).insert(index, value)
+
+        def __reduce__(self):
+            return list, (list(self),)
 else:
     needs_sphinx = '1.2'
+    PathList = list
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo']
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = PathList(['_templates'])
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -118,7 +133,6 @@ pygments_style = 'borland'
 # a list of builtin themes.
 html_theme = 'basic'
 
-templates_path = ['_templates']
 html_style = 'libearth.css'
 
 # Theme options are theme-specific and customize the look and feel of a theme
