@@ -1,15 +1,19 @@
 libearth
 ========
 
-.. image:: _images/libearth.svg
-   :width: 264
-   :height: 279
+Libearth is the share dcommon library for various `Earth Reader`_ apps.
+Earth Reader try to support many platforms as possible (e.g. web_,
+mobile apps, desktop apps), so there must be a large part of common concepts
+and implementations they share like subscription lists, synchronization
+through cloud storages between several devices, and crawler, that libearth
+actually implements.
 
-|
+.. _Earth Reader: http://earthreader.org/
+.. _web: https://github.com/earthreader/web
 
-.. image:: https://travis-ci.org/earthreader/libearth.png?branch=master
-   :alt: Build Status
-   :target: https://travis-ci.org/earthreader/libearth
+
+References
+----------
 
 .. toctree::
    :maxdepth: 3
@@ -17,10 +21,36 @@ libearth
    libearth
 
 
-Indices and tables
-------------------
+Open source
+-----------
 
-- :ref:`genindex`
-- :ref:`modindex`
-- :ref:`search`
+Libearth is an open source software written by `Hong Minhee`_ and
+the `Earth Reader team`_.  See also the complete list of contributors_
+as well.  The source code is distributed under `MIT license`_, and you can
+find the code at `GitHub repository`_:
 
+.. code-block:: console
+
+   $ git clone git://github.com/earthreader/libearth.git
+
+If you find any bugs, please report them to our `issue tracker`_.
+Pull requests are always welcome!
+
+We discuss about libearth's development on IRC.  Come ``#earthreader`` channel
+on Ozinger_ network.  (We will make one on freenode as well soon!)
+
+.. image:: https://travis-ci.org/earthreader/libearth.png?branch=master
+   :alt: Build Status
+   :target: https://travis-ci.org/earthreader/libearth
+
+.. image:: https://coveralls.io/repos/earthreader/libearth/badge.png?branch=master
+   :alt: Coverage Status
+   :target: https://coveralls.io/r/earthreader/libearth?branch=master
+
+.. _Hong Minhee: http://dahlia.kr/
+.. _Earth Reader team: https://github.com/earthreader
+.. _contributors: https://github.com/earthreader/libearth/graphs/contributors
+.. _MIT License: http://minhee.mit-license.org/
+.. _GitHub repository: https://github.com/earthreader/libearth
+.. _issue tracker: https://github.com/earthreader/libearth/issues
+.. _Ozinger: http://ozinger.org/

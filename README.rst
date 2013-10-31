@@ -6,7 +6,9 @@
 libearth
 ========
 
-Libearth is the core implementation of Earth Reader, without any frontends.
+Libearth is the shared common library for various `Earth Reader`_ apps.
+
+.. _Earth Reader: http://earthreader.org/
 
 
 Links
