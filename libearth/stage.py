@@ -16,6 +16,7 @@ from .feed import Feed
 from .repository import Repository, RepositoryKeyError
 from .schema import read, write
 from .session import MergeableDocumentElement, Session
+from .subscribe import SubscriptionList
 from .tz import now
 
 __all__ = ('BaseStage', 'Directory', 'Route', 'Stage',
@@ -446,3 +447,7 @@ class Stage(BaseStage):
     #: (:class:`collections.MutableMapping`) The map of feed ids to
     #: :class:`~libearth.feed.Feed` objects.
     feeds = Route(Feed, ['feeds', '{0}', '{session.identifier}.xml'])
+
+    #: (:class:`~libearth.subscribe.SubscriptionList`) The set of subscriptions.
+    subscriptions = Route(SubscriptionList,
+                          ['subscriptions.{session.identifier}.xml'])
