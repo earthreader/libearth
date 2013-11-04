@@ -141,7 +141,7 @@ class Descriptor(object):
             if self.multiple:
                 return ElementList(obj, self)
             root = obj._root() if hasattr(obj, '_root') else None
-            if root and getattr(root, '_handler', None):
+            if root is not None and getattr(root, '_handler', None):
                 handler = root._handler
                 parser = root._parser
                 iterable = root._iterator
