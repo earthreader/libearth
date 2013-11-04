@@ -145,8 +145,8 @@ class BaseStage(object):
         docs.sort(key=lambda pair: pair[0] == session.identifier,
                   reverse=True)  # the current session comes first
         if docs:
-            session_id, doc = reduce(lambda a, b: session.merge(a[1], b[1]),
-                                     docs)
+            session_id, doc = reduce(lambda a, b:
+                                     (a[0], session.merge(a[1], b[1])), docs)
             return doc
 
     def write(self, key, document):
