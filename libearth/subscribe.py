@@ -1,0 +1,312 @@
+""":mod:`libearth.subscribe` --- Subscription list
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Maintain the subscription list using OPML format, which is de facto standard
+for the purpose.
+
+"""
+import collections
+import distutils.version
+
+from .codecs import Boolean, Integer, Rfc822
+from .compat import text_type
+from .feed import Person
+from .schema import Attribute, Child, Codec, DocumentElement, Element, Text
+from .tz import now
+
+__all__ = ('Body', 'Category', 'CommaSeparatedList', 'Head', 'Outline',
+           'Subscription', 'SubscriptionList', 'SubscriptionSet')
+
+
+class CommaSeparatedList(Codec):
+    """Encode strings e.g. ``['a', 'b', 'c']`` into a comma-separated list
+    e.g. ``'a,b,c'``, and decode it back to a Python list.  Whitespaces
+    between commas are ignored.
+
+    >>> codec = CommaSeparatedList()
+    >>> codec.encode(['technology', 'business'])
+    'technology,business'
+    >>> codec.decode('technology, business')
+    ['technology', 'business']
+
+    """
+
+    def encode(self, value):
+        if value is None:
+            res = ""
+        elif isinstance(value, text_type):
+            res = value
+        else:
+            res = ",".join(value)
+        return res
+
+    def decode(self, text):
+        if text is None:
+            lst = []
+        else:
+            lst = [elem.strip() for elem in text.split(',')]
+        return lst
+
+
+class SubscriptionSet(collections.MutableSet):
+    """Mixin for :class:`SubscriptionList` and :class:`Category`, both can
+    group :class:`Subscription` object and other :class:`Category` objects,
+    to implement :class:`collections.MutableSet` protocol.
+
+    """
+
+    @property
+    def children(self):
+        """(:class:`collections.MutableSequence`) Child :class:`Outline`
+         objects.
+
+        .. note::
+
+           Every subclass of :class:`SubscriptionSet` has to override
+           :attr:`children` property to implement details.
+
+         """
+        raise NotImplementedError(
+            'every subclass of {0.__module__}.{0.__name__} has to '
+            'implement children property'.format(SubscriptionSet)
+        )
+
+    def __len__(self):
+        return len(self.children)
+
+    def __iter__(self):
+        categories = set()
+        subscriptions = set()
+        for outline in self.children:
+            if outline.type == 'rss' or outline.feed_uri or \
+               isinstance(outline, Subscription):
+                if outline.feed_uri in subscriptions:
+                    continue
+                elif isinstance(outline, Subscription):
+                    yield outline
+                    continue
+                yield Subscription(
+                    label=outline.label,
+                    _title=outline.label,
+                    feed_uri=outline.feed_uri,
+                    alternate_uri=outline.alternate_uri,
+                    created_at=outline.created_at
+                )
+            elif outline.label in categories:
+                continue
+            elif isinstance(outline, Category):
+                yield outline
+            else:
+                yield Category(
+                    label=outline.label,
+                    _title=outline.label,
+                    children=outline.children,
+                    created_at=outline.created_at
+                )
+
+    def __contains__(self, outline):
+        return isinstance(outline, Outline) and outline in self.children
+
+    def add(self, value):
+        if not isinstance(value, Outline):
+            raise TypeError('expected {0.__module__}.{0.__name__}, not '
+                            '{1!r}'.format(Outline, value))
+        if value.type == 'rss' or isinstance(value, Subscription):
+            value.type = 'rss'
+            for outline in self.children:
+                if not (outline.type == 'rss' or
+                        isinstance(outline, Subscription)):
+                    continue
+                if outline.feed_uri == value.feed_uri:
+                    return
+        else:
+            value.type = 'category'
+            for outline in self.children:
+                if not (outline.type == 'category' or
+                        isinstance(outline, Category)):
+                    continue
+                if outline.label == value.label:
+                    return
+        value.created_at = now()
+        self.children.append(value)
+
+    def discard(self, outline):
+        if not isinstance(outline, Outline):
+            raise TypeError('expected {0.__module__}.{0.__name__}, not '
+                            '{1!r}'.format(Outline, outline))
+        children = self.children
+        while True:
+            try:
+                children.remove(outline)
+            except ValueError:
+                break
+
+
+class Outline(Element):
+    """Represent ``outline`` element of OPML document."""
+
+    #: (:class:`str`) The human-readable text of the outline.
+    label = Attribute('text', required=True)
+
+    #: (:class:`str`) Internally-used type identifier.
+    type = Attribute('type')
+
+    #: (:class:`datetime.datetime`) The created time.
+    created_at = Attribute('created_at', Rfc822)
+
+    feed_uri = Attribute('xmlUrl')
+    alternate_uri = Attribute('htmlUrl')
+    children = Child('outline', 'Outline', multiple=True)
+
+    _title = Attribute('title')
+    _category = Attribute('category', CommaSeparatedList)
+    _breakpoint = Attribute('isBreakpoint', Boolean)
+
+    def __eq__(self, other):
+        if isinstance(other, Outline):
+            if self.type == 'rss':
+                return self.feed_uri == other.feed_uri
+            return self.label == other.label
+        return False
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __hash__(self):
+        if self.type == 'rss':
+            return hash(self.feed_uri)
+        return hash(self.label)
+
+
+class Category(Outline, SubscriptionSet):
+    """Category which groups :class:`Subscription` objects or other
+    :class:`Category` objects.  It implements :class:`collections.MutableSet`
+    protocol.
+
+    .. attribute:: children
+
+       (:class:`collections.MutableSequence`) The list of child :class:`Outline`
+       elements.  It's for internal use.
+
+    """
+
+    type = Attribute('type', default='category')
+
+    def __repr__(self):
+        return '<{0.__module__}.{0.__name__} {1!r}>'.format(
+            type(self), self.label
+        )
+
+
+class Subscription(Outline):
+    """Subscription which holds referring :attr:`feed_uri`.
+
+    .. attribute:: feed_uri
+
+       (:class:`str`) The feed url.
+
+    .. attribute:: alternate_uri
+
+       (:class:`str`) The web page url.
+
+    """
+
+    type = Attribute('type', default='rss')
+
+    def __repr__(self):
+        return '<{0.__module__}.{0.__name__} {1!r} ({2!r})>'.format(
+            type(self), self.label, self.feed_uri
+        )
+
+
+class Head(Element):
+    """Represent ``head`` element of OPML document."""
+
+    #: (:class:`str`) The title of the subscription list.
+    title = Text('title')
+
+    #: (:class:`str`) The owner's name.
+    owner_name = Text('ownerName')
+
+    #: (:class:`str`) The owner's email.
+    owner_email = Text('ownerEmail')
+
+    #: (:class:`str`) The owner's website url.
+    owner_uri = Text('ownerId')
+
+    created_at = Text('dateCreated', Rfc822)
+    updated_at = Text('dateModified', Rfc822)
+
+    _docs = Text('docs')
+    _expansion_state = Text('expansionState', CommaSeparatedList)
+    _vert_scroll_state = Text('vertScrollState', Integer)
+    _window_top = Text('windowTop', Integer)
+    _window_bottom = Text('windowBottom', Integer)
+    _window_left = Text('windowLeft', Integer)
+    _window_right = Text('windowRight', Integer)
+
+
+class Body(Element):
+    """Represent ``body`` element of OPML document."""
+
+    #: (:class:`collections.MutableSequence`) Child :class:`Outline` objects.
+    children = Child('outline', Outline, multiple=True)
+
+
+class SubscriptionList(DocumentElement, SubscriptionSet):
+    """The set (exactly, tree) of subscriptions.  It consists of
+    :class:`Subscription`\ s and :class:`Category` objects for grouping.
+    It implements :class:`collections.MutableSet` protocol.
+
+    """
+
+    __tag__ = 'opml'
+    head = Child('head', Head)
+    body = Child('body', Body)
+
+    #: (:class:`distutils.version.StrictVersion`) The OPML version number.
+    version = Attribute('version',
+                        encoder=str,
+                        decoder=distutils.version.StrictVersion,
+                        default=distutils.version.StrictVersion('2.0'))
+
+    @property
+    def children(self):
+        if self.body is None:
+            self.body = Body()
+        return self.body.children
+
+    @property
+    def title(self):
+        """(:class:`str`) The title of the subscription list."""
+        return self.head.title
+
+    @title.setter
+    def title(self, title):
+        self.head.title = title
+
+    @property
+    def owner(self):
+        """(:class:`~libearth.feed.Person`) The owner of the subscription
+        list.
+
+        """
+        head = self.head
+        return Person(
+            name=head.owner_name,
+            email=head.owner_email,
+            uri=head.owner_uri
+        )
+
+    @owner.setter
+    def owner(self, owner):
+        head = self.head
+        head.owner_name = owner.name
+        head.owner_email = owner.email
+        head.owner_uri = owner.uri
+
+    def __repr__(self):
+        head = self.head
+        return '<{0.__module__}.{0.__name__} of {1} <{2}>>'.format(
+            type(self), head.owner_name, head.owner_email or head.owner_uri
+        )
