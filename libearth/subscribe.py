@@ -11,7 +11,8 @@ import distutils.version
 from .codecs import Boolean, Integer, Rfc822
 from .compat import text_type
 from .feed import Person
-from .schema import Attribute, Child, Codec, DocumentElement, Element, Text
+from .schema import Attribute, Child, Codec, Element, Text
+from .session import MergeableDocumentElement
 from .tz import now
 
 __all__ = ('Body', 'Category', 'CommaSeparatedList', 'Head', 'Outline',
@@ -253,7 +254,7 @@ class Body(Element):
     children = Child('outline', Outline, multiple=True)
 
 
-class SubscriptionList(DocumentElement, SubscriptionSet):
+class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
     """The set (exactly, tree) of subscriptions.  It consists of
     :class:`Subscription`\ s and :class:`Category` objects for grouping.
     It implements :class:`collections.MutableSet` protocol.
