@@ -1,40 +1,57 @@
 from datetime import datetime
-from pytest import raises
+from pytest import fixture, raises
 
-from libearth.subscribe import (AlreadyExistException, Feed, FeedCategory,
-                                FeedList, OpmlDoc)
+from libearth.feed import Person
+from libearth.subscribe import Body, Category, Subscription, SubscriptionList
 from libearth.schema import read
 from libearth.tz import utc
 
 
+@fixture
+def fx_subscription():
+    return Subscription(
+        label='Title',
+        feed_uri='http://example.com/rss.xml',
+        alternate_uri='http://example.com/'
+    )
+
+
 def test_count_empty_list():
-    feeds = FeedList()
-    assert len(feeds) == 0
+    subs = SubscriptionList()
+    assert len(subs) == 0
+    subs = SubscriptionList(body=Body())
+    assert len(subs) == 0
 
 
-def test_count_duplicated_url():
-    feeds = FeedList()
-    feeds.add_feed('type', 'title', 'url')
-    with raises(AlreadyExistException):
-        feeds.add_feed('type', 'title', 'url')
-    assert len(feeds) == 1
+def test_count_duplicated_url(fx_subscription):
+    subs = SubscriptionList()
+    subs.add(fx_subscription)
+    assert len(subs) == 1
+    assert list(subs) == [fx_subscription]
+    subs.add(fx_subscription)
+    assert len(subs) == 1
+    assert list(subs) == [fx_subscription]
 
 
-def test_count_after_remove():
-    feeds = FeedList()
-    feeds.add_feed('type', 'title', 'url')
-    del feeds[0]
+def test_count_after_remove(fx_subscription):
+    subs = SubscriptionList()
+    subs.add(fx_subscription)
+    assert len(subs) == 1
+    assert list(subs) == [fx_subscription]
+    subs.discard(fx_subscription)
+    assert not subs
+    assert len(subs) == 0
+    assert list(subs) == []
 
-    assert len(feeds) == 0
 
-
-XML = """<?xml version="1.0" encoding="ISO-8859-1"?>
+XML = '''
 <opml version="2.0">
     <head>
-        <title>EarthReader.opml</title>
+        <title>Earth Reader's Subscriptions</title>
         <dateCreated>Sat, 18 Jun 2005 12:11:52 +0000</dateCreated>
-        <ownerName>libearth</ownerName>
+        <ownerName>Earth Reader Team</ownerName>
         <ownerEmail>earthreader@librelist.com</ownerEmail>
+        <ownerId>http://earthreader.org/</ownerId>
         <expansionState>a,b,c,d</expansionState>
         <vertScrollState>1</vertScrollState>
         <windowTop>12</windowTop>
@@ -45,17 +62,19 @@ XML = """<?xml version="1.0" encoding="ISO-8859-1"?>
     <body>
         <outline text="CNET News.com" type="rss" version="RSS2"
             xmlUrl="http://news.com/2547-1_3-0-5.xml"/>
-        <outline text="test.com" type="rss" xmlUrl="http://test.com"/>
+        <outline text="test.com" type="rss" xmlUrl="http://test.com/"/>
     </body>
-</opml>"""
+</opml>
+'''
 
-XML_CATEGORY = """<?xml version="1.0" encoding="ISO-8859-1"?>
+XML_CATEGORY = '''
 <opml version="2.0">
     <head>
-        <title>EarthReader.opml</title>
+        <title>Earth Reader's Subscriptions</title>
         <dateCreated>Sat, 18 Jun 2005 12:11:52 +0000</dateCreated>
-        <ownerName>libearth</ownerName>
+        <ownerName>Earth Reader Team</ownerName>
         <ownerEmail>earthreader@librelist.com</ownerEmail>
+        <ownerId>http://earthreader.org/</ownerId>
         <expansionState>a,b,c,d</expansionState>
         <vertScrollState>1</vertScrollState>
         <windowTop>12</windowTop>
@@ -74,180 +93,71 @@ XML_CATEGORY = """<?xml version="1.0" encoding="ISO-8859-1"?>
             xmlUrl="http://www.capsule-web.com/" />
         </outline>
     </body>
-</opml>"""
-
-XML_DUPLICAED = """<?xml version="1.0" encoding="utf-8"?><opml version="1.1">
-<head>
-    <title>feeds for test</title>
-    <dateCreated>Tue, 13 Jul 2013 21:34:05 +0900</dateCreated>
-    <ownerName>Kjwon15</ownerName>
-</head>
-<body>
-    <outline type="category" text="sub1">
-    <outline type="rss" text="cake" xmlUrl="http://kjwon15.tistory.com/" />
-    </outline>
-    <outline type="category" text="sub2">
-    <outline type="rss" text="cake" xmlUrl="http://kjwon15.tistory.com/" />
-    </outline>
-</body>
 </opml>
-"""
+'''
 
 
-def test_OpmlDocment():
-    doc = read(OpmlDoc, XML)
+@fixture
+def fx_subscription_list():
+    return read(SubscriptionList, XML)
+
+
+def test_subscription_list_datetime(fx_subscription_list):
     expected_datetime = datetime(2005, 6, 18, 12, 11, 52, tzinfo=utc)
-
-    assert doc.head.title == "EarthReader.opml"
-    assert doc.head.date_created == expected_datetime
-    assert doc.head.date_modified is None
-    assert doc.head.owner_name == "libearth"
-    assert doc.head.expansion_state == ['a', 'b', 'c', 'd']
-    assert doc.head.window_top == 12
-
-    assert len(doc.body.outline) == 2
-    assert doc.body.outline[0].text == "CNET News.com"
+    assert fx_subscription_list.head.created_at == expected_datetime
+    assert fx_subscription_list.head.updated_at is None
 
 
-def test_file_not_found():
-    with raises(IOError):
-        FeedList('this_file_must_be_not_found.ext')
+def test_subscription_list_title(fx_subscription_list):
+    assert fx_subscription_list.head.title == "Earth Reader's Subscriptions"
+    assert fx_subscription_list.title == "Earth Reader's Subscriptions"
+    fx_subscription_list.title = "Hong Minhee's Subscriptions"
+    assert fx_subscription_list.head.title == "Hong Minhee's Subscriptions"
 
 
-def test_path_as_string():
-    feeds = FeedList(XML, is_xml_string=True)
-    assert feeds.title == "EarthReader.opml"
-    assert len(feeds) == 2
+def test_subscription_list_owner(fx_subscription_list):
+    assert fx_subscription_list.head.owner_name == 'Earth Reader Team'
+    assert (fx_subscription_list.head.owner_email ==
+            'earthreader' '@' 'librelist.com')
+    assert fx_subscription_list.head.owner_uri == 'http://earthreader.org/'
+    assert fx_subscription_list.owner == Person(
+        name='Earth Reader Team',
+        email='earthreader' '@' 'librelist.com',
+        uri='http://earthreader.org/'
+    )
+    fx_subscription_list.owner = Person(
+        name='Hong Minhee',
+        email='minhee' '@' 'dahlia.kr',
+        uri='http://dahlia.kr/'
+    )
+    assert fx_subscription_list.head.owner_name == 'Hong Minhee'
+    assert fx_subscription_list.head.owner_email == 'minhee' '@' 'dahlia.kr'
+    assert fx_subscription_list.head.owner_uri == 'http://dahlia.kr/'
 
 
-def test_feed_as_iterator():
-    feeds = FeedList(XML, is_xml_string=True)
-    expected = set(['CNET News.com', 'test.com'])
-    assert set(f.title for f in feeds) == expected
+def test_subscription_list_iter(fx_subscription_list):
+    assert frozenset(fx_subscription_list) == frozenset([
+        Subscription(label='CNET News.com',
+                     feed_uri='http://news.com/2547-1_3-0-5.xml'),
+        Subscription(label='test.com', feed_uri='http://test.com/')
+    ])
 
 
-def test_feed_contains_category():
-    feeds = FeedList(XML_CATEGORY, is_xml_string=True)
+def test_subscription_list_contains_category():
+    subs = read(SubscriptionList, XML_CATEGORY)
     expected = {
-        'Game': ['valve', 'nintendo'],
-        'Music': ['capsule'],
+        Category(label='Game'): frozenset([
+            Subscription(label='valve', feed_uri='http://valve.com/'),
+            Subscription(label='nintendo', feed_uri='http://nintendo.com/')
+        ]),
+        Category(label='Music'): frozenset([
+            Subscription(label='capsule',
+                         feed_uri='http://www.capsule-web.com/')
+        ])
     }
-    for feed in feeds:
-        print(feed.title)
-        assert feed.type == 'category'
-        for child_feed in feed:
-            print(child_feed.title)
-            expected[feed.title].remove(child_feed.title)
-        assert not expected[feed.title]
-        expected.pop(feed.title)
-    assert not expected.keys()
-
-
-def test_save_as_file(tmpdir):
-    filename = tmpdir.join('feeds.opml').strpath
-    print(filename)
-    feeds = FeedList(XML, is_xml_string=True)
-    feeds.title = "changed_title"
-    newfeed = Feed('rss2', 'newfeed', 'http://earthreader.com/rss')
-    feeds.append(newfeed)
-    feeds.save_file(filename)
-
-    feeds_another = FeedList(filename)
-    assert feeds_another.title == "changed_title"
-    assert feeds_another.expansion_state == ['a', 'b', 'c', 'd']
-    assert feeds_another[2].title == "newfeed"
-
-    assert feeds_another.window_top == 12
-    assert feeds_another.window_left == 34
-    assert feeds_another.window_bottom == 56
-    assert feeds_another.window_right == 78
-
-
-def test_same_feed_on_multi_category():
-    feeds = FeedList(XML_DUPLICAED, is_xml_string=True)
-    feeds[0][0].xml_url = "changed"
-    assert feeds[1][0].xml_url == "changed"
-
-
-def test_feedTree_in_category():
-    feed1 = Feed('rss2', 'newfeed', 'http://some.url/rss2')
-    feed2 = Feed('rss2', 'otherfeed', 'http://different.url/rss2')
-    feed3 = Feed('rss2', 'anotherfeed', 'http://another.url/rss2')
-
-    root = FeedCategory('root')
-    sub = FeedCategory('sub')
-    cate3 = FeedCategory('outer')
-
-    sub.append(feed2)
-
-    root.append(feed1)
-    root.append(sub)
-
-    assert feed1 in root
-    assert feed1 not in sub
-    assert feed2 in sub
-    assert feed2 in root
-    assert feed3 not in sub
-    assert feed3 not in sub
-
-    assert sub in root
-    assert cate3 not in root
-
-
-def test_circular_reference(tmpdir):
-    cate = FeedCategory('Root category')
-    subcate = FeedCategory('Sub category')
-    lastcate = FeedCategory('last category')
-
-    cate.append(subcate)
-    subcate.append(lastcate)
-    with raises(AlreadyExistException):
-        subcate.append(cate)
-    with raises(AlreadyExistException):
-        lastcate.append(cate)
-    with raises(AlreadyExistException):
-        subcate.append(subcate)
-    feeds = FeedList(XML, is_xml_string=True)
-    feeds.append(cate)
-
-    filename = tmpdir.join('feeds.opml').strpath
-    print(filename)
-    feeds.save_file(filename)
-
-
-def test_feedCategory():
-    feedCategory = FeedCategory('title')
-
-    #'Created' must be datetime.
-    with raises(TypeError):
-        feedCategory = FeedCategory('title', created='not datetime')
-
-    #Or valid rfc822 string.
-    feedCategory = FeedCategory('title', 'Mon, 23 Sep 2013 11:49:28 +0900')
-
-
-def test_get_all_feeds():
-    feed1 = Feed('rss2', 'feed1', 'http://xmlurl1.com/rss')
-    feed2 = Feed('rss2', 'feed2', 'http://xmlurl2.com/rss')
-    feed3 = Feed('rss2', 'feed3', 'http://xmlurl3.com/rss')
-
-    cate1 = FeedCategory('category1')
-    cate2 = FeedCategory('category2')
-
-    #feeds can be placed on multi category
-    cate1.append(feed1)
-    cate1.append(feed2)
-    cate2.append(feed2)
-    cate2.append(feed3)
-
-    feedlist = FeedList()
-    feedlist.append(cate1)
-    feedlist.append(cate2)
-    feedlist.append(feed3)
-
-    all_feeds = feedlist.get_all_feeds()
-
-    assert feed1 in all_feeds
-    assert feed2 in all_feeds
-    assert feed3 in all_feeds
-    assert len(all_feeds) == 3
+    assert frozenset(subs) == frozenset(expected)
+    for outline in subs:
+        print(outline.label)
+        assert outline.type == 'category'
+        print(list(outline))
+        assert frozenset(outline) == expected[outline]
