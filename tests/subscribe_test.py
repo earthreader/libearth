@@ -182,3 +182,23 @@ def test_subscription_list_category_update(fx_categorized_subscription_list):
     category.add(Subscription(label='added', feed_uri='http://example.com/'))
     assert len(category) == 3
     assert len(next(iter(subs))) == 3
+
+
+def test_subscription_set_categories_subscriptions():
+    subs = SubscriptionList()
+    subs.add(Category(label='Category A'))
+    subs.add(Subscription(label='Subscription A', feed_uri='http://feeda.com/'))
+    subs.add(Category(label='Category B'))
+    subs.add(Subscription(label='Subscription B', feed_uri='http://feedb.com/'))
+    subs.add(Category(label='Category C'))
+    subs.add(Subscription(label='Subscription C', feed_uri='http://feedc.com/'))
+    assert subs.categories == frozenset([
+        Category(label='Category A'),
+        Category(label='Category B'),
+        Category(label='Category C')
+    ])
+    assert subs.subscriptions == frozenset([
+        Subscription(label='Subscription A', feed_uri='http://feeda.com/'),
+        Subscription(label='Subscription B', feed_uri='http://feedb.com/'),
+        Subscription(label='Subscription C', feed_uri='http://feedc.com/')
+    ])

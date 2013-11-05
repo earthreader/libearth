@@ -146,6 +146,22 @@ class SubscriptionSet(collections.MutableSet):
             except ValueError:
                 break
 
+    @property
+    def categories(self):
+        """(:class:`collections.Set`) The subset which consists of only
+        :class:`Category` instances.
+
+        """
+        return frozenset(child for child in self if isinstance(child, Category))
+
+    @property
+    def subscriptions(self):
+        """(:class:`collections.Set`) The subset which consists of only
+        :class:`Subscription` instances.
+
+        """
+        return frozenset(e for e in self if isinstance(e, Subscription))
+
 
 class Outline(Element):
     """Represent ``outline`` element of OPML document."""
