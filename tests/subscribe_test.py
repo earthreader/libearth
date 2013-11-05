@@ -1,5 +1,5 @@
 from datetime import datetime
-from pytest import fixture, raises
+from pytest import fixture
 
 from libearth.feed import Person
 from libearth.subscribe import Body, Category, Subscription, SubscriptionList
