@@ -78,7 +78,7 @@ class SubscriptionSet(collections.MutableSet):
     def __iter__(self):
         categories = set()
         subscriptions = set()
-        for outline in self.children:
+        for i, outline in enumerate(self.children):
             if outline.type == 'rss' or outline.feed_uri or \
                isinstance(outline, Subscription):
                 if outline.feed_uri in subscriptions:
@@ -86,24 +86,28 @@ class SubscriptionSet(collections.MutableSet):
                 elif isinstance(outline, Subscription):
                     yield outline
                     continue
-                yield Subscription(
+                outline = Subscription(
                     label=outline.label,
                     _title=outline.label,
                     feed_uri=outline.feed_uri,
                     alternate_uri=outline.alternate_uri,
                     created_at=outline.created_at
                 )
+                self.children[i] = outline
+                yield outline
             elif outline.label in categories:
                 continue
             elif isinstance(outline, Category):
                 yield outline
             else:
-                yield Category(
+                outline = Category(
                     label=outline.label,
                     _title=outline.label,
                     children=outline.children,
                     created_at=outline.created_at
                 )
+                self.children[i] = outline
+                yield outline
 
     def __contains__(self, outline):
         return isinstance(outline, Outline) and outline in self.children

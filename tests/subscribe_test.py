@@ -143,8 +143,21 @@ def test_subscription_list_iter(fx_subscription_list):
     ])
 
 
-def test_subscription_list_contains_category():
-    subs = read(SubscriptionList, XML_CATEGORY)
+def test_subscription_list_update(fx_subscription_list):
+    sub = next(iter(fx_subscription_list))
+    assert sub.label == 'CNET News.com'
+    sub.label = 'updated'
+    assert sub.label == 'updated'
+    assert next(iter(fx_subscription_list)).label == 'updated'
+
+
+@fixture
+def fx_categorized_subscription_list():
+    return read(SubscriptionList, XML_CATEGORY)
+
+
+def test_subscription_list_contains_category(fx_categorized_subscription_list):
+    subs = fx_categorized_subscription_list
     expected = {
         Category(label='Game'): frozenset([
             Subscription(label='valve', feed_uri='http://valve.com/'),
@@ -161,3 +174,11 @@ def test_subscription_list_contains_category():
         assert outline.type == 'category'
         print(list(outline))
         assert frozenset(outline) == expected[outline]
+
+
+def test_subscription_list_category_update(fx_categorized_subscription_list):
+    subs = fx_categorized_subscription_list
+    category = next(iter(subs))
+    category.add(Subscription(label='added', feed_uri='http://example.com/'))
+    assert len(category) == 3
+    assert len(next(iter(subs))) == 3
