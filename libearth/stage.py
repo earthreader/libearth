@@ -19,6 +19,11 @@ from .session import MergeableDocumentElement, Session
 from .subscribe import SubscriptionList
 from .tz import now
 
+try:
+    reduce
+except NameError:
+    from functools import reduce
+
 __all__ = ('BaseStage', 'Directory', 'Route', 'Stage',
            'compile_format_to_pattern')
 
