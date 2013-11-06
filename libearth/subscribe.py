@@ -148,11 +148,15 @@ class SubscriptionSet(collections.MutableSet):
 
     @property
     def categories(self):
-        """(:class:`collections.Set`) The subset which consists of only
-        :class:`Category` instances.
+        """(:class:`collections.Mapping`) Label to :class:`Category` instance
+        Mapping.
 
         """
-        return frozenset(child for child in self if isinstance(child, Category))
+        categories = {}
+        for child in self:
+            if isinstance(child, Category):
+                categories[child.label] = child
+        return categories
 
     @property
     def subscriptions(self):

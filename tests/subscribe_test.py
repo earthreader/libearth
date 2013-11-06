@@ -192,11 +192,11 @@ def test_subscription_set_categories_subscriptions():
     subs.add(Subscription(label='Subscription B', feed_uri='http://feedb.com/'))
     subs.add(Category(label='Category C'))
     subs.add(Subscription(label='Subscription C', feed_uri='http://feedc.com/'))
-    assert subs.categories == frozenset([
-        Category(label='Category A'),
-        Category(label='Category B'),
-        Category(label='Category C')
-    ])
+    assert subs.categories == {
+        'Category A': Category(label='Category A'),
+        'Category B': Category(label='Category B'),
+        'Category C': Category(label='Category C')
+    }
     assert subs.subscriptions == frozenset([
         Subscription(label='Subscription A', feed_uri='http://feeda.com/'),
         Subscription(label='Subscription B', feed_uri='http://feedb.com/'),
