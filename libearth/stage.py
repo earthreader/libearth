@@ -82,7 +82,7 @@ class BaseStage(object):
         """
         self.repository.write(
             self.SESSION_DIRECTORY_KEY + [self.session.identifier],
-            [now().isoformat()]
+            [now().isoformat().encode()]
         )
 
     def read(self, document_type, key):
@@ -117,7 +117,8 @@ class BaseStage(object):
                     document_type
                 )
             )
-        document = read(document_type, self.repository.read(key))
+        chunks = self.repository.read(key)
+        document = read(document_type, chunks)
         assert isinstance(document, MergeableDocumentElement)
         self.touch()
         not_stamped = document.__revision__ is None

@@ -14,7 +14,7 @@ class RepositoryImplemented(Repository):
 
     def read(self, key):
         super(RepositoryImplemented, self).read(key)
-        return ''
+        return b''
 
     def write(self, key, iterable):
         super(RepositoryImplemented, self).write(key, iterable)
@@ -39,8 +39,8 @@ def test_not_implemented_error():
     with raises(NotImplementedError):
         r.list(['key'])
     r2 = RepositoryImplemented()
-    assert r2.read(['key']) == ''
-    r2.write(['key'], '')
+    assert r2.read(['key']) == b''
+    r2.write(['key'], b'')
     assert r2.exists(['key'])
     assert r2.list(['key']) == frozenset()
 
