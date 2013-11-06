@@ -15,7 +15,7 @@ except ImportError:
 from .atom import parse_atom
 from .rss2 import parse_rss
 
-__all__ = 'TYPE_ATOM', 'TYPE_RSS2', 'get_format', 'get_parser'
+__all__ = 'TYPE_ATOM', 'TYPE_RSS2', 'get_format'
 
 
 #: (:class:`str`) The document type value for Atom format.
