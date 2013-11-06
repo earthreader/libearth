@@ -116,6 +116,39 @@ XML_DUPLICATION = '''
 </opml>
 '''
 
+XML_RECURSIVE = '''
+<opml version="2.0">
+    <head>
+        <title>Earth Reader's Subscriptions</title>
+        <dateCreated>Sat, 18 Jun 2005 12:11:52 +0000</dateCreated>
+        <ownerName>Earth Reader Team</ownerName>
+        <ownerEmail>earthreader@librelist.com</ownerEmail>
+        <ownerId>http://earthreader.org/</ownerId>
+        <expansionState>a,b,c,d</expansionState>
+        <vertScrollState>1</vertScrollState>
+        <windowTop>12</windowTop>
+        <windowLeft>34</windowLeft>
+        <windowBottom>56</windowBottom>
+        <windowRight>78</windowRight>
+    </head>
+    <body>
+        <outline text="Game" title="Game" type="category">
+            <outline text="valve" title="valve" xmlUrl="http://valve.com/" />
+            <outline text="nintendo" title="nintendo"
+            xmlUrl="http://nintendo.com/" />
+            <outline text="Riot" title="Riot" type="category">
+                <outline text="LOL" title="LOL"
+                xmlUrl="http://leagueoflegend.com" />
+            </outline>
+        </outline>
+        <outline text="Music" title="Music" type="category">
+            <outline text="capsule" title="capsule"
+            xmlUrl="http://www.capsule-web.com/" />
+        </outline>
+    </body>
+</opml>
+'''
+
 
 @fixture
 def fx_subscription_list():
@@ -233,3 +266,14 @@ def test_subscription_set_iter_uniqueness(fx_duplicated_subscription_list):
     assert len(list(fx_duplicated_subscription_list)) == 1
     category = next(iter(fx_duplicated_subscription_list))
     assert len(list(category)) == 1
+
+
+@fixture
+def fx_recursive_subscription_list():
+    return read(SubscriptionList, XML_RECURSIVE)
+
+
+def test_recursive_subscription_list(fx_recursive_subscription_list):
+    assert len(fx_recursive_subscription_list.recursive_subscriptions) == 4
+    game_category = fx_recursive_subscription_list.categories['Game']
+    assert len(game_category.recursive_subscriptions) == 3

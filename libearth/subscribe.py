@@ -169,6 +169,16 @@ class SubscriptionSet(collections.MutableSet):
         """
         return frozenset(e for e in self if isinstance(e, Subscription))
 
+    @property
+    def recursive_subscriptions(self):
+        subscriptions = set()
+        for child in self:
+            if isinstance(child, Subscription):
+                subscriptions.add(child)
+            elif isinstance(child, Category):
+                subscriptions.update(child.recursive_subscriptions)
+        return subscriptions
+
 
 class Outline(Element):
     """Represent ``outline`` element of OPML document."""
