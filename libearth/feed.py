@@ -19,7 +19,7 @@ from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
                      Element, Text as TextChild)
 
 __all__ = ('ATOM_XMLNS', 'Category', 'Content', 'Entry', 'Feed', 'Generator',
-           'Link', 'MarkupTagCleaner', 'Metadata', 'Person', 'Source', 'Text')
+           'Link', 'Metadata', 'Person', 'Source', 'Text')
 
 
 #: (:class:`str`) The XML namespace name used for Atom (:rfc:`4287`).
@@ -462,7 +462,7 @@ class Source(Metadata):
     logo = TextChild('logo', xmlns=ATOM_XMLNS)
 
     #: (:class:`str`) URI that identifies an image that provides iconic
-    #: visual identification for a feed.  It corresponds to ``atom:icon`
+    #: visual identification for a feed.  It corresponds to ``atom:icon``
     #: element of :rfc:`4287#section-4.2.5` (section 4.2.5).
     icon = TextChild('icon', xmlns=ATOM_XMLNS)
 

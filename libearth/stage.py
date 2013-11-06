@@ -270,7 +270,7 @@ class Route(object):
         self.key_spec = key_spec
 
     def __get__(self, obj, cls=None):
-        if isinstance(obj, type):
+        if obj is None or isinstance(obj, type):
             return self
         # Should be merged!
         assert isinstance(obj, BaseStage)

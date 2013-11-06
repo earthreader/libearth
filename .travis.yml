@@ -13,11 +13,11 @@ install:
 script:
 - python -mlibearth.version
 - if [ `python -c 'from platform import *; print(python_implementation())'` == 'PyPy' ]; then
-    py.test libearth --durations=20;
+    py.test libearth --durations=20 || exit $?;
   else
-    py.test --cov libearth --durations=20;
-    pep8;
-    python docs/coverage.py;
+    py.test --cov libearth --durations=20 || exit $?;
+    pep8 || exit $?;
+    python docs/coverage.py || exit $?;
   fi
 after_success:
 - if [ `python -c 'from platform import *; print(python_implementation())'` != 'PyPy' ]; then coveralls; fi
