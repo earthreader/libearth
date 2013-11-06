@@ -173,7 +173,7 @@ class BaseStage(object):
 
         """
         document = self.session.pull(document)
-        self.repository.write(key, write(document))
+        self.repository.write(key, write(document, as_bytes=True))
         self.touch()
         return document
 

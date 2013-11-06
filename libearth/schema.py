@@ -1393,7 +1393,7 @@ def validate(element, recurse=True, raise_error=True):
 
 
 def write(document, validate=True, indent='  ', newline='\n',
-          canonical_order=False):
+          canonical_order=False, as_bytes=None):
     r"""Write the given ``document`` to XML string.  The return value is
     an iterator that yields chunks of an XML string.  ::
 
@@ -1417,6 +1417,11 @@ def write(document, validate=True, indent='  ', newline='\n',
                             implementations.  useful for testing.
                             :const:`False` by default
     :type canonical_order: :class:`bool`
+    :param as_bytes: return chunks as :class:`bytes` (:class:`str` in Python 2)
+                     if :const:`True`.  return chunks as :class:`str`
+                     (:class:`unicode` in Python 3) if :const:`False`.
+                     return chunks as default string type (:class:`str`)
+                     by default
     :returns: chunks of an XML string
     :rtype: :class:`types.GeneratorType`
 
@@ -1559,7 +1564,12 @@ def write(document, validate=True, indent='  ', newline='\n',
             yield '>'
         else:
             yield '/>'
-    return itertools.chain(
+    result = itertools.chain(
         ['<?xml version="1.0" encoding="utf-8"?>\n'],
         _export(document, doc_cls.__tag__, doc_cls.__xmlns__)
     )
+    if UNICODE_BY_DEFAULT and as_bytes:
+        return (chunk.encode('utf-8') for chunk in result)
+    elif not UNICODE_BY_DEFAULT and as_bytes is False:
+        return (chunk.decode('utf-8') for chunk in result)
+    return result
