@@ -96,20 +96,20 @@ class TestStage(BaseStage):
 class TestRepository(Repository):
 
     DATA = {
-        'doc.SESSID.xml': '<test />',
+        'doc.SESSID.xml': b'<test />',
         'dir': {
-            'abc': {'SESSID.xml': '<test />'},
-            'def': {'SESSID.xml': '<test />'}
+            'abc': {'SESSID.xml': b'<test />'},
+            'def': {'SESSID.xml': b'<test />'}
         },
         'dir2': {
             'preabc': {
-                'xyzpost': {'SESSID.xml': '<test />'},
-                'xxxpost': {'SESSID.xml': '<test />'},
+                'xyzpost': {'SESSID.xml': b'<test />'},
+                'xxxpost': {'SESSID.xml': b'<test />'},
                 'invalid': {}
             },
             'predef': {
-                'xyzpost': {'SESSID.xml': '<test />'},
-                'xxxpost': {'SESSID.xml': '<test />'},
+                'xyzpost': {'SESSID.xml': b'<test />'},
+                'xxxpost': {'SESSID.xml': b'<test />'},
                 'invalid': {}
             },
             'invalid': {}
@@ -129,14 +129,14 @@ class TestRepository(Repository):
                 raise RepositoryKeyError(key)
         if isinstance(data, collections.Mapping):
             raise RepositoryKeyError(key)
-        return data
+        return data,
 
     def write(self, key, iterable):
         super(TestRepository, self).write(key, iterable)
         data = self.data
         for k in key[:-1]:
             data = data.setdefault(k, {})
-        data[key[-1]] = ''.join(iterable)
+        data[key[-1]] = b''.join(iterable).decode()
 
     def exists(self, key):
         super(TestRepository, self).exists(key)
