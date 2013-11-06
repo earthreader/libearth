@@ -12,6 +12,7 @@ from libearth.schema import read
 from libearth.session import MergeableDocumentElement, Session
 from libearth.stage import (BaseStage, Directory, Route, Stage,
                             compile_format_to_pattern)
+from libearth.subscribe import Category, Subscription, SubscriptionList
 from libearth.tz import now, utc
 
 
@@ -327,3 +328,15 @@ def test_stage(fx_test_stages, fx_test_feeds):
     assert feed1.updated_at == feed2.updated_at == \
         datetime.datetime(2013, 10, 30, 20, 55, 30, tzinfo=utc)
     assert feed1.entries[0].title == feed2.entries[0].title
+
+
+@fixture
+def fx_test_opml(fx_test_stages):
+    repo, stage1, stage2 = fx_test_stages
+    sub_list = SubscriptionList()
+    subscription = Subscription(label='test', feed_uri='http://asdf.com')
+    stage1.subscriptions = sub_list
+    assert len(stage1.subscriptions) == 0
+    sub_list.add(subscription)
+    new_stage = Stage(Session('SESSIONID'), repo)
+    assert len(new_stage.subscriptions) == 1
