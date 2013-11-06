@@ -11,19 +11,23 @@ all valid and well-formed.
 import cgi
 import re
 
-from .codecs import Enum, Rfc3339
+from .codecs import Boolean, Enum, Rfc3339
 from .compat import UNICODE_BY_DEFAULT, text_type
 from .sanitizer import clean_html, sanitize_html
 from .session import MergeableDocumentElement
 from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
                      Element, Text as TextChild)
 
-__all__ = ('ATOM_XMLNS', 'Category', 'Content', 'Entry', 'Feed', 'Generator',
-           'Link', 'Metadata', 'Person', 'Source', 'Text')
+__all__ = ('ATOM_XMLNS', 'MARK_XMLNS', 'Category', 'Content', 'Entry', 'Feed',
+           'Generator', 'Link', 'Mark', 'Metadata', 'Person', 'Source', 'Text')
 
 
 #: (:class:`str`) The XML namespace name used for Atom (:rfc:`4287`).
 ATOM_XMLNS = 'http://www.w3.org/2005/Atom'
+
+#: (:class:`str`) The XML namespace name used for Earth Reader :class:`Mark`
+#: metadata.
+MARK_XMLNS = 'http://earthreader.org/mark/'
 
 
 class Text(Element):
@@ -470,6 +474,40 @@ class Source(Metadata):
     icon = TextChild('icon', xmlns=ATOM_XMLNS)
 
 
+class Mark(Element):
+    """Represent whether the entry is read, starred, or tagged by user.
+    It's not a part of :rfc:`4287` Atom standard, but extension for
+    Earth Reader.
+
+    """
+
+    #: (:class:`bool`) Whether it's marked or not.
+    marked = ContentValue(Boolean)
+
+    #: (:class:`datetime.datetime`) Updated time.
+    updated_at = Attribute('updated', Rfc3339)
+
+    def __bool__(self):
+        return bool(self.marked)
+
+    __nonzero__ = __bool__
+
+    def __eq__(self, other):
+        return (isinstance(other, Mark) and
+                bool(self) == bool(other) and
+                self.updated_at == other.updated_at)
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __hash__(self):
+        return bool((bool(self), self.updated_at))
+
+    def __repr__(self):
+        fmt = '{0.__module__}.{0.__name__}(marked={1!r}, updated_at={2!r})'
+        return fmt.format(type(self), self.marked, self.updated_at)
+
+
 class Entry(DocumentElement, Metadata):
     """Represent an individual entry, acting as a container for metadata and
     data associated with the entry.  It corresponds to ``atom:entry`` element
@@ -512,6 +550,9 @@ class Entry(DocumentElement, Metadata):
     #: It corresponds to ``atom:source`` element of :rfc:`4287#section-4.2.10`
     #: (section 4.2.10).
     source = Child('source', Source, xmlns=ATOM_XMLNS)
+
+    #: (:class:`Mark`) Whether and when it's read or unread.
+    read = Child('read', Mark, xmlns=MARK_XMLNS)
 
 
 class Feed(MergeableDocumentElement, Source):

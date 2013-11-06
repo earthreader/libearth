@@ -48,8 +48,6 @@ def test_not_implemented_error():
 def test_file_read(tmpdir):
     f = FileSystemRepository(str(tmpdir))
     with raises(RepositoryKeyError):
-        f.read([])
-    with raises(RepositoryKeyError):
         f.read(['key'])
     tmpdir.join('key').write('file content')
     assert b''.join(f.read(['key'])) == b'file content'

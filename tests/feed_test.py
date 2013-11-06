@@ -5,7 +5,7 @@ from pytest import fixture, raises
 
 from libearth.compat import text_type
 from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
-                           Person, Source, Text)
+                           Person, Source, Text, Mark)
 from libearth.schema import read
 from libearth.tz import utc
 
@@ -244,7 +244,8 @@ def test_source():
 @fixture
 def fx_feed():
     return read(Feed, ['''
-        <feed xmlns="http://www.w3.org/2005/Atom">
+        <feed xmlns="http://www.w3.org/2005/Atom"
+              xmlns:mark="http://earthreader.org/mark/">
             <title>Example Feed</title>
             <link href="http://example.org/"/>
             <updated>2003-12-13T18:30:02Z</updated>
@@ -261,6 +262,7 @@ def fx_feed():
                 <updated>2003-12-13T18:30:02Z</updated>
                 <summary>Some text.</summary>
                 <author><name>Jane Doe</name></author>
+                <mark:read updated="2013-11-06T14:36:00Z">true</mark:read>
             </entry>
             <entry>
                 <title>Danger, Will Robinson!</title>
@@ -324,3 +326,34 @@ def test_generator_eq():
     generator_one.value = 'generator'
     generator_two.value = 'generator'
     assert generator_one == generator_two
+
+
+def test_feed_mark_read(fx_feed):
+    assert fx_feed.entries[0].read == Mark(
+        marked=True,
+        updated_at=datetime.datetime(2013, 11, 6, 14, 36, 0, tzinfo=utc)
+    )
+    assert fx_feed.entries[1].read is None
+
+
+@fixture
+def fx_mark_true():
+    return Mark(
+        marked=True,
+        updated_at=datetime.datetime(2013, 11, 6, 14, 36, 0, tzinfo=utc)
+    )
+
+
+@fixture
+def fx_mark_false():
+    return Mark(
+        marked=False,
+        updated_at=datetime.datetime(2013, 11, 6, 14, 36, 0, tzinfo=utc)
+    )
+
+
+def test_mark(fx_mark_true, fx_mark_false):
+    assert fx_mark_true
+    assert not fx_mark_false
+    assert (fx_mark_true.updated_at ==
+            datetime.datetime(2013, 11, 6, 14, 36, 0, tzinfo=utc))
