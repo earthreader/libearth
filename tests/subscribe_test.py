@@ -96,6 +96,26 @@ XML_CATEGORY = '''
 </opml>
 '''
 
+XML_DUPLICATION = '''
+<opml version="2.0">
+    <head>
+        <title>Earth Reader's Subscriptions</title>
+        <dateCreated>Sat, 18 Jun 2005 12:11:52 +0000</dateCreated>
+        <ownerName>Earth Reader Team</ownerName>
+        <ownerEmail>earthreader@librelist.com</ownerEmail>
+        <ownerId>http://earthreader.org/</ownerId>
+    </head>
+    <body>
+        <outline text="Duplicated" title="Duplicated" type="category">
+            <outline text="dup" title="dup" xmlUrl="http://example.com/" />
+            <outline text="dup" title="dup" xmlUrl="http://example.com/" />
+        </outline>
+        <outline text="Duplicated" title="Duplicated" type="category">
+        </outline>
+    </body>
+</opml>
+'''
+
 
 @fixture
 def fx_subscription_list():
@@ -202,3 +222,14 @@ def test_subscription_set_categories_subscriptions():
         Subscription(label='Subscription B', feed_uri='http://feedb.com/'),
         Subscription(label='Subscription C', feed_uri='http://feedc.com/')
     ])
+
+
+@fixture
+def fx_duplicated_subscription_list():
+    return read(SubscriptionList, XML_DUPLICATION)
+
+
+def test_subscription_set_iter_uniqueness(fx_duplicated_subscription_list):
+    assert len(list(fx_duplicated_subscription_list)) == 1
+    category = next(iter(fx_duplicated_subscription_list))
+    assert len(list(category)) == 1

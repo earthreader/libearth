@@ -83,7 +83,8 @@ class SubscriptionSet(collections.MutableSet):
                isinstance(outline, Subscription):
                 if outline.feed_uri in subscriptions:
                     continue
-                elif isinstance(outline, Subscription):
+                subscriptions.add(outline.feed_uri)
+                if isinstance(outline, Subscription):
                     yield outline
                     continue
                 outline = Subscription(
@@ -97,17 +98,19 @@ class SubscriptionSet(collections.MutableSet):
                 yield outline
             elif outline.label in categories:
                 continue
-            elif isinstance(outline, Category):
-                yield outline
             else:
-                outline = Category(
-                    label=outline.label,
-                    _title=outline.label,
-                    children=outline.children,
-                    created_at=outline.created_at
-                )
-                self.children[i] = outline
-                yield outline
+                categories.add(outline.label)
+                if isinstance(outline, Category):
+                    yield outline
+                else:
+                    outline = Category(
+                        label=outline.label,
+                        _title=outline.label,
+                        children=outline.children,
+                        created_at=outline.created_at
+                    )
+                    self.children[i] = outline
+                    yield outline
 
     def __contains__(self, outline):
         return isinstance(outline, Outline) and outline in self.children
