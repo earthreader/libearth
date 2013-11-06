@@ -78,7 +78,7 @@ class SubscriptionSet(collections.MutableSet):
     def __iter__(self):
         categories = set()
         subscriptions = set()
-        for outline in self.children:
+        for i, outline in enumerate(self.children):
             if outline.type == 'rss' or outline.feed_uri or \
                isinstance(outline, Subscription):
                 if outline.feed_uri in subscriptions:
@@ -86,24 +86,28 @@ class SubscriptionSet(collections.MutableSet):
                 elif isinstance(outline, Subscription):
                     yield outline
                     continue
-                yield Subscription(
+                outline = Subscription(
                     label=outline.label,
                     _title=outline.label,
                     feed_uri=outline.feed_uri,
                     alternate_uri=outline.alternate_uri,
                     created_at=outline.created_at
                 )
+                self.children[i] = outline
+                yield outline
             elif outline.label in categories:
                 continue
             elif isinstance(outline, Category):
                 yield outline
             else:
-                yield Category(
+                outline = Category(
                     label=outline.label,
                     _title=outline.label,
                     children=outline.children,
                     created_at=outline.created_at
                 )
+                self.children[i] = outline
+                yield outline
 
     def __contains__(self, outline):
         return isinstance(outline, Outline) and outline in self.children
@@ -141,6 +145,22 @@ class SubscriptionSet(collections.MutableSet):
                 children.remove(outline)
             except ValueError:
                 break
+
+    @property
+    def categories(self):
+        """(:class:`collections.Set`) The subset which consists of only
+        :class:`Category` instances.
+
+        """
+        return frozenset(child for child in self if isinstance(child, Category))
+
+    @property
+    def subscriptions(self):
+        """(:class:`collections.Set`) The subset which consists of only
+        :class:`Subscription` instances.
+
+        """
+        return frozenset(e for e in self if isinstance(e, Subscription))
 
 
 class Outline(Element):
