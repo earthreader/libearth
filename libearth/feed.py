@@ -115,6 +115,9 @@ class Person(Element):
     def __ne__(self, other):
         return not (self == other)
 
+    def __hash__(self):
+        return hash((self.name, self.uri, self.email))
+
     def __unicode__(self):
         ref = self.uri or self.email
         if ref:
