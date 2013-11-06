@@ -191,7 +191,6 @@ class FileSystemRepository(Repository):
         dirpath.insert(0, self.path)
         for i in xrange(len(dirpath)):
             p = os.path.join(*dirpath[:i + 1])
-            print(p)
             if not os.path.isdir(p):
                 os.mkdir(p)
         with open(os.path.join(self.path, *key), 'wb') as f:

@@ -283,7 +283,6 @@ def get_hash(name):
 
 @fixture
 def fx_test_stages(tmpdir):
-    print 'tmpdir', tmpdir
     repo = FileSystemRepository(str(tmpdir))
     session1 = Session('SESSIONID')
     session2 = Session('SESSIONID2')
