@@ -1,19 +1,14 @@
 import collections
-import datetime
-import hashlib
 
 from pytest import fixture, raises
 
-from libearth.compat import binary
-from libearth.feed import Entry, Feed, Person, Text
-from libearth.repository import (FileSystemRepository, Repository,
-                                 RepositoryKeyError)
+from libearth.repository import Repository, RepositoryKeyError
 from libearth.schema import read
 from libearth.session import MergeableDocumentElement, Session
 from libearth.stage import (BaseStage, Directory, Route, Stage,
                             compile_format_to_pattern)
-from libearth.subscribe import Category, Subscription, SubscriptionList
-from libearth.tz import now, utc
+from libearth.subscribe import Subscription, SubscriptionList
+from libearth.tz import now
 
 
 def test_compile_format_to_pattern():
@@ -276,95 +271,6 @@ def test_get_deep_route(fx_session, fx_stage):
     doc = dir2['xyz']
     assert isinstance(doc, TestDoc)
     assert doc.__revision__.session is fx_session
-
-
-def get_hash(name):
-    return hashlib.sha1(binary(name)).hexdigest()
-
-
-@fixture
-def fx_test_stages(tmpdir):
-    repo = FileSystemRepository(str(tmpdir))
-    session1 = Session('SESSIONID')
-    session2 = Session('SESSIONID2')
-    stage1 = Stage(session1, repo)
-    stage2 = Stage(session2, repo)
-    return repo, stage1, stage2
-
-
-@fixture
-def fx_test_feeds():
-    authors = [Person(name='vio')]
-    feed = Feed(id='http://feedone.com/', authors=authors,
-                title=Text(value='Feed One'),
-                updated_at=datetime.datetime(2013, 10, 29, 20, 55, 30,
-                                             tzinfo=utc))
-    updated_feed = Feed(id='http://feedone.com/', authors=authors,
-                        title=Text(value='Feed One'),
-                        updated_at=datetime.datetime(2013, 10, 30, 20, 55, 30,
-                                                     tzinfo=utc))
-    entry = Entry(id='http://feedone.com/1', authors=authors,
-                  title=Text(value='Test Entry'),
-                  updated_at=datetime.datetime(2013, 10, 30, 20, 55, 30,
-                                               tzinfo=utc))
-    updated_feed.entries.append(entry)
-    return feed, updated_feed
-
-
-def test_stage(fx_test_stages, fx_test_feeds):
-    repo, stage1, stage2 = fx_test_stages
-    feed, updated_feed = fx_test_feeds
-    assert feed.id == updated_feed.id
-    feed_id = feed.id
-    stage1.feeds[get_hash(feed.id)] = feed
-    feed1 = stage1.feeds[get_hash(feed_id)]
-    feed2 = stage2.feeds[get_hash(feed_id)]
-    assert feed1.updated_at == feed2.updated_at == \
-        datetime.datetime(2013, 10, 29, 20, 55, 30, tzinfo=utc)
-    assert not feed1.entries and not feed2.entries
-    stage2.feeds[get_hash(feed_id)] = updated_feed
-    feed1 = stage1.feeds[get_hash(feed_id)]
-    feed2 = stage2.feeds[get_hash(feed_id)]
-    assert feed1.updated_at == feed2.updated_at == \
-        datetime.datetime(2013, 10, 30, 20, 55, 30, tzinfo=utc)
-    assert feed1.entries[0].title == feed2.entries[0].title
-
-
-@fixture
-def fx_test_entries():
-    entry1 = Entry(
-        id='http://feed.com/entry1', title=Text(value='new1'),
-        updated_at=datetime.datetime(2013, 1, 1, 0, 0, 0, tzinfo=utc))
-    entry2 = Entry(
-        id='http://feed.com/entry2', title=Text(value='new2'),
-        updated_at=datetime.datetime(2013, 1, 1, 0, 0, 1, tzinfo=utc))
-    return entry1, entry2
-
-
-def test_entries(fx_test_stages, fx_test_feeds, fx_test_entries):
-    repo, stage1, stage2 = fx_test_stages
-    feed1, feed2 = fx_test_feeds
-    entry1, entry2 = fx_test_entries
-
-    assert feed1.id == feed2.id
-
-    feed1.entries.append(entry1)
-    feed2.entries.append(entry2)
-    print(feed1.entries)
-    print(feed2.entries)
-
-    assert entry1 in feed1.entries and entry2 in feed2.entries
-    assert entry2 not in feed1.entries and entry1 not in feed2.entries
-
-    stage1.feeds[get_hash(feed1.id)] = feed1
-    stage2.feeds[get_hash(feed2.id)] = feed2
-
-    feed1 = stage1.feeds[get_hash(feed1.id)]
-    feed2 = stage2.feeds[get_hash(feed2.id)]
-    print(feed1.entries)
-    print(feed2.entries)
-
-    assert entry2 in feed1.entries and entry1 in feed2.entries
 
 
 @fixture

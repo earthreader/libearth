@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import datetime
+import hashlib
 
 from pytest import fixture, raises
 
-from libearth.compat import text_type
+from libearth.compat import binary, text_type
 from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
                            Person, Source, Text, Mark)
 from libearth.repository import FileSystemRepository
@@ -401,3 +402,81 @@ def test_merge_marks(fx_stages, fx_feed):
             timestamp(3))
     assert (entry_a.starred.updated_at == entry_b.starred.updated_at ==
             timestamp(6))
+
+
+@fixture
+def fx_test_feeds():
+    authors = [Person(name='vio')]
+    feed = Feed(id='http://feedone.com/', authors=authors,
+                title=Text(value='Feed One'),
+                updated_at=datetime.datetime(2013, 10, 29, 20, 55, 30,
+                                             tzinfo=utc))
+    updated_feed = Feed(id='http://feedone.com/', authors=authors,
+                        title=Text(value='Feed One'),
+                        updated_at=datetime.datetime(2013, 10, 30, 20, 55, 30,
+                                                     tzinfo=utc))
+    entry = Entry(id='http://feedone.com/1', authors=authors,
+                  title=Text(value='Test Entry'),
+                  updated_at=datetime.datetime(2013, 10, 30, 20, 55, 30,
+                                               tzinfo=utc))
+    updated_feed.entries.append(entry)
+    return feed, updated_feed
+
+
+def get_hash(name):
+    return hashlib.sha1(binary(name)).hexdigest()
+
+
+def test_stage(fx_stages, fx_test_feeds):
+    stage1, stage2 = fx_stages
+    feed, updated_feed = fx_test_feeds
+    assert feed.id == updated_feed.id
+    feed_id = feed.id
+    stage1.feeds[get_hash(feed.id)] = feed
+    feed1 = stage1.feeds[get_hash(feed_id)]
+    feed2 = stage2.feeds[get_hash(feed_id)]
+    assert feed1.updated_at == feed2.updated_at == \
+           datetime.datetime(2013, 10, 29, 20, 55, 30, tzinfo=utc)
+    assert not feed1.entries and not feed2.entries
+    stage2.feeds[get_hash(feed_id)] = updated_feed
+    feed1 = stage1.feeds[get_hash(feed_id)]
+    feed2 = stage2.feeds[get_hash(feed_id)]
+    assert feed1.updated_at == feed2.updated_at == \
+           datetime.datetime(2013, 10, 30, 20, 55, 30, tzinfo=utc)
+    assert feed1.entries[0].title == feed2.entries[0].title
+
+
+@fixture
+def fx_test_entries():
+    entry1 = Entry(
+        id='http://feed.com/entry1', title=Text(value='new1'),
+        updated_at=datetime.datetime(2013, 1, 1, 0, 0, 0, tzinfo=utc))
+    entry2 = Entry(
+        id='http://feed.com/entry2', title=Text(value='new2'),
+        updated_at=datetime.datetime(2013, 1, 1, 0, 0, 1, tzinfo=utc))
+    return entry1, entry2
+
+
+def test_merge_entries(fx_stages, fx_test_feeds, fx_test_entries):
+    stage1, stage2 = fx_stages
+    feed1, feed2 = fx_test_feeds
+    entry0 = feed2.entries[0]
+    entry1, entry2 = fx_test_entries
+    assert feed1.id == feed2.id
+    feed1.entries.append(entry1)
+    feed2.entries.append(entry2)
+    print(feed1.entries)
+    print(feed2.entries)
+    assert entry1 in feed1.entries and entry2 in feed2.entries
+    assert entry2 not in feed1.entries and entry1 not in feed2.entries
+    stage1.feeds[get_hash(feed1.id)] = feed1
+    stage2.feeds[get_hash(feed2.id)] = feed2
+    feed1 = stage1.feeds[get_hash(feed1.id)]
+    feed2 = stage2.feeds[get_hash(feed2.id)]
+    print(repr(entry1))
+    print(repr(entry2))
+    print(feed1.entries)
+    print(feed2.entries)
+    assert (frozenset(entry.id for entry in feed1.entries) ==
+            frozenset(entry.id for entry in feed2.entries) ==
+            frozenset([entry0.id, entry2.id, entry1.id]))

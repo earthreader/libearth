@@ -436,6 +436,9 @@ class Metadata(Element):
     #: element of :rfc:`4287#section-4.2.10` (section 4.2.10).
     rights = Child('rights', Text, xmlns=ATOM_XMLNS)
 
+    def __entity_id__(self):
+        return self.id
+
     def __unicode__(self):
         return unicode(self.title) if self.title else unicode()
 
@@ -570,9 +573,6 @@ class Entry(DocumentElement, Metadata):
 
     #: (:class:`Mark`) Whether and when it's starred or unstarred.
     starred = Child('starred', Mark, xmlns=MARK_XMLNS)
-
-    def __entity_id__(self):
-        return self.id
 
     def __merge_entities__(self, other):
         for attribute in 'read', 'starred':
