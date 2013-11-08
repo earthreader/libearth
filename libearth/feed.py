@@ -191,6 +191,10 @@ class Link(Element):
     def __ne__(self, other):
         return not (self == other)
 
+    def __hash__(self):
+        return hash((self.uri, self.relation, self.mimetype, self.language,
+                     self.title, self.byte_size))
+
     def __unicode__(self):
         return self.uri
 
@@ -503,6 +507,16 @@ class Mark(Element):
     def __hash__(self):
         return bool((bool(self), self.updated_at))
 
+    def __entity_id__(self):
+        """If there are two or more marks that have the same tag name, these
+        are all should be merged into one.
+
+        """
+        return 1
+
+    def __merge_entities__(self, other):
+        return max(self, other, key=lambda mark: mark.updated_at)
+
     def __repr__(self):
         fmt = '{0.__module__}.{0.__name__}(marked={1!r}, updated_at={2!r})'
         return fmt.format(type(self), self.marked, self.updated_at)
@@ -553,6 +567,16 @@ class Entry(DocumentElement, Metadata):
 
     #: (:class:`Mark`) Whether and when it's read or unread.
     read = Child('read', Mark, xmlns=MARK_XMLNS)
+
+    def __entity_id__(self):
+        return self.id
+
+    def __merge_entities__(self, other):
+        if self.read is None:
+            self.read = other.read
+        elif self.read is not None and other.read is not None:
+            self.read = self.read.__merge_entities__(other.read)
+        return self
 
 
 class Feed(MergeableDocumentElement, Source):

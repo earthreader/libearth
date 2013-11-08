@@ -6,7 +6,10 @@ from pytest import fixture, raises
 from libearth.compat import text_type
 from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
                            Person, Source, Text, Mark)
+from libearth.repository import FileSystemRepository
 from libearth.schema import read
+from libearth.session import Session
+from libearth.stage import Stage
 from libearth.tz import utc
 
 
@@ -357,3 +360,41 @@ def test_mark(fx_mark_true, fx_mark_false):
     assert not fx_mark_false
     assert (fx_mark_true.updated_at ==
             datetime.datetime(2013, 11, 6, 14, 36, 0, tzinfo=utc))
+
+
+@fixture
+def fx_stages(tmpdir):
+    repo = FileSystemRepository(str(tmpdir))
+    session_a = Session(identifier='a')
+    session_b = Session(identifier='b')
+    stage_a = Stage(session_a, repo)
+    stage_b = Stage(session_b, repo)
+    return stage_a, stage_b
+
+
+def test_merge_marks(fx_stages, fx_feed):
+    stage_a, stage_b = fx_stages
+    stage_a.feeds['test'] = fx_feed
+    feed_a = stage_a.feeds['test']
+    feed_b = stage_b.feeds['test']
+    feed_b.entries[0].read = Mark(
+        marked=True,
+        updated_at=datetime.datetime(2013, 11, 7, 18, 37, 0, tzinfo=utc)
+    )
+    feed_a.entries[0].read = Mark(
+        marked=True,
+        updated_at=datetime.datetime(2013, 11, 7, 18, 37, 30, tzinfo=utc)
+    )
+    feed_b.entries[0].read = Mark(
+        marked=False,
+        updated_at=datetime.datetime(2013, 11, 7, 18, 38, 0, tzinfo=utc)
+    )
+    stage_a.feeds['test'] = feed_a
+    stage_b.feeds['test'] = feed_b
+    print(repr(stage_a.feeds['test']))
+    entry_a = stage_a.feeds['test'].entries[0]
+    entry_b = stage_b.feeds['test'].entries[0]
+    assert not entry_a.read
+    assert not entry_b.read
+    assert (entry_a.read.updated_at == entry_b.read.updated_at ==
+            datetime.datetime(2013, 11, 7, 18, 38, 0, tzinfo=utc))

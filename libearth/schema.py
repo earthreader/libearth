@@ -887,7 +887,7 @@ class ElementList(collections.MutableSequence):
                 'descriptor must be an instance of {0.__module__}.{0.__name__}'
                 ', not {1!r}'.format(Descriptor, descriptor)
             )
-        self.element = weakref.ref(element)
+        self.element = element
         self.descriptor = descriptor
 
     def consume_buffer(self):
@@ -899,8 +899,7 @@ class ElementList(collections.MutableSequence):
            Internal method.
 
         """
-        element = self.element()
-        root_ref = getattr(element, '_root', None)
+        root_ref = getattr(self.element, '_root', None)
         if not root_ref:
             return
         root = root_ref()
@@ -908,7 +907,7 @@ class ElementList(collections.MutableSequence):
         if not parser:
             return
         iterable = root._iterator
-        data = element._data
+        data = self.element._data
         while not self.consumes_all():
             yield data
             try:
@@ -919,7 +918,7 @@ class ElementList(collections.MutableSequence):
         yield data
 
     def consumes_all(self):
-        element = self.element()
+        element = self.element
         if not getattr(element, '_parent', None):
             return True
         parent = element._parent()
@@ -947,11 +946,11 @@ class ElementList(collections.MutableSequence):
         else:
             for data in self.consume_buffer():
                 continue
-        return self.element()._data.setdefault(key, [])
+        return self.element._data.setdefault(key, [])
 
     def __len__(self):
         key = self.descriptor
-        data = self.element()._data
+        data = self.element._data
         for data in self.consume_buffer():
             continue
         try:
@@ -980,7 +979,7 @@ class ElementList(collections.MutableSequence):
         return bool(data)
 
     def __repr__(self):
-        consumed = self.element()._data.get(self.descriptor, [])
+        consumed = self.element._data.get(self.descriptor, [])
         list_repr = repr(consumed)
         if not self.consumes_all():
             if consumed:
