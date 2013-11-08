@@ -568,14 +568,21 @@ class Entry(DocumentElement, Metadata):
     #: (:class:`Mark`) Whether and when it's read or unread.
     read = Child('read', Mark, xmlns=MARK_XMLNS)
 
+    #: (:class:`Mark`) Whether and when it's starred or unstarred.
+    starred = Child('starred', Mark, xmlns=MARK_XMLNS)
+
     def __entity_id__(self):
         return self.id
 
     def __merge_entities__(self, other):
-        if self.read is None:
-            self.read = other.read
-        elif self.read is not None and other.read is not None:
-            self.read = self.read.__merge_entities__(other.read)
+        for attribute in 'read', 'starred':
+            self_mark = getattr(self, attribute)
+            other_mark = getattr(other, attribute)
+            if self_mark is None:
+                setattr(self, attribute, other_mark)
+            elif self_mark is not None and other_mark is not None:
+                merged_mark = self_mark.__merge_entities__(other_mark)
+                setattr(self, attribute, merged_mark)
         return self
 
 
