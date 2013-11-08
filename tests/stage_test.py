@@ -331,6 +331,43 @@ def test_stage(fx_test_stages, fx_test_feeds):
 
 
 @fixture
+def fx_test_entries():
+    entry1 = Entry(
+        id='http://feed.com/entry1', title=Text(value='new1'),
+        updated_at=datetime.datetime(2013, 1, 1, 0, 0, 0, tzinfo=utc))
+    entry2 = Entry(
+        id='http://feed.com/entry2', title=Text(value='new2'),
+        updated_at=datetime.datetime(2013, 1, 1, 0, 0, 1, tzinfo=utc))
+    return entry1, entry2
+
+
+def test_entries(fx_test_stages, fx_test_feeds, fx_test_entries):
+    repo, stage1, stage2 = fx_test_stages
+    feed1, feed2 = fx_test_feeds
+    entry1, entry2 = fx_test_entries
+
+    assert feed1.id == feed2.id
+
+    feed1.entries.append(entry1)
+    feed2.entries.append(entry2)
+    print(feed1.entries)
+    print(feed2.entries)
+
+    assert entry1 in feed1.entries and entry2 in feed2.entries
+    assert entry2 not in feed1.entries and entry1 not in feed2.entries
+
+    stage1.feeds[get_hash(feed1.id)] = feed1
+    stage2.feeds[get_hash(feed2.id)] = feed2
+
+    feed1 = stage1.feeds[get_hash(feed1.id)]
+    feed2 = stage2.feeds[get_hash(feed2.id)]
+    print(feed1.entries)
+    print(feed2.entries)
+
+    assert entry2 in feed1.entries and entry1 in feed2.entries
+
+
+@fixture
 def fx_test_opml(fx_test_stages):
     repo, stage1, stage2 = fx_test_stages
     sub_list = SubscriptionList()
