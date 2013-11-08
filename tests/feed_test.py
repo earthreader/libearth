@@ -435,14 +435,14 @@ def test_stage(fx_stages, fx_test_feeds):
     stage1.feeds[get_hash(feed.id)] = feed
     feed1 = stage1.feeds[get_hash(feed_id)]
     feed2 = stage2.feeds[get_hash(feed_id)]
-    assert feed1.updated_at == feed2.updated_at == \
-           datetime.datetime(2013, 10, 29, 20, 55, 30, tzinfo=utc)
+    assert (feed1.updated_at == feed2.updated_at ==
+            datetime.datetime(2013, 10, 29, 20, 55, 30, tzinfo=utc))
     assert not feed1.entries and not feed2.entries
     stage2.feeds[get_hash(feed_id)] = updated_feed
     feed1 = stage1.feeds[get_hash(feed_id)]
     feed2 = stage2.feeds[get_hash(feed_id)]
-    assert feed1.updated_at == feed2.updated_at == \
-           datetime.datetime(2013, 10, 30, 20, 55, 30, tzinfo=utc)
+    assert (feed1.updated_at == feed2.updated_at ==
+            datetime.datetime(2013, 10, 30, 20, 55, 30, tzinfo=utc))
     assert feed1.entries[0].title == feed2.entries[0].title
 
 
