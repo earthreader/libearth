@@ -372,23 +372,19 @@ def fx_stages(tmpdir):
     return stage_a, stage_b
 
 
+def timestamp(minute, second=0):
+    """Creates an arbitrary timestamp with a short call."""
+    return datetime.datetime(2013, 11, 7, 18, minute, second, tzinfo=utc)
+
+
 def test_merge_marks(fx_stages, fx_feed):
     stage_a, stage_b = fx_stages
     stage_a.feeds['test'] = fx_feed
     feed_a = stage_a.feeds['test']
     feed_b = stage_b.feeds['test']
-    feed_b.entries[0].read = Mark(
-        marked=True,
-        updated_at=datetime.datetime(2013, 11, 7, 18, 37, 0, tzinfo=utc)
-    )
-    feed_a.entries[0].read = Mark(
-        marked=True,
-        updated_at=datetime.datetime(2013, 11, 7, 18, 37, 30, tzinfo=utc)
-    )
-    feed_b.entries[0].read = Mark(
-        marked=False,
-        updated_at=datetime.datetime(2013, 11, 7, 18, 38, 0, tzinfo=utc)
-    )
+    feed_b.entries[0].read = Mark(marked=True, updated_at=timestamp(1))
+    feed_a.entries[0].read = Mark(marked=True, updated_at=timestamp(2))
+    feed_b.entries[0].read = Mark(marked=False, updated_at=timestamp(3))
     stage_a.feeds['test'] = feed_a
     stage_b.feeds['test'] = feed_b
     print(repr(stage_a.feeds['test']))
@@ -397,4 +393,4 @@ def test_merge_marks(fx_stages, fx_feed):
     assert not entry_a.read
     assert not entry_b.read
     assert (entry_a.read.updated_at == entry_b.read.updated_at ==
-            datetime.datetime(2013, 11, 7, 18, 38, 0, tzinfo=utc))
+            timestamp(3))
