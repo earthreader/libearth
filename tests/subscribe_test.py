@@ -277,3 +277,45 @@ def test_recursive_subscription_list(fx_recursive_subscription_list):
     assert len(fx_recursive_subscription_list.recursive_subscriptions) == 4
     game_category = fx_recursive_subscription_list.categories['Game']
     assert len(game_category.recursive_subscriptions) == 3
+
+
+XML_NO_HEAD = '''
+<opml version="2.0">
+    <body>
+        <outline text="CNET News.com" type="rss" version="RSS2"
+            xmlUrl="http://news.com/2547-1_3-0-5.xml"/>
+        <outline text="test.com" type="rss" xmlUrl="http://test.com/"/>
+    </body>
+</opml>
+'''
+
+
+@fixture
+def fx_headless_subscription_list():
+    return read(SubscriptionList, XML_NO_HEAD)
+
+
+def test_no_head(fx_headless_subscription_list):
+    subs = fx_headless_subscription_list
+    assert subs.owner is None
+    assert subs.title is None
+    repr(subs)  # should not raise AttributeError
+
+
+def test_no_head_set_title(fx_headless_subscription_list):
+    fx_headless_subscription_list.title = 'Title'
+    assert fx_headless_subscription_list.title == 'Title'
+    assert fx_headless_subscription_list.head.title == 'Title'
+
+
+def test_no_head_set_owner(fx_headless_subscription_list):
+    owner = Person(
+        name='Earth Reader Team',
+        email='earthreader' '@' 'librelist.com',
+        uri='http://earthreader.org/'
+    )
+    fx_headless_subscription_list.owner = owner
+    assert fx_headless_subscription_list.owner == owner
+    assert fx_headless_subscription_list.head.owner_name == owner.name
+    assert fx_headless_subscription_list.head.owner_email == owner.email
+    assert fx_headless_subscription_list.head.owner_uri == owner.uri

@@ -317,11 +317,15 @@ class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
     @property
     def title(self):
         """(:class:`str`) The title of the subscription list."""
-        return self.head.title
+        head = self.head
+        return head and head.title
 
     @title.setter
     def title(self, title):
-        self.head.title = title
+        head = self.head
+        if head is None:
+            head = self.head = Head()
+        head.title = title
 
     @property
     def owner(self):
@@ -330,6 +334,8 @@ class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
 
         """
         head = self.head
+        if head is None:
+            return
         return Person(
             name=head.owner_name,
             email=head.owner_email,
@@ -339,12 +345,17 @@ class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
     @owner.setter
     def owner(self, owner):
         head = self.head
+        if head is None:
+            head = self.head = Head()
         head.owner_name = owner.name
         head.owner_email = owner.email
         head.owner_uri = owner.uri
 
     def __repr__(self):
         head = self.head
-        return '<{0.__module__}.{0.__name__} of {1} <{2}>>'.format(
-            type(self), head.owner_name, head.owner_email or head.owner_uri
+        if head is None:
+            return super(SubscriptionList, self).__repr__()
+        return '<{0.__module__}.{0.__name__} {1!r} of {2} <{3}>>'.format(
+            type(self), head.title, head.owner_name,
+            head.owner_email or head.owner_uri
         )
