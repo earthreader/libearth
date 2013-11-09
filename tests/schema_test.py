@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import collections
+import os.path
 import xml.etree.ElementTree
 
 from pytest import fixture, mark, raises
 
 from libearth.compat import text, text_type
+from libearth.feed import Feed
 from libearth.schema import (Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
                              Element, EncodeError, IntegrityError, Text,
@@ -922,3 +924,32 @@ def test_partial_load_test():
         </x:partial-load-test>
     '''.splitlines())
     assert doc.entry.value == 'asdf'
+
+
+class ELConsumeBufferRegressionTestD(Element):
+
+    content = Content()
+
+
+class ELConsumeBufferRegressionTestC(Element):
+
+    d = Child('d', ELConsumeBufferRegressionTestD)
+
+
+class ELConsumeBufferRegressionTestB(Element):
+
+    c = Child('c', ELConsumeBufferRegressionTestC, multiple=True)
+
+
+class ELConsumeBufferRegressionTestDoc(DocumentElement):
+
+    __tag__ = 'a'
+    b = Child('b', ELConsumeBufferRegressionTestB, multiple=True)
+
+
+def test_element_list_consume_buffer_regression():
+    xml = ['<a><b><c></c><c><d>content', '</d></c><c></c></b><b></b></a>']
+    doc = read(ELConsumeBufferRegressionTestDoc, xml)
+    assert len(doc.b) == 2
+    b = doc.b[0]
+    assert len(b.c) == 3

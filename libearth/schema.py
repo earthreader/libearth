@@ -919,17 +919,21 @@ class ElementList(collections.MutableSequence):
 
     def consumes_all(self):
         element = self.element
-        if not getattr(element, '_parent', None):
+        if getattr(element, '_parent', None) is None:
             return True
         parent = element._parent()
         root = element._root()
         handler = getattr(root, '_handler', None)
-        if not handler:
+        if handler is None:
             return True
         stack = handler.stack
         top = element._stack_top
-        return (len(stack) < top or
-                top > 0 and stack[top - 1].reserved_value is not parent)
+        if len(stack) < top:
+            return True
+        for context in reversed(stack):
+            if context.reserved_value is parent:
+                return False
+        return True
 
     def consume_index(self, index):
         if isinstance(index, slice):
