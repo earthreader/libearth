@@ -9,3 +9,6 @@ MANIFEST
 *.pyc
 .DS_Store
 .idea
+py/
+_pytest/
+pytest.py

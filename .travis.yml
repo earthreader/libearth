@@ -5,22 +5,57 @@ python:
 - 2.7
 - 3.2
 - 3.3
+env:
+- PYTHON_VM=cpython
+- PYTHON_VM=pypy
+- PYTHON_VM=ironpython
+matrix:
+  include:
+  - python: 2.7
+    env: PYTHON_VM=ironpython
+  - python: pypy
+    env: PYTHON_VM=pypy
+  - python: 2.6
+    env: PYTHON_VM=cpython
+  - python: 2.7
+    env: PYTHON_VM=cpython
+  - python: 3.2
+    env: PYTHON_VM=cpython
+  - python: 3.3
+    env: PYTHON_VM=cpython
 install:
-- pip install pytest;
-- if [ `python -c 'from platform import *; print(python_implementation())'` != 'PyPy' ]; then
+- if [[ "$PYTHON_VM" == "cpython" ]]; then
     pip install pytest pytest-cov pep8 coveralls;
   fi
+- if [[ "$PYTHON_VM" == "pypy" ]]; then
+    pip install pytest;
+  fi
+- if [[ "$PYTHON_VM" == "ironpython" ]]; then
+    sudo apt-get install -qq mono-devel mercurial;
+    curl -L -o /tmp/ironpython.zip https://github.com/IronLanguages/main/releases/download/ipy-2.7.4/IronPython-2.7.4.zip;
+    unzip /tmp/ironpython.zip;
+    hg clone https://bitbucket.org/dahlia/py-ironpython /tmp/py-lib;
+    hg clone https://bitbucket.org/dahlia/pytest-ironpython /tmp/pytest;
+    ln -s /tmp/py-lib/py;
+    ln -s /tmp/pytest/_pytest;
+    ln -s /tmp/pytest/pytest.py;
+  fi
 script:
-- python -mlibearth.version
-- if [ `python -c 'from platform import *; print(python_implementation())'` == 'PyPy' ]; then
-    py.test libearth --durations=20 || exit $?;
-  else
+- if [[ "$PYTHON_VM" == "cpython" ]]; then
+    python -mlibearth.version;
     py.test --cov libearth --durations=20 || exit $?;
     pep8 || exit $?;
     python docs/coverage.py || exit $?;
   fi
+- if [[ "$PYTHON_VM" == "pypy" ]]; then
+    python -mlibearth.version;
+    py.test --durations=20 || exit $?;
+  fi
+- if [[ "$PYTHON_VM" == "ironpython" ]]; then
+    mono IronPython-2.7.4/ipy.exe pytest.py --durations=20 || exit $?;
+  fi
 after_success:
-- if [ `python -c 'from platform import *; print(python_implementation())'` != 'PyPy' ]; then coveralls; fi
+- if [[ "$PYTHON_VM" == "cpython" ]]; then coveralls; fi
 notifications:
   irc:
     channels:
