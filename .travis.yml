@@ -7,21 +7,14 @@ python:
 - 3.3
 env:
 - PYTHON_VM=cpython
-- PYTHON_VM=pypy
-- PYTHON_VM=ironpython
 matrix:
   include:
   - python: 2.7
     env: PYTHON_VM=ironpython
   - python: pypy
     env: PYTHON_VM=pypy
-  - python: 2.6
-    env: PYTHON_VM=cpython
-  - python: 2.7
-    env: PYTHON_VM=cpython
-  - python: 3.2
-    env: PYTHON_VM=cpython
-  - python: 3.3
+  exclude:
+  - python: pypy
     env: PYTHON_VM=cpython
 install:
 - if [[ "$PYTHON_VM" == "cpython" ]]; then
