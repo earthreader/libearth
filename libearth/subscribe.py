@@ -190,7 +190,7 @@ class Outline(Element):
     type = Attribute('type')
 
     #: (:class:`datetime.datetime`) The created time.
-    created_at = Attribute('created_at', Rfc822)
+    created_at = Attribute('created', Rfc822)
 
     feed_uri = Attribute('xmlUrl')
     alternate_uri = Attribute('htmlUrl')
