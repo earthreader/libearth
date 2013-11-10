@@ -7,6 +7,7 @@ for the purpose.
 """
 import collections
 import distutils.version
+import hashlib
 
 from .codecs import Boolean, Integer, Rfc822
 from .compat import text_type
@@ -17,6 +18,11 @@ from .tz import now
 
 __all__ = ('Body', 'Category', 'CommaSeparatedList', 'Head', 'Outline',
            'Subscription', 'SubscriptionList', 'SubscriptionSet')
+
+
+#: (:class:`str`) The XML namespace name used for Earth Reader subscription
+#: list metadata.
+METADATA_XMLNS = 'http://earthreader.org/subscription-list/'
 
 
 class CommaSeparatedList(Codec):
@@ -88,6 +94,9 @@ class SubscriptionSet(collections.MutableSet):
                     yield outline
                     continue
                 outline = Subscription(
+                    feed_id=(outline.feed_id or
+                             hashlib.sha1(outline.feed_uri.encode('utf-8'))
+                                    .hexdigest()),
                     label=outline.label,
                     _title=outline.label,
                     feed_uri=outline.feed_uri,
@@ -195,6 +204,7 @@ class Outline(Element):
     feed_uri = Attribute('xmlUrl')
     alternate_uri = Attribute('htmlUrl')
     children = Child('outline', 'Outline', multiple=True)
+    feed_id = Attribute('id', xmlns=METADATA_XMLNS)
 
     _title = Attribute('title')
     _category = Attribute('category', CommaSeparatedList)
@@ -239,6 +249,12 @@ class Category(Outline, SubscriptionSet):
 class Subscription(Outline):
     """Subscription which holds referring :attr:`feed_uri`.
 
+    .. attribute:: feed_id
+
+       (:class:`str`) The feed identifier to be used for lookup.
+       It's intended to be SHA1 digest of :class:`Feed.id
+       <libearth.feed.Feed.id>` value (which is UTF-8 encoded).
+
     .. attribute:: feed_uri
 
        (:class:`str`) The feed url.
@@ -252,8 +268,8 @@ class Subscription(Outline):
     type = Attribute('type', default='rss')
 
     def __repr__(self):
-        return '<{0.__module__}.{0.__name__} {1!r} ({2!r})>'.format(
-            type(self), self.label, self.feed_uri
+        return '<{0.__module__}.{0.__name__} {1} {2!r} ({3!r})>'.format(
+            type(self), self.feed_id, self.label, self.feed_uri
         )
 
 

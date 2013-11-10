@@ -45,7 +45,7 @@ def test_count_after_remove(fx_subscription):
 
 
 XML = '''
-<opml version="2.0">
+<opml xmlns:e="http://earthreader.org/subscription-list/" version="2.0">
     <head>
         <title>Earth Reader's Subscriptions</title>
         <dateCreated>Sat, 18 Jun 2005 12:11:52 +0000</dateCreated>
@@ -62,7 +62,8 @@ XML = '''
     <body>
         <outline text="CNET News.com" type="rss" version="RSS2"
             xmlUrl="http://news.com/2547-1_3-0-5.xml"/>
-        <outline text="test.com" type="rss" xmlUrl="http://test.com/"/>
+        <outline text="test.com" type="rss" xmlUrl="http://test.com/"
+                 e:id="2f0bdb1d4987309e304ad0d7f982a37791fb06d4" />
     </body>
 </opml>
 '''
@@ -207,6 +208,13 @@ def test_subscription_list_update(fx_subscription_list):
     sub.label = 'updated'
     assert sub.label == 'updated'
     assert next(iter(fx_subscription_list)).label == 'updated'
+
+
+def test_subscription_feed_id(fx_subscription_list):
+    test_com = next(s for s in fx_subscription_list if s.label == 'test.com')
+    assert test_com.feed_id == '2f0bdb1d4987309e304ad0d7f982a37791fb06d4'
+    cnet = next(s for s in fx_subscription_list if s.label == 'CNET News.com')
+    assert cnet.feed_id == '95e2b8d3378bc34d13685583528d616f9b8dce1b'
 
 
 @fixture
