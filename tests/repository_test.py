@@ -92,7 +92,9 @@ def test_file_list(tmpdir):
 def test_file_not_found(tmpdir):
     path = tmpdir.join('not-exist')
     with raises(FileNotFoundError):
-        FileSystemRepository(str(path))
+        FileSystemRepository(str(path), mkdir=False)
+    FileSystemRepository(str(path))
+    assert path.isdi
 
 
 def test_not_dir(tmpdir):

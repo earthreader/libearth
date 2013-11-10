@@ -153,6 +153,9 @@ class FileSystemRepository(Repository):
 
     :param path: the directory path to store keys
     :type path: :class:`str`
+    :param mkdir: create the directory if it doesn't exist yet.
+                  :const:`True` by default
+    :type mkdir: :class:`bool`
     :raises FileNotFoundError: when the ``path`` doesn't exist
     :raises NotADirectoryError: when the ``path`` is not a directory
 
@@ -162,10 +165,13 @@ class FileSystemRepository(Repository):
     #: It should be readable and writable.
     path = None
 
-    def __init__(self, path):
+    def __init__(self, path, mkdir=True):
         if not os.path.exists(path):
-            raise FileNotFoundError(repr(path) + ' does not exist')
-        elif not os.path.isdir(path):
+            if mkdir:
+                os.makedirs(path)
+            else:
+                raise FileNotFoundError(repr(path) + ' does not exist')
+        if not os.path.isdir(path):
             raise NotADirectoryError(repr(path) + ' is not a directory')
         self.path = path
 
