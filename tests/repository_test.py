@@ -94,7 +94,7 @@ def test_file_not_found(tmpdir):
     with raises(FileNotFoundError):
         FileSystemRepository(str(path), mkdir=False)
     FileSystemRepository(str(path))
-    assert path.isdi
+    assert path.isdir()
 
 
 def test_not_dir(tmpdir):
