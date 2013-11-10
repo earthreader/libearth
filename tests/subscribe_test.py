@@ -1,7 +1,7 @@
 from datetime import datetime
-from pytest import fixture
+from pytest import fixture, mark
 
-from libearth.feed import Person
+from libearth.feed import Feed, Link, Person, Text
 from libearth.subscribe import Body, Category, Subscription, SubscriptionList
 from libearth.schema import read
 from libearth.tz import utc
@@ -332,3 +332,28 @@ def test_no_head_set_owner(fx_headless_subscription_list):
     assert fx_headless_subscription_list.head.owner_name == owner.name
     assert fx_headless_subscription_list.head.owner_email == owner.email
     assert fx_headless_subscription_list.head.owner_uri == owner.uri
+
+
+@mark.parametrize('subs', [
+    SubscriptionList(),
+    Category()
+])
+def test_subscription_set_subscribe(subs):
+    feed = Feed(
+        id='urn:earthreader:test:test_subscription_set_subscribe',
+        title=Text(value='Feed title')
+    )
+    feed.links.extend([
+        Link(uri='http://example.com/index.xml',
+             relation='self',
+             mimetype='application/atom+xml'),
+        Link(uri='http://example.com/',
+             relation='alternate',
+             mimetype='text/html')
+    ])
+    subs.subscribe(feed)
+    sub = next(iter(subs))
+    assert sub.feed_id == '0691e2f0c3ea1d7fa9da48e14a46ac8077815ad3'
+    assert sub.label == 'Feed title'
+    assert sub.feed_uri == 'http://example.com/index.xml'
+    assert sub.alternate_uri == 'http://example.com/'

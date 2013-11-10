@@ -11,7 +11,7 @@ import hashlib
 
 from .codecs import Boolean, Integer, Rfc822
 from .compat import text_type
-from .feed import Person
+from .feed import Feed, Person
 from .schema import Attribute, Child, Codec, Element, Text
 from .session import MergeableDocumentElement
 from .tz import now
@@ -157,6 +157,31 @@ class SubscriptionSet(collections.MutableSet):
                 children.remove(outline)
             except ValueError:
                 break
+
+    def subscribe(self, feed):
+        """Add a subscription from :class:`~libearth.feed.Feed` instance.
+        Prefer this method over :meth:`add()` method.
+
+        :param feed: feed to subscribe
+        :type feed: :class:`~libearth.feed.Feed`
+
+        """
+        if not isinstance(feed, Feed):
+            raise TypeError('feed must be an instance of {0.__module__}.'
+                            '{0.__name__}, not {1!r}'.format(Feed, feed))
+        sub = Subscription(
+            feed_id=hashlib.sha1(feed.id.encode('utf-8')).hexdigest(),
+            label=str(feed.title),
+            _title=str(feed.title),
+            feed_uri=next(l.uri for l in feed.links if l.relation == 'self'),
+            alternate_uri=next(
+                (l.uri for l in feed.links
+                 if l.relation == 'alternate' and l.mimetype == 'text/html'),
+                None
+            ),
+            created_at=now()
+        )
+        self.add(sub)
 
     @property
     def categories(self):
