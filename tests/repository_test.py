@@ -1,3 +1,5 @@
+import os.path
+
 from pytest import raises
 
 from libearth.repository import (FileNotFoundError, FileSystemRepository,
@@ -94,7 +96,7 @@ def test_file_not_found(tmpdir):
     with raises(FileNotFoundError):
         FileSystemRepository(str(path), mkdir=False)
     FileSystemRepository(str(path))
-    assert path.isdir()
+    assert os.path.isdir(str(path))
 
 
 def test_not_dir(tmpdir):
