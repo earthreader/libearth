@@ -186,6 +186,11 @@ def test_subscription_list_owner(fx_subscription_list):
     assert fx_subscription_list.head.owner_name == 'Hong Minhee'
     assert fx_subscription_list.head.owner_email == 'minhee' '@' 'dahlia.kr'
     assert fx_subscription_list.head.owner_uri == 'http://dahlia.kr/'
+    fx_subscription_list.owner = None
+    assert fx_subscription_list.owner is None
+    assert fx_subscription_list.head.owner_name is None
+    assert fx_subscription_list.head.owner_email is None
+    assert fx_subscription_list.head.owner_uri is None
 
 
 def test_subscription_list_iter(fx_subscription_list):

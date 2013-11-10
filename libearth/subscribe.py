@@ -152,7 +152,7 @@ class SubscriptionSet(collections.MutableSet):
     @property
     def categories(self):
         """(:class:`collections.Mapping`) Label to :class:`Category` instance
-        Mapping.
+        mapping.
 
         """
         categories = {}
@@ -336,6 +336,9 @@ class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
         head = self.head
         if head is None:
             return
+        if head.owner_name is None and head.owner_email is None and \
+           head.owner_uri is None:
+            return
         return Person(
             name=head.owner_name,
             email=head.owner_email,
@@ -346,7 +349,12 @@ class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
     def owner(self, owner):
         head = self.head
         if head is None:
+            if owner is None:
+                return
             head = self.head = Head()
+        elif owner is None:
+            head.owner_name = head.owner_email = head.owner_uri = None
+            return
         head.owner_name = owner.name
         head.owner_email = owner.email
         head.owner_uri = owner.uri
