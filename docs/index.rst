@@ -12,6 +12,15 @@ actually implements.
 .. _web: https://github.com/earthreader/web
 
 
+Design docs
+-----------
+
+.. toctree::
+   :maxdepth: 2
+
+   design/goal
+
+
 References
 ----------
 
