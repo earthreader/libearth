@@ -12,17 +12,13 @@ the natural object-mapping interface instead.
 import collections
 import re
 
+from .compat import reduce
 from .feed import Feed
 from .repository import Repository, RepositoryKeyError
 from .schema import read, write
 from .session import MergeableDocumentElement, RevisionSet, Session
 from .subscribe import SubscriptionList
 from .tz import now
-
-try:
-    reduce
-except NameError:
-    from functools import reduce
 
 __all__ = ('BaseStage', 'Directory', 'Route', 'Stage',
            'compile_format_to_pattern')
