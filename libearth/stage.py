@@ -12,17 +12,13 @@ the natural object-mapping interface instead.
 import collections
 import re
 
+from .compat import reduce
 from .feed import Feed
 from .repository import Repository, RepositoryKeyError
 from .schema import read, write
-from .session import MergeableDocumentElement, Session
+from .session import MergeableDocumentElement, RevisionSet, Session
 from .subscribe import SubscriptionList
 from .tz import now
-
-try:
-    reduce
-except NameError:
-    from functools import reduce
 
 __all__ = ('BaseStage', 'Directory', 'Route', 'Stage',
            'compile_format_to_pattern')
@@ -123,7 +119,7 @@ class BaseStage(object):
         self.touch()
         not_stamped = document.__revision__ is None
         if not_stamped:
-            return self.write(key, document)
+            return self.write(key, document, merge=False)
         return document
 
     def read_merged_document(self, document_type, key_spec, key):
@@ -145,10 +141,16 @@ class BaseStage(object):
                 docs.append(triple)
         session = self.session
         if len(docs) == 1:
-            _, doc, key = docs[0]
+            _, doc, __ = docs[0]
             if doc.__revision__.session is session:
                 return doc
-            return self.write(key, doc)
+            doc.__base_revisions__ = doc.__base_revisions__.merge(
+                RevisionSet([doc.__revision__])
+            )
+            doc.__reivison__ = now()
+            key = key + [key_spec[complete_size].format(session=session)] \
+                      + key_spec[complete_size + 1:]
+            return self.write(key, doc, merge=False)
         docs.sort(key=lambda pair: pair[0] == session.identifier,
                   reverse=True)  # the current session comes first
         if docs:
@@ -156,7 +158,7 @@ class BaseStage(object):
                                      (a[0], session.merge(a[1], b[1])), docs)
             return doc
 
-    def write(self, key, document):
+    def write(self, key, document, merge=True):
         """Save the ``document`` to the ``key`` in the staged
         :attr:`repository`.
 
@@ -164,6 +166,9 @@ class BaseStage(object):
         :type key: :class:`collections.Sequence`
         :param document: the document to save
         :type document: :class:`~libearth.schema.MergeableDocumentElement`
+        :param merge: merge with the previous revision of the same session
+                      (if exists).  :const:`True` by default
+        :type merge: :class:`bool`
         :returns: actually written document
         :rtype: :class:`~libearth.schema.MergeableDocumentElement`
 
@@ -173,7 +178,29 @@ class BaseStage(object):
            rather than this.  See also :class:`Route`.
 
         """
-        document = self.session.pull(document)
+        try:
+            if not merge:
+                raise RepositoryKeyError([])
+            prev = self.repository.read(key)
+        except RepositoryKeyError:
+            document = self.session.pull(document)
+        else:
+            prev_doc = read(type(document), prev)
+            prev_rev = prev_doc.__revision__
+            doc_rev = document.__revision__
+            if doc_rev is not None and prev_rev is not None and \
+               1 and (doc_rev.updated_at > prev_rev.updated_at
+                      if doc_rev.session is prev_rev.session
+                      else document.__base_revisions__.contains(prev_rev)):
+                # If the document already contains prev_doc, don't merge
+                assert prev_rev.session is doc_rev.session
+                document = self.session.pull(document)
+            else:
+                if prev_rev is None:
+                    prev_doc = self.session.pull(prev_doc)
+                if doc_rev is None:
+                    document = self.session.pull(document)
+                document = self.session.merge(prev_doc, document)
         self.repository.write(key, write(document, as_bytes=True))
         self.touch()
         return document

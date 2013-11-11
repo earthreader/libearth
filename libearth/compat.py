@@ -6,6 +6,7 @@ multiple Python versions (2.6, 2.7, 3.2, 3.3) and VM implementations
 (CPython, PyPy).
 
 """
+import functools
 import io
 import sys
 import types
@@ -78,6 +79,11 @@ if PY3:
 
 #: The :func:`xrange()` function.  Alias for :func:`range()` in Python 3.
 xrange = range if PY3 else xrange
+
+
+#: The :func:`reduce()` function.  Alias for :func:`functools.reduce()`
+#: in Python 3.
+reduce = functools.reduce if PY3 else reduce
 
 
 #: (:class:`type`, :class:`tuple`) Types for file objects that have
