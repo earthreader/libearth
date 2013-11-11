@@ -80,6 +80,15 @@ class Session(object):
             cls.interns[identifier] = session
         return session
 
+    def __eq__(self, other):
+        return self is other
+
+    def __ne__(self, other):
+        return self is not other
+
+    def __hash__(self):
+        return hash(self.identifier)
+
     def revise(self, document):
         """Mark the given ``document`` as the latest revision of the current
         session.
