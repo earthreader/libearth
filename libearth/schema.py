@@ -262,18 +262,34 @@ class Child(Descriptor):
                     raise NameError('name {0!r} is not defined'.format(name))
         return self._element_type
 
+    def __get__(self, obj, cls=None):
+        if isinstance(obj, Element):
+            if self.multiple:
+                return ElementList(obj, self, self.element_type)
+        return super(Child, self).__get__(obj, cls)
+
     def __set__(self, obj, value):
         if isinstance(obj, Element):
+            element_type = self.element_type
             if self.multiple:
                 if isinstance(value, collections.Sequence):
                     if len(value) < 1 or \
-                       isinstance(value[0], self.element_type):
-                        obj._data[self] = list(value)
+                       isinstance(value[0], element_type):
+                        value = [e if isinstance(e, element_type)
+                                 else element_type.__coerce_from__(e)
+                                 for e in value]
+                        for e in value:
+                            if not isinstance(e, element_type):
+                                raise TypeError(
+                                    'expected instances of {0.__module__}.'
+                                    '{0.__name__}, not {1!r}'.format(e)
+                                )
+                        obj._data[self] = value
                     else:
                         raise TypeError(
                             'expected a sequence of {0.__module__}.'
                             '{0.__name__}, not {1!r}'.format(
-                                self.element_type, value
+                                element_type, value
                             )
                         )
                 else:
@@ -281,13 +297,14 @@ class Child(Descriptor):
                                     'only accepts a sequence, not ' +
                                     repr(value))
             else:
-                if isinstance(value, self.element_type):
-                    obj._data[self] = value
-                elif value is not None:
+                if not (value is None or isinstance(value, element_type)):
+                    value = element_type.__coerce_from__(value)
+                if not (value is None or isinstance(value, element_type)):
                     raise TypeError(
                         'expected an instance of {0.__module__}.{0.__name__}, '
-                        'not {1!r}'.format(self.element_type, value)
+                        'not {1!r}'.format(element_type, value)
                     )
+                obj._data[self] = value
         else:
             raise AttributeError('cannot change the class attribute')
 
@@ -630,6 +647,12 @@ class Text(Descriptor, CodecDescriptor):
         CodecDescriptor.__init__(self, codec=codec,
                                  encoder=encoder, decoder=decoder)
 
+    def __get__(self, obj, cls=None):
+        if isinstance(obj, Element):
+            if self.multiple:
+                return ElementList(obj, self, string_type)
+        return super(Text, self).__get__(obj, cls)
+
     def start_element(self, element, attribute):
         return element
 
@@ -830,6 +853,30 @@ class Element(object):
         """
         return self
 
+    @classmethod
+    def __coerce_from__(cls, value):
+        """Cast a value which isn't an instance of the element type to
+        the element type.  It's useful when a boxed element type could
+        be more naturally represented using builtin type.
+
+        For example, :class:`~libearth.feed.Mark` could be represented
+        as a boolean value, and :class:`~libearth.feed.Text` also
+        could be represented as a string.
+
+        The following example shows how the element type can be
+        automatically casted from string by implementing
+        :meth:`__coerce_from__()` class method::
+
+            @classmethod
+            def __coerce_from__(cls, value):
+                if isinstance(value, str):
+                    return Text(value=value)
+                raise TypeError('expected a string or Text')
+
+        """
+        raise TypeError('expected an instance of {0.__module__}.{0.__name__}, '
+                        'not {1!r}'.format(cls, value))
+
 
 class DocumentElement(Element):
     """The root element of the document.
@@ -874,9 +921,10 @@ class ElementList(collections.MutableSequence):
 
     """
 
-    __slots__ = 'element', 'descriptor', 'tag', 'xmlns', 'key_pair'
+    __slots__ = ('element', 'descriptor', 'value_type',
+                 'tag', 'xmlns', 'key_pair')
 
-    def __init__(self, element, descriptor):
+    def __init__(self, element, descriptor, value_type=None):
         if not isinstance(element, Element):
             raise TypeError(
                 'element must be an instance of {0.__module__}.{0.__name__}, '
@@ -887,8 +935,12 @@ class ElementList(collections.MutableSequence):
                 'descriptor must be an instance of {0.__module__}.{0.__name__}'
                 ', not {1!r}'.format(Descriptor, descriptor)
             )
+        elif not (value_type is None or isinstance(value_type, type)):
+            raise TypeError('value_type must be a type, not ' +
+                            repr(value_type))
         self.element = element
         self.descriptor = descriptor
+        self.value_type = value_type
 
     def consume_buffer(self):
         """Consume the buffer for the parser.  It returns a generator,
@@ -952,6 +1004,18 @@ class ElementList(collections.MutableSequence):
                 continue
         return self.element._data.setdefault(key, [])
 
+    def validate_value(self, value):
+        if self.value_type is None or isinstance(value, self.value_type):
+            return value
+        elif self.value_type is string_type:
+            raise TypeError('expected a string, not ' + repr(value))
+        elif issubclass(self.value_type, Element):
+            value = self.value_type.__coerce_from__(value)
+            if isinstance(value, self.value_type):
+                return value
+        raise TypeError('expected an instance of {0.__module__}.{0.__name__}, '
+                        'not {1!r}'.format(self.value_type, value))
+
     def __len__(self):
         key = self.descriptor
         data = self.element._data
@@ -968,7 +1032,10 @@ class ElementList(collections.MutableSequence):
 
     def __setitem__(self, index, value):
         data = self.consume_index(index)
-        data[index] = value
+        if isinstance(index, slice):
+            data[index] = map(self.validate_value, value)
+        else:
+            data[index] = self.validate_value(value)
 
     def __delitem__(self, index):
         data = self.consume_index(index)
@@ -976,7 +1043,7 @@ class ElementList(collections.MutableSequence):
 
     def insert(self, index, value):
         data = self.consume_index(index)
-        data.insert(index, value)
+        data.insert(index, self.validate_value(value))
 
     def __nonzero__(self):
         data = self.consume_index(1)

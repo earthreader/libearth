@@ -5,8 +5,7 @@ import xml.etree.ElementTree
 
 from pytest import fixture, mark, raises
 
-from libearth.compat import text, text_type
-from libearth.feed import Feed
+from libearth.compat import text, text_type, string_type
 from libearth.schema import (Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
                              Element, EncodeError, IntegrityError, Text,
@@ -26,6 +25,12 @@ class TextElement(Element):
 
     ns_attr_attr = Attribute('ns-attr', xmlns='http://earthreader.github.io/')
     value = Content()
+
+    @classmethod
+    def __coerce_from__(cls, value):
+        if isinstance(value, string_type):
+            return TextElement(value=value)
+        raise TypeError
 
 
 class TextDecoderElement(Element):
@@ -953,3 +958,46 @@ def test_element_list_consume_buffer_regression():
     assert len(doc.b) == 2
     b = doc.b[0]
     assert len(b.c) == 3
+
+
+def test_child_set_none(fx_test_doc):
+    doc, _ = fx_test_doc
+    assert doc.title_attr is not None
+    doc.title_attr = None
+    assert doc.title_attr is None
+
+
+def test_element_coerce_from(fx_test_doc):
+    doc, _ = fx_test_doc
+    doc.title_attr = 'coerce test'
+    assert isinstance(doc.title_attr, TextElement)
+    assert doc.title_attr.value == 'coerce test'
+    with raises(TypeError):
+        doc.title_attr = 123
+    doc.multi_attr = [TextElement(value='a'), 'b']
+    for e in doc.multi_attr:
+        assert isinstance(e, TextElement)
+    assert doc.multi_attr[0].value == 'a'
+    assert doc.multi_attr[1].value == 'b'
+    with raises(TypeError):
+        doc.multi_attr = [TextElement(value='a'), 'b', 3]
+    number = len(doc.multi_attr)
+    doc.multi_attr.append('coerce test')
+    assert len(doc.multi_attr) == number + 1
+    for e in doc.multi_attr:
+        assert isinstance(e, TextElement)
+    assert doc.multi_attr[-1].value == 'coerce test'
+    with raises(TypeError):
+        doc.multi_attr.append(123)
+    doc.multi_attr[0] = 'coerce test'
+    assert isinstance(doc.multi_attr[0], TextElement)
+    assert doc.multi_attr[0].value == 'coerce test'
+    with raises(TypeError):
+        doc.multi_attr[1] = 123
+    doc.multi_attr[1:] = ['slice', 'test']
+    for e in doc.multi_attr:
+        assert isinstance(e, TextElement)
+    assert doc.multi_attr[1].value == 'slice'
+    assert doc.multi_attr[2].value == 'test'
+    with raises(TypeError):
+        doc.multi_attr[1:] = ['slice test', 123]
