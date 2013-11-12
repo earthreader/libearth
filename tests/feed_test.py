@@ -407,20 +407,15 @@ def test_merge_marks(fx_stages, fx_feed):
 def test_merge_mark_crawled(fx_stages, fx_feed):
     stage, _ = fx_stages
     stage.feeds['test'] = fx_feed
-
     feed = stage.feeds['test']
     feed.updated_at = timestamp(1)
-    feed.entries[1].read = Mark(marked=True, updated_at=timestamp(1))
+    feed.entries[1].read = True
     stage.feeds['test'] = feed
-
     assert stage.feeds['test'].entries[1].read
-
     crawled_feed = fx_feed
     assert not crawled_feed.entries[1].read
-
     crawled_feed.updated_at = timestamp(2)
     stage.feeds['test'] = crawled_feed
-
     assert stage.feeds['test'].entries[1].read
 
 

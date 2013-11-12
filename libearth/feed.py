@@ -17,6 +17,7 @@ from .sanitizer import clean_html, sanitize_html
 from .session import MergeableDocumentElement
 from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
                      Element, Text as TextChild)
+from .tz import now
 
 __all__ = ('ATOM_XMLNS', 'MARK_XMLNS', 'Category', 'Content', 'Entry', 'Feed',
            'Generator', 'Link', 'Mark', 'Metadata', 'Person', 'Source', 'Text')
@@ -526,6 +527,13 @@ class Mark(Element):
 
     def __merge_entities__(self, other):
         return max(self, other, key=lambda mark: mark.updated_at)
+
+    @classmethod
+    def __coerce_from__(cls, value):
+        if isinstance(value, bool):
+            return cls(marked=value, updated_at=now())
+        raise TypeError('expected bool or an instance of {0.__module__}.'
+                        '{0.__name__}, not {1!r}'.format(cls, value))
 
     def __repr__(self):
         fmt = '{0.__module__}.{0.__name__}(marked={1!r}, updated_at={2!r})'
