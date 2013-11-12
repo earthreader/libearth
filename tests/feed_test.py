@@ -428,7 +428,7 @@ def test_merge_mark_crawled(fx_stages, fx_feed):
 def fx_test_feeds():
     authors = [Person(name='vio')]
     feed = Feed(id='http://feedone.com/', authors=authors,
-                title=Text(value='Feed One'),
+                title='Feed One',
                 updated_at=datetime.datetime(2013, 10, 29, 20, 55, 30,
                                              tzinfo=utc))
     updated_feed = Feed(id='http://feedone.com/', authors=authors,

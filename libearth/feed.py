@@ -12,7 +12,7 @@ import cgi
 import re
 
 from .codecs import Boolean, Enum, Rfc3339
-from .compat import UNICODE_BY_DEFAULT, text_type
+from .compat import UNICODE_BY_DEFAULT, string_type, text_type
 from .sanitizer import clean_html, sanitize_html
 from .session import MergeableDocumentElement
 from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
@@ -63,6 +63,13 @@ class Text(Element):
             return sanitize_html(self.value)
         elif self.type == 'text':
             return cgi.escape(self.value, quote=True).replace('\n', '<br>\n')
+
+    @classmethod
+    def __coerce_from__(cls, value):
+        if isinstance(value, string_type):
+            return cls(value=value, type='text')
+        raise TypeError('expected a string or an instance of {0.__module__}.'
+                        '{0.__name__}, not {1!r}'.format(cls, value))
 
     def __eq__(self, other):
         return (isinstance(other, type(self)) and
