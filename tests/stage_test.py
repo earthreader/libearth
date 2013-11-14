@@ -271,15 +271,3 @@ def test_get_deep_route(fx_session, fx_stage):
     doc = dir2['xyz']
     assert isinstance(doc, TestDoc)
     assert doc.__revision__.session is fx_session
-
-
-@fixture
-def fx_test_opml(fx_test_stages):
-    repo, stage1, stage2 = fx_test_stages
-    sub_list = SubscriptionList()
-    subscription = Subscription(label='test', feed_uri='http://asdf.com')
-    stage1.subscriptions = sub_list
-    assert len(stage1.subscriptions) == 0
-    sub_list.add(subscription)
-    new_stage = Stage(Session('SESSIONID'), repo)
-    assert len(new_stage.subscriptions) == 1
