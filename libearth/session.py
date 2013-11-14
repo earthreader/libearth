@@ -207,9 +207,9 @@ class Session(object):
                 older_attr = getattr(a, attr_name, None)
                 newer_attr = getattr(b, attr_name, None)
                 if older_attr is None:
-                    merged_attr = older_attr
-                elif newer_attr is None:
                     merged_attr = newer_attr
+                elif newer_attr is None:
+                    merged_attr = older_attr
                 elif isinstance(newer_attr, Element):
                     merged_attr = newer_attr.__merge_entities__(older_attr)
                 else:

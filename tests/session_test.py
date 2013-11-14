@@ -239,6 +239,7 @@ class TestMergeableDoc(MergeableDocumentElement):
     unique_entities = Child('unique-entity', TestUniqueEntity, multiple=True)
     rev_entities = Child('rev-multi-entity', TestRevisedEntity, multiple=True)
     rev_entity = Child('rev-single-entity', TestRevisedEntity)
+    nullable = Child('nullable-entity', TestUniqueEntity)
 
 
 class TestMergeableContentDoc(MergeableDocumentElement):
@@ -349,6 +350,8 @@ def test_session_merge():
             [('s1-a', 2), ('s1-b', 2), ('s2-c', 3), ('s2-d', 2)])
     assert c.rev_entity.rev == 2
     assert c.rev_entity.value == 's2'
+    assert c.nullable is None
+    c.nullable = TestUniqueEntity(ident='nullable', value='nullable')
     b.attr = b.text = b_c.content = 'd'
     b.multi_text.append('blah')
     b.unique_entities.append(TestUniqueEntity(ident='blah', value='s2-blah'))
@@ -366,6 +369,8 @@ def test_session_merge():
     assert list(d.multi_text) == ['a', 'b', 'c', 'd', 'e', 'f', 'blah']
     assert ([entity.value for entity in d.unique_entities] ==
             ['s1-a', 's1-b', 's2-c', 's2-d', 's2-e', 's2-blah'])
+    assert d.nullable is not None
+    assert d.nullable.value == 'nullable'
     e = s1.merge(c, d)  # (5)
     e_c = s1.merge(c_c, d_c)
     assert e.__revision__.session is s1
