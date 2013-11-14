@@ -2,9 +2,11 @@ from datetime import datetime
 from pytest import fixture, mark
 
 from libearth.feed import Feed, Link, Person, Text
+from libearth.stage import Stage
 from libearth.subscribe import Body, Category, Subscription, SubscriptionList
 from libearth.schema import read
 from libearth.tz import utc
+from .stage_test import fx_repo, fx_session
 
 
 @fixture
@@ -357,3 +359,12 @@ def test_subscription_set_subscribe(subs):
     assert sub.label == 'Feed title'
     assert sub.feed_uri == 'http://example.com/index.xml'
     assert sub.alternate_uri == 'http://example.com/'
+
+
+def test_stage_subscription_list(fx_repo, fx_session):
+    stage = Stage(fx_session, fx_repo)
+    stage.subscriptions = SubscriptionList()
+    subs = stage.subscriptions
+    subs.add(Category(label='Test'))
+    stage.subscriptions = subs
+    assert frozenset(stage.subscriptions) == frozenset([Category(label='Test')])
