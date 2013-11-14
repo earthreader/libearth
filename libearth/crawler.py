@@ -16,7 +16,7 @@ from .parser.heuristic import get_format
 __all__ = 'crawl',
 
 
-def crawl(feeds, pool_size):
+class crawl(object):
     """Crawl feeds in feed list using thread.
 
     .. note::
@@ -29,10 +29,18 @@ def crawl(feeds, pool_size):
     :rtype: :class:`collections.Iterable`
 
     """
-    pool = multiprocessing.pool.ThreadPool(pool_size)
-    for result in pool.imap_unordered(get_feed, feeds):
-        yield result
-    pool.close()
+
+    __slots__ = 'pool', 'async_results'
+
+    def __init__(self, feeds, pool_size):
+        self.pool = multiprocessing.pool.ThreadPool(pool_size)
+        self.async_results = self.pool.imap_unordered(get_feed, feeds)
+
+    def __iter__(self):
+        for result in self.async_results:
+            yield result
+        self.pool.close()
+        self.pool.join()
 
 
 def get_feed(feed_url):

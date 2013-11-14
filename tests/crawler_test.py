@@ -165,9 +165,9 @@ def test_crawl_error():
     feeds = ['http://brokenrss.com/rss']
     generator = crawl(feeds, 2)
     with raises(CrawlError):
-        next(generator)
+        next(iter(generator))
     # unreachable url
     feeds = ['http://not-exists.com/rss']
     generator = crawl(feeds, 2)
     with raises(CrawlError):
-        next(generator)
+        next(iter(generator))
