@@ -48,7 +48,10 @@ def get_feed(feed_url):
         f = urllib2.urlopen(feed_url)
         feed_xml = f.read()
         parser = get_format(feed_xml)
-        return feed_url, parser(feed_xml, feed_url)
+        feed, crawler_hints = parser(feed_xml, feed_url)
+        feed.entries = sorted(feed.entries, key=lambda entry: entry.updated_at,
+                              reverse=True)
+        return feed_url, feed, crawler_hints
     except Exception:
         raise CrawlError(
             'Crawling, {0} failed: {1}'.format(feed_url, sys.exc_info()[0]))

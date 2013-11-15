@@ -38,6 +38,14 @@ atom_xml = """
     <logo>http://vio.atomtest.com/images/logo.jpg</logo>
     <rights>vio company all rights reserved</rights>
     <updated>2013-08-10T15:27:04Z</updated>
+    <entry xml:base="http://basetest.com/">
+        <id>two</id>
+        <author>
+            <name>kjwon</name>
+        </author>
+        <title>xml base test</title>
+        <updated>2013-08-17T03:28:11Z</updated>
+    </entry>
     <entry>
         <id>one</id>
         <author>
@@ -51,13 +59,29 @@ atom_xml = """
         <category scheme="http://vio.atomtest.com" term="Category Two" />
         <content>Hello World</content>
     </entry>
-    <entry xml:base="http://basetest.com/">
-        <id>two</id>
-        <author>
-            <name>kjwon</name>
-        </author>
-        <title>xml base test</title>
-        <updated>2013-08-17T03:28:11Z</updated>
+</feed>
+"""
+
+
+atom_reversed_entries = """
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title type="text">Feed One</title>
+    <id>http://feedone.com/feed/atom/</id>
+    <updated>2013-08-19T07:49:20+07:00</updated>
+    <link type="text/html" rel="alternate" href="http://feedone.com" />
+    <entry>
+        <title>Feed One: Entry One</title>
+        <id>http://feedone.com/feed/atom/1/</id>
+        <updated>2013-08-19T07:49:20+07:00</updated>
+        <published>2013-08-19T07:49:20+07:00</published>
+        <content>This is content of Entry One in Feed One</content>
+    </entry>
+    <entry>
+        <title>Feed One: Entry Two</title>
+        <id>http://feedone.com/feed/atom/2/</id>
+        <updated>2013-10-19T07:49:20+07:00</updated>
+        <published>2013-10-19T07:49:20+07:00</published>
+        <content>This is content of Entry Two in Feed One</content>
     </entry>
 </feed>
 """
@@ -108,6 +132,7 @@ rss_source_xml = """
 </rss>
 """
 
+
 broken_rss = """
 <rss version="2.0">
     <channel>
@@ -117,6 +142,7 @@ broken_rss = """
 
 mock_urls = {
     'http://vio.atomtest.com/feed/atom': (200, atom_xml),
+    'http://reversedentries.com/feed/atom': (200, atom_reversed_entries),
     'http://rsstest.com/rss.xml': (200, rss_xml),
     'http://sourcetest.com/rss.xml': (200, rss_source_xml),
     'http://brokenrss.com/rss': (200, broken_rss)
@@ -146,16 +172,25 @@ def test_crawler():
              'http://rsstest.com/rss.xml']
     generator = crawl(feeds, 4)
     for result in generator:
-        feed_data = result[1][0]
+        feed_data = result[1]
         if feed_data.title.value == 'Atom Test':
             entries = feed_data.entries
-            assert entries[0].title.value == 'Title One'
-            assert entries[1].title.value == 'xml base test'
+            assert entries[0].title.value == 'xml base test'
+            assert entries[1].title.value == 'Title One'
         elif feed_data.title.value == 'Vio Blog':
             entries = feed_data.entries
             assert entries[0].title.value == 'test one'
             source = feed_data.entries[0].source
             assert source.title.value == 'Source Test'
+
+
+def test_sort_entries():
+    my_opener = urllib2.build_opener(TestHTTPHandler)
+    urllib2.install_opener(my_opener)
+    feeds = ['http://reversedentries.com/feed/atom']
+    crawler = iter(crawl(feeds, 4))
+    url, feed, hints = next(crawler)
+    assert feed.entries[0].updated_at > feed.entries[1].updated_at
 
 
 def test_crawl_error():
