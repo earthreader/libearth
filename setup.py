@@ -1,4 +1,5 @@
 import os.path
+import sys
 
 try:
     from setuptools import find_packages, setup
@@ -32,6 +33,11 @@ class pytest(test):
         raise SystemExit(errno)
 
 
+install_requires = []
+if sys.version_info < (3, 2):
+    install_requires.append('futures')
+
+
 setup(
     name='libearth',
     version=VERSION,
@@ -42,6 +48,7 @@ setup(
     author_email='minhee' '@' 'dahlia.kr',
     license='MIT License',
     packages=find_packages(exclude=['tests']),
+    install_requires=install_requires,
     tests_require=['pytest >= 2.3.0'],
     cmdclass={'test': pytest},
     classifiers=[

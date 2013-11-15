@@ -4,7 +4,11 @@
 Crawl feeds.
 
 """
-import multiprocessing.pool
+try:
+    import concurrent.futures
+except ImportError:
+    concurrent = None
+    import multiprocessing.pool
 import sys
 try:
     import urllib.request as urllib2
@@ -33,14 +37,23 @@ class crawl(object):
     __slots__ = 'pool', 'async_results'
 
     def __init__(self, feeds, pool_size):
-        self.pool = multiprocessing.pool.ThreadPool(pool_size)
-        self.async_results = self.pool.imap_unordered(get_feed, feeds)
+        if concurrent:
+            self.pool = concurrent.futures.ThreadPoolExecutor(
+                max_workers=pool_size
+            )
+            self.async_results = self.pool.map(get_feed, feeds)
+        else:
+            self.pool = multiprocessing.pool.ThreadPool(pool_size)
+            self.async_results = self.pool.imap_unordered(get_feed, feeds)
 
     def __iter__(self):
         for result in self.async_results:
             yield result
-        self.pool.close()
-        self.pool.join()
+        if concurrent:
+            self.pool.shutdown()
+        else:
+            self.pool.close()
+            self.pool.join()
 
 
 def get_feed(feed_url):
@@ -52,9 +65,8 @@ def get_feed(feed_url):
         feed.entries = sorted(feed.entries, key=lambda entry: entry.updated_at,
                               reverse=True)
         return feed_url, feed, crawler_hints
-    except Exception:
-        raise CrawlError(
-            'Crawling, {0} failed: {1}'.format(feed_url, sys.exc_info()[0]))
+    except Exception as e:
+        raise CrawlError('{0} failed: {1}'.format(feed_url, e))
 
 
 class CrawlError(IOError):
