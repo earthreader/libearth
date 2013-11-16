@@ -119,14 +119,11 @@ def rss_get_item_data(entries):
         links = []
         for data in entry:
             if data.tag == 'title':
-                title = Text()
-                title.value = data.text
-                entry_data.title = title
+                entry_data.title = Text(value=data.text)
             elif data.tag == 'link':
-                link = Link()
-                link.uri = data.text
-                link.relation = 'alternate'
-                link.mimetype = 'text/html'
+                link = Link(uri=data.text,
+                            relation='alternate',
+                            mimetype='text/html')
                 links.append(link)
                 entry_data.links = links
             elif data.tag == 'description' and not entry_data.content:
@@ -134,21 +131,14 @@ def rss_get_item_data(entries):
             elif data.tag == CONTENT_XMLNS + 'encoded':
                 entry_data.content = Content(type='html', value=data.text)
             elif data.tag == 'author':
-                author = Person()
-                author.name = data.text
-                author.email = data.text
-                entry_data.authors = [author]
+                entry_data.authors = [Person(name=data.text, email=data.text)]
             elif data.tag == 'category':
-                category = Category()
-                category.term = data.text
-                entry_data.categories = [category]
+                entry_data.categories = [Category(term=data.text)]
             elif data.tag == 'comments':
                 #entry_data['comments'] = data.text
                 pass  # FIXME
             elif data.tag == 'enclosure':
-                link = Link()
-                link.mimetype = data.get('type')
-                link.uri = data.get('url')
+                link = Link(mimetype=data.get('type'), uri=data.get('url'))
                 links.append(link)
                 entry_data.links = links
             elif data.tag == 'guid':
