@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import hashlib
-from threading import Thread
+import threading
 
 from pytest import fixture, raises
 
@@ -498,31 +498,22 @@ def test_merge_entries(fx_stages, fx_test_feeds, fx_test_entries):
             frozenset([entry0.id, entry2.id, entry1.id]))
 
 
-class ApplyTimestamp(Thread):
-    def __init__(self, stage, feedName, timestamp):
-        Thread.__init__(self)
-        self.stage = stage
-        self.feedName = feedName
-        self.timestamp = timestamp
-
-    def run(self):
-        feed = self.stage.feeds[self.feedName]
-        feed.entries[0].read = Mark(
-            marked=True, updated_at=self.timestamp)
-        self.stage.feeds[self.feedName] = feed
+def apply_timestamp(stage, feed_id, timestamp):
+    feed = stage.feeds[feed_id]
+    feed.entries[0].read = Mark(marked=True, updated_at=timestamp)
+    stage.feeds[feed_id] = feed
 
 
 def test_race_condition(fx_stages, fx_feed):
     stage, _ = fx_stages
     stage.feeds['test'] = fx_feed
-
     threads = []
     for i in range(10):
-        t = ApplyTimestamp(stage, 'test', timestamp(i))
+        t = threading.Thread(target=apply_timestamp,
+                             args=(stage, 'test', timestamp(i)))
         t.daemon = True
         threads.append(t)
         t.start()
     for thread in threads:
         thread.join()
-
     assert stage.feeds['test'].entries[0].read.updated_at == timestamp(9)
