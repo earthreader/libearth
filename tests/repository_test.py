@@ -1,6 +1,6 @@
 import os.path
 
-from pytest import raises
+from pytest import mark, raises
 
 from libearth.repository import (FileNotFoundError, FileSystemRepository,
                                  NotADirectoryError, Repository,
@@ -104,3 +104,17 @@ def test_not_dir(tmpdir):
     path.write('')
     with raises(NotADirectoryError):
         FileSystemRepository(str(path))
+
+
+def test_atomicity(tmpdir):
+    repo = FileSystemRepository(str(tmpdir), atomic=True)
+    repo.write(['key'], [b'first ', b'revision'])
+
+    def gen():
+        assert b''.join(repo.read(['key'])) == b'first revision'
+        yield b'second '
+        assert b''.join(repo.read(['key'])) == b'first revision'
+        yield b'revision'
+        assert b''.join(repo.read(['key'])) == b'first revision'
+    repo.write(['key'], gen())
+    assert b''.join(repo.read(['key'])) == b'second revision'
