@@ -182,6 +182,7 @@ class SubscriptionSet(collections.MutableSet):
             created_at=now()
         )
         self.add(sub)
+        return sub
 
     @property
     def categories(self):
