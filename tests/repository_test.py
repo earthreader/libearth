@@ -1,10 +1,12 @@
 import os.path
+import tempfile
 
-from pytest import raises
+from pytest import mark, raises
 
 from libearth.repository import (FileNotFoundError, FileSystemRepository,
                                  NotADirectoryError, Repository,
                                  RepositoryKeyError)
+from libearth.stage import DirtyBuffer
 
 
 class RepositoryNotImplemented(Repository):
@@ -104,3 +106,44 @@ def test_not_dir(tmpdir):
     path.write('')
     with raises(NotADirectoryError):
         FileSystemRepository(str(path))
+
+
+def repositories():
+    yield FileSystemRepository(tempfile.mkdtemp())
+    yield DirtyBuffer(FileSystemRepository(tempfile.mkdtemp()))
+
+
+@mark.parametrize('repository', list(repositories()))
+def test_repository(repository):
+    with raises(TypeError):
+        repository.read(set(['key ', 'must ', 'be ', 'sequence']))
+    with raises(TypeError):
+        repository.write(set(['key ', 'must ', 'be ', 'sequence']), [])
+    with raises(TypeError):
+        repository.list(set(['key ', 'must ', 'be ', 'sequence']))
+    with raises(TypeError):
+        repository.exists(set(['key ', 'must ', 'be ', 'sequence']))
+    with raises(RepositoryKeyError):
+        repository.read([])
+    with raises(RepositoryKeyError):
+        repository.write([], [b'key ', b'cannot ', b'be ', b'empty'])
+    assert not repository.list([])
+    assert not repository.exists(['key'])
+    with raises(RepositoryKeyError):
+        repository.read(['key'])
+    repository.write(['key'], [b'cont', b'ents'])
+    assert frozenset(repository.list([])) == frozenset(['key'])
+    assert repository.exists(['key'])
+    assert b''.join(repository.read(['key'])) == b'contents'
+    assert not repository.exists(['dir', 'key'])
+    with raises(RepositoryKeyError):
+        repository.read(['dir', 'key'])
+    repository.write(['dir', 'key'], [b'cont', b'ents'])
+    assert frozenset(repository.list([])) == frozenset(['dir', 'key'])
+    assert repository.exists(['dir', 'key'])
+    assert not repository.exists(['dir', 'key2'])
+    assert b''.join(repository.read(['dir', 'key'])) == b'contents'
+    with raises(RepositoryKeyError):
+        repository.write(['key', 'key'], [b'directory test'])
+    with raises(RepositoryKeyError):
+        repository.list(['key'])

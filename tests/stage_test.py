@@ -2,12 +2,12 @@ import collections
 
 from pytest import fixture, raises
 
-from libearth.repository import Repository, RepositoryKeyError
+from libearth.repository import (FileSystemRepository, Repository,
+                                 RepositoryKeyError)
 from libearth.schema import read
 from libearth.session import MergeableDocumentElement, Session
-from libearth.stage import (BaseStage, Directory, Route, Stage,
+from libearth.stage import (BaseStage, Directory, DirtyBuffer, Route,
                             compile_format_to_pattern)
-from libearth.subscribe import Subscription, SubscriptionList
 from libearth.tz import now
 
 
@@ -271,3 +271,32 @@ def test_get_deep_route(fx_session, fx_stage):
     doc = dir2['xyz']
     assert isinstance(doc, TestDoc)
     assert doc.__revision__.session is fx_session
+
+
+def test_dirty_buffer(tmpdir):
+    repo = FileSystemRepository(str(tmpdir))
+    dirty = DirtyBuffer(repo)
+    key = ['key']
+    dir_key = []
+    with raises(RepositoryKeyError):
+        dirty.read(key)
+    assert not dirty.exists(key)
+    assert frozenset(dirty.list(dir_key)) == frozenset([])
+    with raises(RepositoryKeyError):
+        repo.read(key)
+    assert not repo.exists(key)
+    assert frozenset(repo.list(dir_key)) == frozenset([])
+    dirty.write(key, [b'dirty ', b'value'])
+    assert b''.join(dirty.read(key)) == b'dirty value'
+    assert dirty.exists(key)
+    assert frozenset(dirty.list(dir_key)) == frozenset(key)
+    with raises(RepositoryKeyError):
+        repo.read(key)
+    assert not repo.exists(key)
+    assert frozenset(repo.list(dir_key)) == frozenset([])
+    assert dirty.dictionary
+    dirty.flush()
+    assert not dirty.dictionary
+    assert b''.join(repo.read(key)) == b'dirty value'
+    assert repo.exists(key)
+    assert frozenset(repo.list(dir_key)) == frozenset(key)

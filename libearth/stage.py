@@ -20,7 +20,7 @@ from .session import MergeableDocumentElement, RevisionSet, Session
 from .subscribe import SubscriptionList
 from .tz import now
 
-__all__ = ('BaseStage', 'Directory', 'Route', 'Stage',
+__all__ = ('BaseStage', 'Directory', 'DirtyBuffer', 'Route', 'Stage',
            'compile_format_to_pattern')
 
 
@@ -209,6 +209,98 @@ class BaseStage(object):
         return '{0.__module__}.{0.__name__}({1!r}, {2!r})'.format(
             type(self), self.session, self.repository
         )
+
+
+class DirtyBuffer(Repository):
+    """Memory-buffered proxy for the repository.  It's used for transaction
+    buffer which maintains updates to be written until the ongoing transaction
+    is committed.
+
+    :param repository: the bare repository where the buffer will
+                       :meth:`flush` to
+    :type repository: :class:`~libearth.repository.Repository`
+
+    .. note::
+
+       This class is intended to be internal.
+
+    """
+
+    #: (:class:`~libearth.repository.Repository`) The bare repository where
+    #: the buffer will :meth:`flush` to.
+    repository = None
+
+    def __init__(self, repository):
+        self.repository = repository
+        self.dictionary = {}
+
+    def read(self, key):
+        super(DirtyBuffer, self).read(key)
+        d = self.dictionary
+        for k in key:
+            if not isinstance(d, dict):
+                raise RepositoryKeyError(key)
+            try:
+                d = d[k]
+            except KeyError:
+                return self.repository.read(key)
+        return d
+
+    def write(self, key, iterable):
+        super(DirtyBuffer, self).write(key, iterable)
+        d = self.dictionary
+        for k in key[:-1]:
+            if not isinstance(d, dict):
+                raise RepositoryKeyError(key)
+            d = d.setdefault(k, {})
+        if not isinstance(d, dict):
+            raise RepositoryKeyError(key)
+        d[key[-1]] = b''.join(iterable)
+
+    def exists(self, key):
+        super(DirtyBuffer, self).exists(key)
+        d = self.dictionary
+        for k in key:
+            if not isinstance(d, dict):
+                raise RepositoryKeyError(key)
+            try:
+                d = d[k]
+            except KeyError:
+                return self.repository.exists(key)
+        return True
+
+    def list(self, key):
+        super(DirtyBuffer, self).list(key)
+        d = self.dictionary
+        for k in key:
+            if not isinstance(d, dict):
+                raise RepositoryKeyError(key)
+            try:
+                d = d[k]
+            except KeyError:
+                return self.repository.list(key)
+        if not isinstance(d, dict):
+            raise RepositoryKeyError(key)
+        return frozenset(d).union(self.repository.list(key))
+
+    def flush(self, _dictionary=None, _key=None):
+        """Flush all buffered updates to the :attr:`repository`."""
+        if _dictionary is None or _key is None:
+            _dictionary = self.dictionary
+            _key = ()
+        items = getattr(_dictionary, 'iteritems', _dictionary.items)()
+        write_to_repository = self.repository.write
+        for key, value in items:
+            key = _key + (key,)
+            if isinstance(value, dict):
+                self.flush(_dictionary=value, _key=key)
+            else:
+                write_to_repository(key, value)
+        _dictionary.clear()
+
+    def __repr__(self):
+        return '{0.__module__}.{0.__name__}({1!r})'.format(type(self),
+                                                           self.repository)
 
 
 class Route(object):

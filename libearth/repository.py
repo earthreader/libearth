@@ -197,8 +197,10 @@ class FileSystemRepository(Repository):
         dirpath.insert(0, self.path)
         for i in xrange(len(dirpath)):
             p = os.path.join(*dirpath[:i + 1])
-            if not os.path.isdir(p):
+            if not os.path.exists(p):
                 os.mkdir(p)
+            elif not os.path.isdir(p):
+                raise RepositoryKeyError(key)
         with open(os.path.join(self.path, *key), 'wb') as f:
             for chunk in iterable:
                 f.write(chunk)
