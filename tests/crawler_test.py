@@ -141,11 +141,14 @@ broken_rss = """
 
 
 mock_urls = {
-    'http://vio.atomtest.com/feed/atom': (200, atom_xml),
-    'http://reversedentries.com/feed/atom': (200, atom_reversed_entries),
-    'http://rsstest.com/rss.xml': (200, rss_xml),
-    'http://sourcetest.com/rss.xml': (200, rss_source_xml),
-    'http://brokenrss.com/rss': (200, broken_rss)
+    'http://vio.atomtest.com/feed/atom': (200, 'application/atom+xml',
+                                          atom_xml),
+    'http://reversedentries.com/feed/atom': (200, 'application/atom+xml',
+                                             atom_reversed_entries),
+    'http://rsstest.com/rss.xml': (200, 'application/rss+xml', rss_xml),
+    'http://sourcetest.com/rss.xml': (200, 'application/rss+xml',
+                                      rss_source_xml),
+    'http://brokenrss.com/rss': (200, 'application/rss+xml', broken_rss)
 }
 
 
@@ -154,11 +157,11 @@ class TestHTTPHandler(urllib2.HTTPHandler):
     def http_open(self, req):
         url = req.get_full_url()
         try:
-            status_code, content = mock_urls[url]
+            status_code, mimetype, content = mock_urls[url]
         except KeyError:
             return urllib2.HTTPHandler.http_open(self, req)
         resp = urllib2.addinfourl(StringIO(content),
-                                  'mock message',
+                                  {'content-type': mimetype},
                                   url)
         resp.code = status_code
         resp.msg = httplib.responses[status_code]
