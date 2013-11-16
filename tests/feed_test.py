@@ -384,14 +384,25 @@ def test_merge_marks(fx_stages, fx_feed):
     stage_a.feeds['test'] = fx_feed
     feed_a = stage_a.feeds['test']
     feed_b = stage_b.feeds['test']
+
     feed_b.entries[0].read = Mark(marked=True, updated_at=timestamp(1))
+    stage_b.feeds['test'] = feed_b
+
     feed_a.entries[0].read = Mark(marked=True, updated_at=timestamp(2))
+    stage_a.feeds['test'] = feed_a
+
     feed_b.entries[0].read = Mark(marked=False, updated_at=timestamp(3))
+    stage_b.feeds['test'] = feed_b
+
     feed_b.entries[0].starred = Mark(marked=True, updated_at=timestamp(4))
+    stage_b.feeds['test'] = feed_b
+
     feed_b.entries[0].starred = Mark(marked=False, updated_at=timestamp(5))
+    stage_b.feeds['test'] = feed_b
+
     feed_a.entries[0].starred = Mark(marked=True, updated_at=timestamp(6))
     stage_a.feeds['test'] = feed_a
-    stage_b.feeds['test'] = feed_b
+
     print(repr(stage_a.feeds['test']))
     entry_a = stage_a.feeds['test'].entries[0]
     entry_b = stage_b.feeds['test'].entries[0]
