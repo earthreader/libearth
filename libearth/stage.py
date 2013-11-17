@@ -11,6 +11,26 @@ the natural object-mapping interface instead.
 """
 import collections
 import re
+import sys
+if sys.version_info >= (3,):
+    try:
+        import _thread
+    except ImportError:
+        import _dummy_thread as _thread
+else:
+    try:
+        import thread as _thread
+    except ImportError:
+        import dummy_thread as _thread
+
+try:
+    import greenlet
+except ImportError:
+    greenlet = None
+try:
+    import stackless
+except ImportError:
+    stackless = None
 
 from .compat import reduce
 from .feed import Feed
@@ -21,7 +41,26 @@ from .subscribe import SubscriptionList
 from .tz import now
 
 __all__ = ('BaseStage', 'Directory', 'DirtyBuffer', 'Route', 'Stage',
-           'compile_format_to_pattern')
+           'compile_format_to_pattern', 'get_current_context_id')
+
+
+def get_current_context_id():
+    """Identifies which context it is (greenlet, stackless, or thread).
+
+    :returns: the identifier of the current context
+
+    """
+    global get_current_context_id
+    if greenlet is not None:
+        if stackless is None:
+            get_current_context_id = greenlet.getcurrent
+            return greenlet.getcurrent()
+        return greenlet.getcurrent(), stackless.getcurrent()
+    elif stackless is not None:
+        get_current_context_id = stackless.getcurrent
+        return stackless.getcurrent()
+    get_current_context_id = _thread.get_ident
+    return _thread.get_ident()
 
 
 class BaseStage(object):
