@@ -4,6 +4,7 @@
 Parsing RSS 2.0 feed.
 
 """
+import logging
 import re
 try:
     import urllib2
@@ -73,51 +74,33 @@ def check_valid_as_atom(feed_data):
 
 
 def rss_get_channel_data(root, feed_url):
+    _log = logging.getLogger(__name__ + '.rss_get_channel_data')
     feed_data = Feed(id=feed_url)
     feed_data.links.append(Link(relation='self', uri=feed_url))
     crawler_hints = {}
     contributors = []
     for data in root:
         if data.tag == 'title':
-            feed_data.title = Text()
-            feed_data.title.value = data.text or ''
+            feed_data.title = Text(value=data.text or '')
         elif data.tag == 'link':
-            link = Link()
-            link.uri = data.text
-            link.relation = 'alternate'
-            link.mimetype = 'text/html'
+            link = Link(uri=data.text,
+                        relation='alternate',
+                        mimetype='text/html')
             feed_data.links.append(link)
         elif data.tag == 'description':
-            subtitle = Text()
-            subtitle.type = 'text'
-            subtitle.value = data.text
-            feed_data.subtitle = subtitle
+            feed_data.subtitle = Text(type='text', value=data.text)
         elif data.tag == 'copyright':
-            rights = Text()
-            rights.value = data.text
-            feed_data.rights = rights
-        elif data.tag == 'managingEditor':
-            contributor = Person()
-            contributor.name = data.text
-            contributor.email = data.text
-            contributors.append(contributor)
-            feed_data.contributors = contributors
-        elif data.tag == 'webMaster':
-            contributor = Person()
-            contributor.name = data.text
-            contributor.email = data.text
+            feed_data.rights = Text(value=data.text)
+        elif data.tag in ('managingEditor', 'webMaster'):
+            contributor = Person(name=data.text, email=data.text)
             contributors.append(contributor)
             feed_data.contributors = contributors
         elif data.tag == 'pubDate':
             feed_data.updated_at = Rfc822().decode(data.text)
         elif data.tag == 'category':
-            category = Category()
-            category.term = data.text
-            feed_data.categories = [category]
+            feed_data.categories = [Category(term=data.text)]
         elif data.tag == 'generator':
-            generator = Generator()
-            generator.value = data.text
-            feed_data.generator = generator
+            feed_data.generator = Generator(value=data.text)
         elif data.tag == 'lastBuildDate':
             crawler_hints['lastBuildDate'] = Rfc822().decode(data.text)
         elif data.tag == 'ttl':
@@ -128,24 +111,24 @@ def rss_get_channel_data(root, feed_url):
             crawler_hints['skipMinutes'] = data.text
         elif data.tag == 'skipDays':
             crawler_hints['skipDays'] = data.text
+        else:
+            _log.warn('Unknown tag: %s', data)
     return feed_data, crawler_hints
 
 
 def rss_get_item_data(entries):
+    _log = logging.getLogger(__name__ + '.rss_get_item_data')
     entries_data = []
     for entry in entries:
         entry_data = Entry()
         links = []
         for data in entry:
             if data.tag == 'title':
-                title = Text()
-                title.value = data.text
-                entry_data.title = title
+                entry_data.title = Text(value=data.text)
             elif data.tag == 'link':
-                link = Link()
-                link.uri = data.text
-                link.relation = 'alternate'
-                link.mimetype = 'text/html'
+                link = Link(uri=data.text,
+                            relation='alternate',
+                            mimetype='text/html')
                 links.append(link)
                 entry_data.links = links
             elif data.tag == 'description' and not entry_data.content:
@@ -153,21 +136,14 @@ def rss_get_item_data(entries):
             elif data.tag == CONTENT_XMLNS + 'encoded':
                 entry_data.content = Content(type='html', value=data.text)
             elif data.tag == 'author':
-                author = Person()
-                author.name = data.text
-                author.email = data.text
-                entry_data.authors = [author]
+                entry_data.authors = [Person(name=data.text, email=data.text)]
             elif data.tag == 'category':
-                category = Category()
-                category.term = data.text
-                entry_data.categories = [category]
+                entry_data.categories = [Category(term=data.text)]
             elif data.tag == 'comments':
                 #entry_data['comments'] = data.text
                 pass  # FIXME
             elif data.tag == 'enclosure':
-                link = Link()
-                link.mimetype = data.get('type')
-                link.uri = data.get('url')
+                link = Link(mimetype=data.get('type'), uri=data.get('url'))
                 links.append(link)
                 entry_data.links = links
             elif data.tag == 'guid':
@@ -190,6 +166,8 @@ def rss_get_item_data(entries):
                 parser = get_format(xml)
                 source, _ = parser(xml, url, parse_entry=False)
                 entry_data.source = source
+            else:
+                _log.warn('Unknown tag: %s', data)
         if entry_data.updated_at is None:
             entry_data.updated_at = entry_data.published_at
         if entry_data.id is None:

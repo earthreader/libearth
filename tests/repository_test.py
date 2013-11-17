@@ -149,3 +149,17 @@ def test_repository(repository):
         repository.write(['key', 'key'], [b'directory test'])
     with raises(RepositoryKeyError):
         repository.list(['key'])
+
+
+def test_atomicity(tmpdir):
+    repo = FileSystemRepository(str(tmpdir), atomic=True)
+    repo.write(['key'], [b'first ', b'revision'])
+
+    def gen():
+        assert b''.join(repo.read(['key'])) == b'first revision'
+        yield b'second '
+        assert b''.join(repo.read(['key'])) == b'first revision'
+        yield b'revision'
+        assert b''.join(repo.read(['key'])) == b'first revision'
+    repo.write(['key'], gen())
+    assert b''.join(repo.read(['key'])) == b'second revision'
