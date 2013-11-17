@@ -386,13 +386,23 @@ def test_merge_marks(fx_stages, fx_feed):
         feed_a = stage_a.feeds['test']
     with stage_b:
         feed_b = stage_b.feeds['test']
-    feed_b.entries[0].read = Mark(marked=True, updated_at=timestamp(1))
-    feed_a.entries[0].read = Mark(marked=True, updated_at=timestamp(2))
-    feed_b.entries[0].read = Mark(marked=False, updated_at=timestamp(3))
-    feed_b.entries[0].starred = Mark(marked=True, updated_at=timestamp(4))
-    feed_b.entries[0].starred = Mark(marked=False, updated_at=timestamp(5))
-    feed_a.entries[0].starred = Mark(marked=True, updated_at=timestamp(6))
+    with stage_b:
+        feed_b.entries[0].read = Mark(marked=True, updated_at=timestamp(1))
+        stage_b.feeds['test'] = feed_b
     with stage_a:
+        feed_a.entries[0].read = Mark(marked=True, updated_at=timestamp(2))
+        stage_a.feeds['test'] = feed_a
+    with stage_b:
+        feed_b.entries[0].read = Mark(marked=False, updated_at=timestamp(3))
+        stage_b.feeds['test'] = feed_b
+    with stage_b:
+        feed_b.entries[0].starred = Mark(marked=True, updated_at=timestamp(4))
+        stage_b.feeds['test'] = feed_b
+    with stage_b:
+        feed_b.entries[0].starred = Mark(marked=False, updated_at=timestamp(5))
+        stage_b.feeds['test'] = feed_b
+    with stage_a:
+        feed_a.entries[0].starred = Mark(marked=True, updated_at=timestamp(6))
         stage_a.feeds['test'] = feed_a
     with stage_b:
         stage_b.feeds['test'] = feed_b
