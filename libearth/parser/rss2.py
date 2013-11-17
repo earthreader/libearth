@@ -4,6 +4,7 @@
 Parsing RSS 2.0 feed.
 
 """
+import logging
 import re
 try:
     import urllib2
@@ -73,6 +74,7 @@ def check_valid_as_atom(feed_data):
 
 
 def rss_get_channel_data(root, feed_url):
+    _log = logging.getLogger(__name__ + '.rss_get_channel_data')
     feed_data = Feed(id=feed_url)
     feed_data.links.append(Link(relation='self', uri=feed_url))
     crawler_hints = {}
@@ -128,10 +130,13 @@ def rss_get_channel_data(root, feed_url):
             crawler_hints['skipMinutes'] = data.text
         elif data.tag == 'skipDays':
             crawler_hints['skipDays'] = data.text
+        else:
+            _log.warn('Unknown tag: %s', data)
     return feed_data, crawler_hints
 
 
 def rss_get_item_data(entries):
+    _log = logging.getLogger(__name__ + '.rss_get_item_data')
     entries_data = []
     for entry in entries:
         entry_data = Entry()
@@ -190,6 +195,8 @@ def rss_get_item_data(entries):
                 parser = get_format(xml)
                 source, _ = parser(xml, url, parse_entry=False)
                 entry_data.source = source
+            else:
+                _log.warn('Unknown tag: %s', data)
         if entry_data.updated_at is None:
             entry_data.updated_at = entry_data.published_at
         if entry_data.id is None:
