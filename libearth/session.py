@@ -155,7 +155,7 @@ class Session(object):
             self.revise(copy)
         return copy
 
-    def merge(self, a, b):
+    def merge(self, a, b, force=False):
         """Merge the given two documents and return new merged document.
         The given documents are not manipulated in place.  Two documents
         must have the same type.
@@ -164,6 +164,10 @@ class Session(object):
         :type a: :class:`MergeableDocumentElement`
         :param b: the second document to be merged
         :type b: :class:`MergeableDocumentElement`
+        :param force: by default (:const:`False`) it doesn't merge but
+                      simply pull a or b if one already contains other.
+                      if ``force`` is :const:`True` it always merge
+                      two.  it assumes ``b`` is newer than ``a``
 
         """
         element_type = type(a)
@@ -174,15 +178,16 @@ class Session(object):
                 '{0.__name__} and {1.__module__}.{1.__name__} are not the '
                 'same type'.format(element_type, cls_b)
             )
-        if a.__base_revisions__.contains(b.__revision__):
-            return self.pull(a)
-        elif b.__base_revisions__.contains(a.__revision__):
-            return self.pull(b)
+        if not force:
+            if a.__base_revisions__.contains(b.__revision__):
+                return self.pull(a)
+            elif b.__base_revisions__.contains(a.__revision__):
+                return self.pull(b)
         entity_id = lambda e: (e.__entity_id__()
                                if isinstance(e, Element)
                                else e)
         # The latest one should be `b`.
-        if a.__revision__.updated_at > b.__revision__.updated_at:
+        if not force and a.__revision__.updated_at > b.__revision__.updated_at:
             a, b = b, a
         merged = element_type()
         for attr_name, desc in inspect_child_tags(element_type).values():

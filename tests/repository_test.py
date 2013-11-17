@@ -1,5 +1,6 @@
 import os.path
 import tempfile
+import threading
 
 from pytest import mark, raises
 
@@ -110,7 +111,8 @@ def test_not_dir(tmpdir):
 
 def repositories():
     yield FileSystemRepository(tempfile.mkdtemp())
-    yield DirtyBuffer(FileSystemRepository(tempfile.mkdtemp()))
+    yield DirtyBuffer(FileSystemRepository(tempfile.mkdtemp()),
+                      threading.RLock())
 
 
 @mark.parametrize('repository', list(repositories()))

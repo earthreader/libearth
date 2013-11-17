@@ -363,8 +363,11 @@ def test_subscription_set_subscribe(subs):
 
 def test_stage_subscription_list(fx_repo, fx_session):
     stage = Stage(fx_session, fx_repo)
-    stage.subscriptions = SubscriptionList()
-    subs = stage.subscriptions
-    subs.add(Category(label='Test'))
-    stage.subscriptions = subs
-    assert frozenset(stage.subscriptions) == frozenset([Category(label='Test')])
+    with stage:
+        stage.subscriptions = SubscriptionList()
+        subs = stage.subscriptions
+        subs.add(Category(label='Test'))
+        stage.subscriptions = subs
+    with stage:
+        assert (frozenset(stage.subscriptions) ==
+                frozenset([Category(label='Test')]))

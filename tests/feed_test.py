@@ -381,20 +381,27 @@ def timestamp(minute, second=0):
 
 def test_merge_marks(fx_stages, fx_feed):
     stage_a, stage_b = fx_stages
-    stage_a.feeds['test'] = fx_feed
-    feed_a = stage_a.feeds['test']
-    feed_b = stage_b.feeds['test']
+    with stage_a:
+        stage_a.feeds['test'] = fx_feed
+        feed_a = stage_a.feeds['test']
+    with stage_b:
+        feed_b = stage_b.feeds['test']
     feed_b.entries[0].read = Mark(marked=True, updated_at=timestamp(1))
     feed_a.entries[0].read = Mark(marked=True, updated_at=timestamp(2))
     feed_b.entries[0].read = Mark(marked=False, updated_at=timestamp(3))
     feed_b.entries[0].starred = Mark(marked=True, updated_at=timestamp(4))
     feed_b.entries[0].starred = Mark(marked=False, updated_at=timestamp(5))
     feed_a.entries[0].starred = Mark(marked=True, updated_at=timestamp(6))
-    stage_a.feeds['test'] = feed_a
-    stage_b.feeds['test'] = feed_b
-    print(repr(stage_a.feeds['test']))
-    entry_a = stage_a.feeds['test'].entries[0]
-    entry_b = stage_b.feeds['test'].entries[0]
+    with stage_a:
+        stage_a.feeds['test'] = feed_a
+    with stage_b:
+        stage_b.feeds['test'] = feed_b
+    with stage_a:
+        print(repr(stage_a.feeds['test']))
+    with stage_a:
+        entry_a = stage_a.feeds['test'].entries[0]
+    with stage_b:
+        entry_b = stage_b.feeds['test'].entries[0]
     assert not entry_a.read
     assert not entry_b.read
     assert entry_a.starred
@@ -407,17 +414,22 @@ def test_merge_marks(fx_stages, fx_feed):
 
 def test_merge_mark_crawled(fx_stages, fx_feed):
     stage, _ = fx_stages
-    stage.feeds['test'] = fx_feed
-    feed = stage.feeds['test']
+    with stage:
+        stage.feeds['test'] = fx_feed
+        feed = stage.feeds['test']
     feed.updated_at = timestamp(1)
     feed.entries[1].read = True
-    stage.feeds['test'] = feed
-    assert stage.feeds['test'].entries[1].read
+    with stage:
+        stage.feeds['test'] = feed
+    with stage:
+        assert stage.feeds['test'].entries[1].read
     crawled_feed = fx_feed
     assert not crawled_feed.entries[1].read
     crawled_feed.updated_at = timestamp(2)
-    stage.feeds['test'] = crawled_feed
-    assert stage.feeds['test'].entries[1].read
+    with stage:
+        stage.feeds['test'] = crawled_feed
+    with stage:
+        assert stage.feeds['test'].entries[1].read
 
 
 @fixture
@@ -448,15 +460,20 @@ def test_stage(fx_stages, fx_test_feeds):
     feed, updated_feed = fx_test_feeds
     assert feed.id == updated_feed.id
     feed_id = feed.id
-    stage1.feeds[get_hash(feed.id)] = feed
-    feed1 = stage1.feeds[get_hash(feed_id)]
-    feed2 = stage2.feeds[get_hash(feed_id)]
+    with stage1:
+        stage1.feeds[get_hash(feed.id)] = feed
+        feed1 = stage1.feeds[get_hash(feed_id)]
+    with stage2:
+        feed2 = stage2.feeds[get_hash(feed_id)]
     assert (feed1.updated_at == feed2.updated_at ==
             datetime.datetime(2013, 10, 29, 20, 55, 30, tzinfo=utc))
     assert not feed1.entries and not feed2.entries
-    stage2.feeds[get_hash(feed_id)] = updated_feed
-    feed1 = stage1.feeds[get_hash(feed_id)]
-    feed2 = stage2.feeds[get_hash(feed_id)]
+    with stage2:
+        stage2.feeds[get_hash(feed_id)] = updated_feed
+    with stage1:
+        feed1 = stage1.feeds[get_hash(feed_id)]
+    with stage2:
+        feed2 = stage2.feeds[get_hash(feed_id)]
     assert (feed1.updated_at == feed2.updated_at ==
             datetime.datetime(2013, 10, 30, 20, 55, 30, tzinfo=utc))
     assert feed1.entries[0].title == feed2.entries[0].title
@@ -485,10 +502,14 @@ def test_merge_entries(fx_stages, fx_test_feeds, fx_test_entries):
     print(feed2.entries)
     assert entry1 in feed1.entries and entry2 in feed2.entries
     assert entry2 not in feed1.entries and entry1 not in feed2.entries
-    stage1.feeds[get_hash(feed1.id)] = feed1
-    stage2.feeds[get_hash(feed2.id)] = feed2
-    feed1 = stage1.feeds[get_hash(feed1.id)]
-    feed2 = stage2.feeds[get_hash(feed2.id)]
+    with stage1:
+        stage1.feeds[get_hash(feed1.id)] = feed1
+    with stage2:
+        stage2.feeds[get_hash(feed2.id)] = feed2
+    with stage1:
+        feed1 = stage1.feeds[get_hash(feed1.id)]
+    with stage2:
+        feed2 = stage2.feeds[get_hash(feed2.id)]
     print(repr(entry1))
     print(repr(entry2))
     print(feed1.entries)
@@ -499,14 +520,16 @@ def test_merge_entries(fx_stages, fx_test_feeds, fx_test_entries):
 
 
 def apply_timestamp(stage, feed_id, timestamp):
-    feed = stage.feeds[feed_id]
-    feed.entries[0].read = Mark(marked=True, updated_at=timestamp)
-    stage.feeds[feed_id] = feed
+    with stage:
+        feed = stage.feeds[feed_id]
+        feed.entries[0].read = Mark(marked=True, updated_at=timestamp)
+        stage.feeds[feed_id] = feed
 
 
 def test_race_condition(fx_stages, fx_feed):
     stage, _ = fx_stages
-    stage.feeds['test'] = fx_feed
+    with stage:
+        stage.feeds['test'] = fx_feed
     threads = []
     for i in range(10):
         t = threading.Thread(target=apply_timestamp,
@@ -516,4 +539,5 @@ def test_race_condition(fx_stages, fx_feed):
         t.start()
     for thread in threads:
         thread.join()
-    assert stage.feeds['test'].entries[0].read.updated_at == timestamp(9)
+    with stage:
+        assert stage.feeds['test'].entries[0].read.updated_at == timestamp(9)

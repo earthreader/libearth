@@ -1,5 +1,5 @@
-""":mod:`libearth.stage` --- Staging updates
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`libearth.stage` --- Staging updates and transactions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Stage is a similar concept to Git's one.  It's a unit of updates,
 so every change to the repository should be done through a stage.
@@ -8,10 +8,27 @@ It also does more than Git's stage: :class:`Route`.  Routing system
 hide how document should be stored in the repository, and provides
 the natural object-mapping interface instead.
 
+Stage also provides transactions.  All operations on staged documents should
+be done within a transaction.  You can open and close a transaction using
+:keyword:`with` statement e.g.::
+
+    with stage:
+        subs = stage.subscriptions
+        stage.subscriptions = some_operation(subs)
+
+Transaction will merge all simultaneous updates if there are multiple updates
+when it's committed.  You can easily achieve thread safety using transactions.
+
+Note that it however doesn't guarantee data integrity between multiple
+processes, so *you have to use different session ids when there are multiple
+processes.*
+
 """
 import collections
+import contextlib
 import re
 import sys
+import threading
 if sys.version_info >= (3,):
     try:
         import _thread
@@ -36,11 +53,13 @@ from .compat import reduce
 from .feed import Feed
 from .repository import Repository, RepositoryKeyError
 from .schema import read, write
-from .session import MergeableDocumentElement, RevisionSet, Session
+from .session import (MergeableDocumentElement, RevisionSet, Session,
+                      parse_revision)
 from .subscribe import SubscriptionList
 from .tz import now
 
 __all__ = ('BaseStage', 'Directory', 'DirtyBuffer', 'Route', 'Stage',
+           'TransactionError',
            'compile_format_to_pattern', 'get_current_context_id')
 
 
@@ -67,6 +86,17 @@ class BaseStage(object):
     """Base stage class that routes nothing yet.  It should be inherited
     to route document types.  See also :class:`Route` class.
 
+    It's a context manager, which is possible to be passed to :keyword:`with`
+    statement.  The context maintains a transaction, that is required for
+    all operations related to the stage::
+
+        with stage:
+            v = stage.some_value
+            stage.some_value =  operate(v)
+
+    If any ongoing transaction is not present while the operation requires it,
+    it will raise :exc:`TransactionError`.
+
     :param session: the current session to stage
     :type session: :class:`~libearth.session.Session`
     :param repository: the repository to stage
@@ -84,6 +114,12 @@ class BaseStage(object):
     #: (:class:`~libearth.repository.Repository`) The staged repository.
     repository = None
 
+    #: (:class:`collections.MutableMapping`) Ongoing transactions.  Keys are
+    #: the context identifier (that :func:`get_current_context_id()` returns),
+    #: and values are the :class:`DirtyBuffer` that should be written
+    #: when the transaction is committed.
+    transactions = None
+
     def __init__(self, session, repository):
         if not isinstance(session, Session):
             raise TypeError('session must be an instance of {0.__module__}.'
@@ -95,7 +131,49 @@ class BaseStage(object):
             )
         self.session = session
         self.repository = repository
+        self.transactions = {}
+        self.lock = threading.RLock()
         self.touch()
+
+    def __enter__(self):
+        context_id = get_current_context_id()
+        transactions = self.transactions
+        if context_id in transactions:
+            raise TransactionError(
+                'cannot doubly begin transactions for the same context; '
+                'please commit the previously begun transaction first'
+            )
+        dirty_buffer = DirtyBuffer(self.repository, self.lock)
+        transactions[context_id] = dirty_buffer
+        return dirty_buffer
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        dirty_buffer = self.get_current_transaction(pop=True)
+        if exc_type is None:
+            dirty_buffer.flush()
+
+    def get_current_transaction(self, pop=False):
+        """Get the current ongoing transaction.  If any transaction is not
+        begun yet, it raises :exc:`TransactionError`.
+
+        :returns: the dirty buffer that should be written when the transaction
+                  is committed
+        :rtype: :class:`DirtyBuffer`
+        :raises TransactionError: if not any transaction is not begun yet
+
+        """
+        context_id = get_current_context_id()
+        trans_dict = self.transactions
+        try:
+            return trans_dict.pop(context_id) if pop else trans_dict[context_id]
+        except KeyError:
+            raise TransactionError(
+                'there is no ongoing transaction for the current context; '
+                'please begin the transaction using with keyword e.g.:\n'
+                '    stage = {0!r}\n'
+                '    with stage:\n'
+                '        do_something(stage)\n'.format(self)
+            )
 
     @property
     def sessions(self):
@@ -152,7 +230,8 @@ class BaseStage(object):
                     document_type
                 )
             )
-        chunks = self.repository.read(key)
+        repository = self.get_current_transaction()
+        chunks = repository.read(key)
         document = read(document_type, chunks)
         assert isinstance(document, MergeableDocumentElement)
         self.touch()
@@ -170,8 +249,9 @@ class BaseStage(object):
                 subkey.format()
             except IndexError:
                 raise  # FIXME: should return Directory instead
+        repository = self.get_current_transaction()
         docs = []
-        for subkey in self.repository.list(key):
+        for subkey in repository.list(key):
             match = pattern.match(subkey)
             if match:
                 k = key + [subkey] + key_spec[complete_size + 1:]
@@ -217,20 +297,25 @@ class BaseStage(object):
            rather than this.  See also :class:`Route`.
 
         """
+        repository = self.get_current_transaction()
         try:
             if not merge:
                 raise RepositoryKeyError([])
-            prev = self.repository.read(key)
+            prev = repository.read(key)
         except RepositoryKeyError:
             document = self.session.pull(document)
+            pull = True
         else:
             prev_doc = read(type(document), prev)
             prev_rev = prev_doc.__revision__
             doc_rev = document.__revision__
-            if doc_rev is not None and prev_rev is not None and \
-               1 and (doc_rev.updated_at > prev_rev.updated_at
-                      if doc_rev.session is prev_rev.session
-                      else document.__base_revisions__.contains(prev_rev)):
+            pull = (
+                doc_rev is not None and prev_rev is not None and
+                (doc_rev.updated_at > prev_rev.updated_at
+                 if doc_rev.session is prev_rev.session
+                 else document.__base_revisions__.contains(prev_rev))
+            )
+            if pull:
                 # If the document already contains prev_doc, don't merge
                 assert prev_rev.session is doc_rev.session
                 document = self.session.pull(document)
@@ -239,8 +324,10 @@ class BaseStage(object):
                     prev_doc = self.session.pull(prev_doc)
                 if doc_rev is None:
                     document = self.session.pull(document)
-                document = self.session.merge(prev_doc, document)
-        self.repository.write(key, write(document, as_bytes=True))
+                document = self.session.merge(prev_doc, document, force=True)
+        with self.lock:  # FIXME
+            bytearray = write(document, as_bytes=True)
+        repository.write(key, bytearray, _type_hint=type(document))
         self.touch()
         return document
 
@@ -258,6 +345,8 @@ class DirtyBuffer(Repository):
     :param repository: the bare repository where the buffer will
                        :meth:`flush` to
     :type repository: :class:`~libearth.repository.Repository`
+    :param lock: the common lock shared between dirty buffers of the same stage
+    :type lock: :class:`threading.RLock`
 
     .. note::
 
@@ -269,9 +358,10 @@ class DirtyBuffer(Repository):
     #: the buffer will :meth:`flush` to.
     repository = None
 
-    def __init__(self, repository):
+    def __init__(self, repository, lock):
         self.repository = repository
         self.dictionary = {}
+        self.lock = lock
 
     def read(self, key):
         super(DirtyBuffer, self).read(key)
@@ -282,10 +372,11 @@ class DirtyBuffer(Repository):
             try:
                 d = d[k]
             except KeyError:
-                return self.repository.read(key)
-        return d
+                with self.lock:
+                    return self.repository.read(key)
+        return d[1],
 
-    def write(self, key, iterable):
+    def write(self, key, iterable, _type_hint=None):
         super(DirtyBuffer, self).write(key, iterable)
         d = self.dictionary
         for k in key[:-1]:
@@ -294,7 +385,8 @@ class DirtyBuffer(Repository):
             d = d.setdefault(k, {})
         if not isinstance(d, dict):
             raise RepositoryKeyError(key)
-        d[key[-1]] = b''.join(iterable)
+        bytearray = b''.join(iterable)
+        d[key[-1]] = _type_hint, bytearray
 
     def exists(self, key):
         super(DirtyBuffer, self).exists(key)
@@ -305,7 +397,8 @@ class DirtyBuffer(Repository):
             try:
                 d = d[k]
             except KeyError:
-                return self.repository.exists(key)
+                with self.lock:
+                    return self.repository.exists(key)
         return True
 
     def list(self, key):
@@ -317,29 +410,71 @@ class DirtyBuffer(Repository):
             try:
                 d = d[k]
             except KeyError:
-                return self.repository.list(key)
+                with self.lock:
+                    return self.repository.list(key)
         if not isinstance(d, dict):
             raise RepositoryKeyError(key)
-        return frozenset(d).union(self.repository.list(key))
+        try:
+            with self.lock:
+                src = self.repository.list(key)
+        except RepositoryKeyError:
+            return d
+        return frozenset(d).union(src)
 
     def flush(self, _dictionary=None, _key=None):
         """Flush all buffered updates to the :attr:`repository`."""
-        if _dictionary is None or _key is None:
-            _dictionary = self.dictionary
-            _key = ()
-        items = getattr(_dictionary, 'iteritems', _dictionary.items)()
-        write_to_repository = self.repository.write
-        for key, value in items:
-            key = _key + (key,)
-            if isinstance(value, dict):
-                self.flush(_dictionary=value, _key=key)
-            else:
-                write_to_repository(key, value)
-        _dictionary.clear()
+        with self.lock if _dictionary is None else self.dump_context():
+            if _dictionary is None:
+                _dictionary = self.dictionary
+                _key = ()
+            items = getattr(_dictionary, 'iteritems', _dictionary.items)()
+            read_from_repository = self.repository.read
+            write_to_repository = self.repository.write
+            for key, value in items:
+                key = _key + (key,)
+                if isinstance(value, dict):
+                    self.flush(_dictionary=value, _key=key)
+                else:
+                    type_hint, bytearray = value
+                    bytearray = bytearray,
+                    if type_hint is not None:
+                        try:
+                            prev_iterable = read_from_repository(key)
+                        except RepositoryKeyError:
+                            pass
+                        else:
+                            prev_iterable = list(prev_iterable)
+                            prev = parse_revision(prev_iterable)
+                            crev = parse_revision(bytearray)
+                            if prev is not None and \
+                                (crev is None or crev[0] is None or
+                                 not crev[1].contains(prev[0])):
+                                prev_doc = read(type_hint, prev_iterable)
+                                doc = read(type_hint, bytearray)
+                                merged_doc = prev[0].session.merge(
+                                    doc,
+                                    prev_doc,
+                                    force=True
+                                )
+                                bytearray = write(merged_doc, as_bytes=True)
+                    write_to_repository(key, bytearray)
+            _dictionary.clear()
+
+    @contextlib.contextmanager
+    def dump_context(self):
+        yield
 
     def __repr__(self):
         return '{0.__module__}.{0.__name__}({1!r})'.format(type(self),
                                                            self.repository)
+
+
+class TransactionError(RuntimeError):
+    """The error that rises if there's no ongoing transaction while it's
+    needed to update the stage, or if there's already begun ongoing transaction
+    when the new transaction get tried to begin.
+
+    """
 
 
 class Route(object):
