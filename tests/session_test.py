@@ -7,9 +7,9 @@ from pytest import fixture, mark, raises
 
 from libearth.codecs import Integer
 from libearth.schema import Attribute, Child, Content, Text, Element
-from libearth.session import (MergeableDocumentElement, Revision, RevisionCodec,
-                              RevisionSet, RevisionSetCodec, Session,
-                              ensure_revision_pair)
+from libearth.session import (SESSION_XMLNS, MergeableDocumentElement, Revision,
+                              RevisionCodec, RevisionSet, RevisionSetCodec,
+                              Session, ensure_revision_pair, parse_revision)
 from libearth.tz import now, utc
 
 
@@ -380,3 +380,44 @@ def test_session_merge():
     assert list(e.multi_text) == ['a', 'b', 'c', 'd', 'e', 'f', 'blah']
     assert ([entity.value for entity in d.unique_entities] ==
             ['s1-a', 's1-b', 's2-c', 's2-d', 's2-e', 's2-blah'])
+
+
+@mark.parametrize(('iterable', 'rv'), [
+    (['<doc ', 'xmlns:s="', SESSION_XMLNS,
+      '" s:revision="test 2013-09-22T03:43:40Z" ', 's:bases="" ', '/>'],
+     (Revision(Session('test'),
+               datetime.datetime(2013, 9, 22, 3, 43, 40, tzinfo=utc)),
+      RevisionSet())),
+    (['<doc ', 'xmlns:s="', SESSION_XMLNS,
+      '" s:revision="test 2013-09-22T03:43:40Z" ', 's:bases="">',
+      '<a />', '</doc>'],
+     (Revision(Session('test'),
+               datetime.datetime(2013, 9, 22, 3, 43, 40, tzinfo=utc)),
+      RevisionSet())),
+    (['<doc ', 'xmlns:s="', SESSION_XMLNS,
+      '" s:revision="test 2013-09-22T03:43:40Z" ', 's:bases=""><a /></doc>'],
+     (Revision(Session('test'),
+               datetime.datetime(2013, 9, 22, 3, 43, 40, tzinfo=utc)),
+      RevisionSet())),
+    (['<?xml version="1.0" encoding="utf-8"?>\n', '<ns1:feed xmlns:ns0="',
+      SESSION_XMLNS, '" xmlns:ns1="http://www.w3.org/2005/Atom" ',
+      'xmlns:ns2="http://earthreader.org/mark/" ',
+      'ns0:bases="a 2013-11-17T16:36:46.003058Z" ',
+      'ns0:revision="a 2013-11-17T16:36:46.033062Z">', '</ns1:feed>'],
+     (Revision(Session('a'),
+               datetime.datetime(2013, 11, 17, 16, 36, 46, 33062, tzinfo=utc)),
+      RevisionSet([
+          Revision(
+              Session('a'),
+              datetime.datetime(2013, 11, 17, 16, 36, 46, 3058, tzinfo=utc)
+          )
+      ]))),
+    (['<doc ', ' revision="test 2013-09-22T03:43:40Z" ', 'bases="" ', '/>'],
+     None),
+    (['<doc ', ' revision="test 2013-09-22T03:43:40Z" ', 'bases="">',
+      '<a />', '</doc>'], None),
+    (['<doc>', '<a />' '</doc>'], None),
+    (['<doc', ' />'], None),
+])
+def test_parse_revision(iterable, rv):
+    assert parse_revision(iterable) == rv
