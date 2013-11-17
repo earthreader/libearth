@@ -143,9 +143,8 @@ class BaseStage(object):
                 'cannot doubly begin transactions for the same context; '
                 'please commit the previously begun transaction first'
             )
-        dirty_buffer = DirtyBuffer(self.repository, self.lock)
-        transactions[context_id] = dirty_buffer
-        return dirty_buffer
+        transactions[context_id] = DirtyBuffer(self.repository, self.lock)
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         dirty_buffer = self.get_current_transaction(pop=True)
