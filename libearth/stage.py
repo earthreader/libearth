@@ -29,6 +29,9 @@ import contextlib
 import re
 import sys
 import threading
+import traceback
+
+
 if sys.version_info >= (3,):
     try:
         import _thread
@@ -138,12 +141,20 @@ class BaseStage(object):
     def __enter__(self):
         context_id = get_current_context_id()
         transactions = self.transactions
-        if context_id in transactions:
+        try:
+            pair = transactions[context_id]
+        except KeyError:
+            pass
+        else:
+            _, stack = pair
             raise TransactionError(
                 'cannot doubly begin transactions for the same context; '
-                'please commit the previously begun transaction first'
+                'please commit the previously begun transaction first.\n'
+                'note that previous transaction is begun at:\n' +
+                ''.join('  ' + line.replace('\n', '\n  ', 1) for line in stack)
             )
-        transactions[context_id] = DirtyBuffer(self.repository, self.lock)
+        transactions[context_id] = (DirtyBuffer(self.repository, self.lock),
+                                    traceback.format_stack())
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -164,7 +175,7 @@ class BaseStage(object):
         context_id = get_current_context_id()
         trans_dict = self.transactions
         try:
-            return trans_dict.pop(context_id) if pop else trans_dict[context_id]
+            pair = trans_dict.pop(context_id) if pop else trans_dict[context_id]
         except KeyError:
             raise TransactionError(
                 'there is no ongoing transaction for the current context; '
@@ -173,6 +184,8 @@ class BaseStage(object):
                 '    with stage:\n'
                 '        do_something(stage)\n'.format(self)
             )
+        dirty_buffer, _ = pair
+        return dirty_buffer
 
     @property
     def sessions(self):
