@@ -66,6 +66,7 @@ __all__ = ('Attribute', 'Child', 'Codec', 'CodecDescriptor', 'CodecError',
            'DescriptorConflictError', 'DocumentElement', 'Element',
            'ElementList', 'EncodeError', 'IntegrityError',
            'SchemaError', 'Text',
+           'element_list_for',
            'index_descriptors', 'inspect_attributes', 'inspect_child_tags',
            'inspect_content_tag', 'inspect_xmlns_set', 'read', 'validate',
            'write')
@@ -919,10 +920,96 @@ class ElementList(collections.MutableSequence):
     to lazily consume the buffer when an element of a particular offset
     is requested.
 
+    You can extend methods or properties for a particular element type
+    using :func:`element_list_for()` class decorator e.g.::
+
+        @element_list_for(Link)
+        class LinkList(collections.Sequence):
+            '''Specialized ElementList for Link elements.'''
+
+            def filter_by_mimetype(self, mimetype):
+                '''Filter links by their mimetype.'''
+                return [link for link in self if link.mimetype == mimetype]
+
+    Extended methods/properties can be used for element lists for the type::
+
+        assert isinstance(feed.links, LinkList)
+        assert isinstance(feed.links, ElementList)
+        feed.links.filter_by_mimetype('text/html')
+
     """
 
     __slots__ = ('element', 'descriptor', 'value_type',
                  'tag', 'xmlns', 'key_pair')
+
+    #: (:class:`collections.MutableMapping`) The internal table for
+    #: specialized subtypes used by :meth:`register_specialized_type()`
+    #: method and :func:`element_list_for()` class decorator.
+    specialized_types = {}
+
+    @classmethod
+    def register_specialized_type(cls, value_type, specialized_type):
+        """Register specialized :class:`collections.Sequence` type for
+        a particular ``value_type``.
+
+        An imperative version of :func`element_list_for()` class decorator.
+
+        :param value_type: a particular element type that ``specialized_type``
+                             would be used for instead of default
+                             :class:`ElementList` class.
+                             it has to be a subtype of :class:`Element`
+        :type value_type: :class:`type`
+        :param specialized_type: a :class:`collections.Sequence` type which
+                                 extends methods and properties for
+                                 ``value_type``
+        :type specialized_type: :class:`type`
+
+        """
+        if not isinstance(value_type, type):
+            raise TypeError('value_type must be a type object, not ' +
+                            repr(value_type))
+        elif not issubclass(value_type, Element):
+            raise TypeError(
+                'value_type must be a subtype of {0.__module__}.{0.__name__},'
+                ' not {1.__module__}.{1.__name__}'.format(Element, value_type)
+            )
+        elif not isinstance(specialized_type, type):
+            raise TypeError('specialized_type must be a type object, not ' +
+                            repr(specialized_type))
+        elif not issubclass(specialized_type, collections.Sequence):
+            raise TypeError(
+                'specialized_type must be a subtype of {0.__module__}.'
+                '{0.__name__}, not {1.__module__}.{1.__name__}'
+                ''.format(collections.Sequence, specialized_type)
+            )
+        try:
+            t, t2 = cls.specialized_types[value_type]
+        except KeyError:
+            pass
+        else:
+            if t is specialized_type or t2 is specialized_type:
+                return
+            raise TypeError(
+                '{0.__module__}.{0.__name__} already has its own specialized '
+                'subtype: {1.__module__}.{1.__name__}'.format(value_type, t)
+            )
+        cls.specialized_types[value_type] = specialized_type, None
+
+    def __new__(cls, element, descriptor, value_type=None):
+        try:
+            supcls, subcls = cls.specialized_types[value_type]
+        except KeyError:
+            subcls = cls
+        else:
+            if issubclass(supcls, cls):
+                cls = supcls
+                subcls = supcls
+                cls.specialized_types[value_type] = supcls, supcls
+            if subcls is None:
+                subcls = type(supcls.__name__, (cls, supcls), {})
+                subcls.__module__ = supcls.__module__
+                cls.specialized_types[value_type] = supcls, subcls
+        return object.__new__(subcls)
 
     def __init__(self, element, descriptor, value_type=None):
         if not isinstance(element, Element):
@@ -1060,6 +1147,42 @@ class ElementList(collections.MutableSequence):
         return '<{0.__module__}.{0.__name__} {1}>'.format(
             type(self), list_repr
         )
+
+
+class element_list_for(object):
+    """Class decorator which registers specialized :class:`ElementList`
+    subclass for a particular ``value_type`` e.g.::
+
+        @element_list_for(Link)
+        class LinkList(collections.Sequence):
+            '''Specialized ElementList for Link elements.'''
+
+            def filter_by_mimetype(self, mimetype):
+                '''Filter links by their mimetype.'''
+                return [link for link in self if link.mimetype == mimetype]
+
+    :param value_type: a particular element type that ``specialized_type``
+                         would be used for instead of default
+                         :class:`ElementList` class.
+                         it has to be a subtype of :class:`Element`
+    :type value_type: :class:`type`
+
+    """
+
+    def __init__(self, value_type):
+        if not isinstance(value_type, type):
+            raise TypeError('value_type must be a type object, not ' +
+                            repr(value_type))
+        elif not issubclass(value_type, Element):
+            raise TypeError(
+                'value_type must be a subtype of {0.__module__}.{0.__name__},'
+                ' not {1.__module__}.{1.__name__}'.format(Element, value_type)
+            )
+        self.value_type = value_type
+
+    def __call__(self, specialized_type):
+        ElementList.register_specialized_type(self.value_type, specialized_type)
+        return specialized_type
 
 
 # Semi-structured record type for only internal use.

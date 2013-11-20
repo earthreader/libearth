@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import collections
-import os.path
 import xml.etree.ElementTree
 
 from pytest import fixture, mark, raises
@@ -8,8 +7,9 @@ from pytest import fixture, mark, raises
 from libearth.compat import text, text_type, string_type
 from libearth.schema import (Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
-                             Element, EncodeError, IntegrityError, Text,
-                             index_descriptors,
+                             Element, ElementList, EncodeError, IntegrityError,
+                             Text,
+                             element_list_for, index_descriptors,
                              inspect_attributes, inspect_child_tags,
                              inspect_content_tag, inspect_xmlns_set,
                              read, validate, write)
@@ -280,6 +280,42 @@ def test_element_list_repr(fx_test_doc):
             text_type('b')
         )
     )
+
+
+class SpecializedElementList(collections.Sequence):
+
+    def test_extended_method(self):
+        return len(self)
+
+
+class AnotherElementList(collections.Sequence):
+
+    pass
+
+
+def test_element_list_register_specialized_type(fx_test_doc):
+    ElementList.register_specialized_type(TextElement, SpecializedElementList)
+    doc, _ = fx_test_doc
+    assert isinstance(doc.multi_attr, SpecializedElementList)
+    assert doc.multi_attr.test_extended_method() == len(doc.multi_attr)
+    # TypeError if try to register another specialized element list type for
+    # the already registered element type
+    with raises(TypeError):
+        ElementList.register_specialized_type(TextElement, AnotherElementList)
+    # Does nothing if the given specialized element list type is the same to
+    # the previously registered element list type
+    ElementList.register_specialized_type(TextElement, SpecializedElementList)
+    ElementList.specialized_types.clear()  # FIXME: implementation details leak
+
+
+def test_element_list_for(fx_test_doc):
+    @element_list_for(TextElement)
+    class Decorated(SpecializedElementList):
+        pass
+    doc, _ = fx_test_doc
+    assert isinstance(doc.multi_attr, Decorated)
+    assert doc.multi_attr.test_extended_method() == len(doc.multi_attr)
+    ElementList.specialized_types.clear()  # FIXME: implementation details leak
 
 
 def test_document_element_tag():
