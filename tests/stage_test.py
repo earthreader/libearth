@@ -8,7 +8,7 @@ from libearth.repository import (FileSystemRepository, Repository,
 from libearth.schema import read
 from libearth.session import MergeableDocumentElement, Session
 from libearth.stage import (BaseStage, Directory, DirtyBuffer, Route,
-                            compile_format_to_pattern)
+                            TransactionError, compile_format_to_pattern)
 from libearth.tz import now
 
 
@@ -319,3 +319,10 @@ def test_dirty_buffer(tmpdir):
     assert b''.join(repo.read(key)) == b'dirty value'
     assert repo.exists(key)
     assert frozenset(repo.list(dir_key)) == frozenset(key)
+
+
+def test_doubly_begun_transaction(fx_stage):
+    with fx_stage:
+        with raises(TransactionError):
+            with fx_stage:
+                pass
