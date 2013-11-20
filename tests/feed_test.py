@@ -7,7 +7,7 @@ from pytest import fixture, raises
 
 from libearth.compat import binary, text_type
 from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
-                           Person, Source, Text, Mark)
+                           LinkList, Person, Source, Text, Mark)
 from libearth.repository import FileSystemRepository
 from libearth.schema import read
 from libearth.session import Session
@@ -115,6 +115,43 @@ def test_link_html():
         '<link rel="alternate" type="text/html" hreflang="en" '
         'href="http://dahlia.kr/" title="Hong Minhee\'s website">'
     )
+
+
+@fixture
+def fx_feed_links(fx_feed):
+    fx_feed.links.extend([
+        Link(relation='alternate', mimetype='text/html',
+             uri='http://example.com/index.html'),
+        Link(relation='alternate', mimetype='text/html',
+             uri='http://example.com/index2.html'),
+        Link(relation='alternate', mimetype='text/xml',
+             uri='http://example.com/index.xml'),
+        Link(relation='alternate', mimetype='application/json',
+             uri='http://example.com/index.json'),
+        Link(relation='alternate', mimetype='text/javascript',
+             uri='http://example.com/index.js'),
+        Link(relation='alternate', mimetype='application/xml+atom',
+             uri='http://example.com/index.atom'),
+        Link(relation='alternate', mimetype='application/xml+rss',
+             uri='http://example.com/index.atom')
+    ])
+    return fx_feed
+
+
+def test_link_list_filter_by_mimetype(fx_feed_links):
+    assert isinstance(fx_feed_links.links, LinkList)
+    result = fx_feed_links.links.filter_by_mimetype('text/html')
+    assert isinstance(result, LinkList)
+    assert len(result) == 2
+    assert [link.mimetype for link in result] == ['text/html', 'text/html']
+    result = fx_feed_links.links.filter_by_mimetype('application/*')
+    assert isinstance(result, LinkList)
+    assert len(result) == 3
+    assert [link.mimetype for link in result] == [
+        'application/json',
+        'application/xml+atom',
+        'application/xml+rss'
+    ]
 
 
 def test_category_str():

@@ -9,6 +9,7 @@ all valid and well-formed.
 
 """
 import cgi
+import collections
 import re
 
 from .codecs import Boolean, Enum, Rfc3339
@@ -16,11 +17,12 @@ from .compat import UNICODE_BY_DEFAULT, string_type, text_type
 from .sanitizer import clean_html, sanitize_html
 from .session import MergeableDocumentElement
 from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
-                     Element, Text as TextChild)
+                     Element, Text as TextChild, element_list_for)
 from .tz import now
 
 __all__ = ('ATOM_XMLNS', 'MARK_XMLNS', 'Category', 'Content', 'Entry', 'Feed',
-           'Generator', 'Link', 'Mark', 'Metadata', 'Person', 'Source', 'Text')
+           'Generator', 'Link', 'LinkList', 'Mark', 'Metadata', 'Person',
+           'Source', 'Text')
 
 
 #: (:class:`str`) The XML namespace name used for Atom (:rfc:`4287`).
@@ -235,6 +237,40 @@ class Link(Element):
                                              self.byte_size)
 
 
+@element_list_for(Link)
+class LinkList(collections.MutableSequence):
+    """Element list mixin specialized for :class:`Link`."""
+
+    def filter_by_mimetype(self, pattern):
+        """Filter links by their :attr:`~Link.mimetype` e.g.::
+
+            links.filter_by_mimetype('text/html')
+
+        ``pattern`` can include wildcards (``*``) as well e.g.::
+
+            links.filter_by_mimetype('application/xml+*')
+
+        :param pattern: the mimetype pattern to filter
+        :type pattern: :class:`str`
+        :returns: the filtered links
+        :rtype: :class:`LinkList`
+
+        """
+        if '*' in pattern:
+            regex = re.compile(
+                '.+?'.join(re.escape(s) for s in pattern.split('*')) + '$'
+            )
+            return LinkList.list_type(
+                link for link in self
+                if link.mimetype and regex.match(link.mimetype)
+            )
+        return LinkList.list_type(l for l in self if l.mimetype == pattern)
+
+
+# FIXME: it probably would be common for all specialized element list types
+LinkList.list_type = type('LinkList.list_type', (list, LinkList), {})
+
+
 class Category(Element):
     """Category element defined in :rfc:`4287#section-4.2.2` (section 4.2.2)."""
 
@@ -408,7 +444,7 @@ class Metadata(Element):
     #: (section 4.2.14).
     title = Child('title', Text, xmlns=ATOM_XMLNS, required=True)
 
-    #: (:class:`collections.MutableSequence`) The list of :class:`Link` objects
+    #: (:class:`collections.LinkList`) The list of :class:`Link` objects
     #: that define a reference from an entry or feed to a web resource.
     #: It corresponds to ``atom:link`` element of :rfc:`4287#section-4.2.7`
     #: (section 4.2.7).
