@@ -1,5 +1,5 @@
-""":mod:`libearth.session` --- Merging concurrent updates between devices
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`libearth.session` --- Isolate data from other installations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module provides merging facilities to avoid conflict between concurrent
 updates of the same document/entity from different devices (installations).

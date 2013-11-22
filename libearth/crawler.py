@@ -9,6 +9,7 @@ try:
 except ImportError:
     concurrent = None
     import multiprocessing.pool
+import logging
 import sys
 try:
     import urllib.request as urllib2
@@ -74,6 +75,7 @@ def get_feed(feed_url):
                               reverse=True)
         return feed_url, feed, crawler_hints
     except Exception as e:
+        logging.getLogger(__name__ + '.get_feed').exception(e)
         raise CrawlError('{0} failed: {1}'.format(feed_url, e))
 
 

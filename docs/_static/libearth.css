@@ -27,6 +27,10 @@ ul, ol {
 
 ul ul, ul ol, ol ul, ol ol { padding-left: 35px; }
 
+ul.simple li, ol.simple li {
+  margin: 1em 0;
+}
+
 dt { line-height: 2; }
 
 pre, code, tt {
@@ -41,6 +45,23 @@ a code, a tt { color: inherit; }
 .highlight .kn, .highlight .kp, .highlight .kr, .highlight .kt, .highlight .nt,
 .highlight .ow {
   font-weight: 500 !important;
+}
+
+.admonition {
+  border-left: 15px solid silver;
+  background-color: #eee;
+  padding: 10px;
+}
+
+.admonition *:last-child {
+  margin-bottom: 0;
+}
+
+.admonition-title {
+  font-weight: bolder;
+  font-style: italic;
+  color: gray;
+  margin-top: 0;
 }
 
 .sphinxsidebar {
