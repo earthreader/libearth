@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 import collections
-import os.path
 import xml.etree.ElementTree
 
 from pytest import fixture, mark, raises
 
 from libearth.compat import text, text_type, string_type
-from libearth.feed import Feed
 from libearth.schema import (Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
                              Element, ElementList, EncodeError, IntegrityError,
