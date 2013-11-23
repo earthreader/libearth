@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import collections
+import os.path
 import xml.etree.ElementTree
 
 from pytest import fixture, mark, raises
 
 from libearth.compat import text, text_type, string_type
+from libearth.feed import Feed
 from libearth.schema import (Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
                              Element, ElementList, EncodeError, IntegrityError,
@@ -992,6 +994,15 @@ def test_element_list_consume_buffer_regression():
     xml = ['<a><b><c></c><c><d>content', '</d></c><c></c></b><b></b></a>']
     doc = read(ELConsumeBufferRegressionTestDoc, xml)
     assert len(doc.b) == 2
+    b = doc.b[0]
+    assert len(b.c) == 3
+
+
+def test_element_list_consume_buffer_regression_root_stack_top_should_be_1():
+    xml = ['<a><b><!-- 1 --><c></c><c><d>', 'content</d></c><c></c></b><b>',
+           '<!-- 2 --><c><d>abc</d></c></b><b><!-- 3 --></b></a>']
+    doc = read(ELConsumeBufferRegressionTestDoc, xml)
+    assert len(doc.b) == 3
     b = doc.b[0]
     assert len(b.c) == 3
 

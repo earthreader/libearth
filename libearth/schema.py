@@ -810,7 +810,8 @@ class Element(object):
             self._parent = weakref.ref(_parent)
             self._root = _parent._root
             if hasattr(self._root(), '_handler'):
-                self._stack_top = len(self._root()._handler.stack)
+                self._stack_top = (1 if self._root() is self
+                                   else len(self._root()._handler.stack))
         cls = type(self)
         acceptable_desc_types = Descriptor, Content, Attribute, property
         # FIXME: ^-- hardcoded type list
