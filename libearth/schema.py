@@ -143,16 +143,11 @@ class Descriptor(object):
             root = obj._root() if hasattr(obj, '_root') else None
             if root is not None and getattr(root, '_handler', None):
                 handler = root._handler
-                parser = root._parser
-                iterable = root._iterator
                 stack = handler.stack
                 while ((obj._data.get(self) is None and
                        (not stack or stack[-1]))):
-                    try:
-                        chunk = next(iterable)
-                    except StopIteration:
+                    if not root._parse_next():
                         break
-                    parser.feed(chunk)
             return obj._data.get(self)
         return self
 
@@ -721,15 +716,11 @@ class Content(CodecDescriptor):
         if isinstance(obj, Element):
             if getattr(obj, '_root', None):
                 root = obj._root()
-                parser = getattr(root, '_parser', None)
-                if parser:
+                if getattr(root, '_parser', None):
                     handler = root._handler
-                    iterable = root._iterator
                     while (obj._content is None and
                            (not handler.stack or handler.stack[-1])):
-                        try:
-                            parser.feed(next(iterable))
-                        except StopIteration:
+                        if not root._parse_next():
                             break
             return obj._content
         return self
@@ -866,6 +857,24 @@ class DocumentElement(Element):
         self._root = weakref.ref(self)
         super(DocumentElement, self).__init__(_parent or self, **kwargs)
 
+    def _parse_next(self):
+        """Parse the next step of iteration.
+
+        :returns: whether it's not complete or consumed all.
+                  :const:`False` if it's completely consumed
+        :rtype: :class:`bool`
+
+        """
+        parser = getattr(self, '_parser', None)
+        if not parser:
+            return False
+        try:
+            chunk = next(self._iterator)
+        except StopIteration:
+            return False
+        parser.feed(chunk)
+        return True
+
 
 class ElementList(collections.MutableSequence):
     """List-like object to represent multiple chidren.  It makes the parser
@@ -903,18 +912,13 @@ class ElementList(collections.MutableSequence):
         if not root_ref:
             return
         root = root_ref()
-        parser = getattr(root, '_parser', None)
-        if not parser:
+        if not getattr(root, '_parser', None):
             return
-        iterable = root._iterator
         data = self.element._data
         while not self.consumes_all():
             yield data
-            try:
-                chunk = next(iterable)
-            except StopIteration:
+            if not root._parse_next():
                 break
-            parser.feed(chunk)
         yield data
 
     def consumes_all(self):
@@ -1334,11 +1338,8 @@ def read(cls, iterable):
     doc._iterator = iterator
     stack = handler.stack
     while not stack:
-        try:
-            chunk = next(iterator)
-        except StopIteration:
+        if not doc._parse_next():
             break
-        parser.feed(chunk)
     Element.__init__(doc, doc)
     return doc
 
