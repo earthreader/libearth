@@ -1,12 +1,88 @@
 """:mod:`xml.compat.clrxmlreader` --- ``System.Xml.XmlReader`` backed SAX
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Python :mod:`xml.sax` parser implementation using CLR ``System.Xml.XmlReader``.
+
+.. seealso::
+
+   - `XmlReader Class`__
+   - `Comparing XmlReader to SAX Reader`__
+
+   __ http://msdn.microsoft.com/en-us/library/system.xml.xmlreader.aspx
+   __ http://msdn.microsoft.com/en-us/library/sbw89de7.aspx
+
 """
+import clr
+clr.AddReference('System.Xml')
 import collections
 import System
 import System.IO
+import System.Xml
+import xml.sax.xmlreader
 
-__all__ = 'IteratorStream',
+from .xmlpullreader import PullReader
+
+__all__ = 'IteratorStream', 'XmlReader', 'create_parser'
+
+
+def create_parser():
+    """Create a new :class:`XmlReader()` parser instance.
+
+    :returns: a new parser instance
+    :rtype: :class:`XmlReader`
+
+    """
+    return XmlReader()
+
+
+class XmlReader(PullReader):
+    """SAX :class:`~libearth.compat.xmlpullreader.PullReader` implementation
+    using CLR ``System.Xml.XmlReader``.
+
+    """
+
+    def prepareParser(self, iterable):
+        stream = IteratorStream(iterable)
+        self.reader = System.Xml.XmlReader.Create(stream)
+
+    def feed(self):
+        reader = self.reader
+        if not reader.Read():
+            return False
+        handler = self.getContentHandler()
+        XmlNodeType = System.Xml.XmlNodeType
+        node_type = reader.NodeType
+        if node_type == XmlNodeType.Element:
+            attrs = {}
+            qnames = {}
+            if reader.HasAttributes:
+                while reader.MoveToNextAttribute():
+                    attr = reader.NamespaceURI or None, reader.LocalName
+                    attrs[attr] = reader.Value
+                    qnames[attr] = reader.Name
+                reader.MoveToElement()
+            handler.startElementNS(
+                (reader.NamespaceURI or None, reader.LocalName),
+                reader.Name,
+                xml.sax.xmlreader.AttributesNSImpl(attrs, qnames)
+            )
+        elif node_type == XmlNodeType.Text or node_type == XmlNodeType.CDATA:
+            handler.characters(reader.Value)
+        elif node_type == XmlNodeType.EndElement:
+            handler.endElementNS(
+                (reader.NamespaceURI or None, reader.LocalName),
+                reader.Name
+            )
+        return True
+
+    def close(self):
+        self.reader.Dispose()
+
+    def setFeature(self, name, state):
+        pass
+
+    def reset(self):
+        pass
 
 
 class IteratorStream(System.IO.Stream):

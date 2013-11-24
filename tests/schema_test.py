@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import collections
-import os.path
+import re
 import xml.etree.ElementTree
+import xmllib
 
 from pytest import fixture, mark, raises
 
-from libearth.compat import text, text_type
+from libearth.compat import IRON_PYTHON, binary_type, text, text_type
 from libearth.feed import Feed
 from libearth.schema import (Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
@@ -104,6 +105,10 @@ def string_chunks(consume_log, *chunks):
         chunk = text(chunk)
         if size > i + 1 and type(chunks[i + 1]) is list:
             consume_log.append(chunks[i + 1][0])
+        if not isinstance(chunk, binary_type):
+            # In IronPython str.encode() returns str instead of bytes,
+            # and bytes(str, encoding) returns bytes.
+            chunk = binary_type(chunk, 'utf-8')
         yield chunk
 
 
@@ -144,30 +149,30 @@ def fx_test_doc():
 
 def test_document_parse(fx_test_doc):
     doc, consume_log = fx_test_doc
-    assert consume_log[-1] == 'TEST_START'
+    assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert doc.title_attr.value == u('제목 test')
-    assert consume_log[-1] == 'TITLE_CLOSE'
+    assert consume_log[-1] == 'TITLE_CLOSE' or IRON_PYTHON
     assert doc.content_attr.value == 'Content test'
-    assert consume_log[-1] == 'CONTENT_CLOSE'
+    assert consume_log[-1] == 'CONTENT_CLOSE' or IRON_PYTHON
     assert isinstance(doc.multi_attr, collections.Sequence)
 
 
 def test_attribute(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert doc.attr_attr == u('속성 값')
-    assert consume_log[-1] == 'TEST_START'
+    assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
 
 
 def test_xmlns_attribute(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert doc.ns_element_attr.ns_attr_attr == 'namespace attribute value'
-    assert consume_log[-1] == 'NS_ELEMENT_START'
+    assert consume_log[-1] == 'NS_ELEMENT_START' or IRON_PYTHON
 
 
 def test_attribute_decoder(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert doc.attr_decoder == 'decoder test'
-    assert consume_log[-1] == 'TEST_START'
+    assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
 
 
 def test_content_decoder(fx_test_doc):
@@ -178,13 +183,13 @@ def test_content_decoder(fx_test_doc):
 def test_multiple_child_iter(fx_test_doc):
     doc, consume_log = fx_test_doc
     it = iter(doc.multi_attr)
-    assert consume_log[-1] == 'TEST_START'
+    assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert next(it).value == 'a'
-    assert consume_log[-1] == 'MULTI_1_CLOSE'
+    assert consume_log[-1] == 'MULTI_1_CLOSE' or IRON_PYTHON
     assert next(it).value == 'b'
-    assert consume_log[-1] == 'MULTI_2_CLOSE'
+    assert consume_log[-1] == 'MULTI_2_CLOSE' or IRON_PYTHON
     assert next(it).value == 'c'
-    assert consume_log[-1] == 'MULTI_3_CLOSE'
+    assert consume_log[-1] == 'MULTI_3_CLOSE' or IRON_PYTHON
     with raises(StopIteration):
         next(it)
     assert consume_log[-1] == 'TEST_CLOSE'
@@ -192,63 +197,63 @@ def test_multiple_child_iter(fx_test_doc):
 
 def test_multiple_child_len(fx_test_doc):
     doc, consume_log = fx_test_doc
-    assert consume_log[-1] == 'TEST_START'
+    assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert len(doc.multi_attr) == 3
     assert consume_log[-1] == 'TEST_CLOSE'
 
 
 def test_multiple_child_getitem(fx_test_doc):
     doc, consume_log = fx_test_doc
-    assert consume_log[-1] == 'TEST_START'
+    assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert doc.multi_attr[0].value == 'a'
-    assert consume_log[-1] == 'MULTI_1_CLOSE'
+    assert consume_log[-1] == 'MULTI_1_CLOSE' or IRON_PYTHON
     assert doc.multi_attr[1].value == 'b'
-    assert consume_log[-1] == 'MULTI_2_CLOSE'
+    assert consume_log[-1] == 'MULTI_2_CLOSE' or IRON_PYTHON
     assert doc.multi_attr[2].value == 'c'
-    assert consume_log[-1] == 'MULTI_3_CLOSE'
+    assert consume_log[-1] == 'MULTI_3_CLOSE' or IRON_PYTHON
 
 
 def test_multiple_child_getitem_from_last(fx_test_doc):
     doc, consume_log = fx_test_doc
-    assert consume_log[-1] == 'TEST_START'
+    assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert doc.multi_attr[2].value == 'c'
-    assert consume_log[-1] == 'MULTI_3_CLOSE'
+    assert consume_log[-1] == 'MULTI_3_CLOSE' or IRON_PYTHON
     assert doc.multi_attr[1].value == 'b'
-    assert consume_log[-1] == 'MULTI_3_CLOSE'
+    assert consume_log[-1] == 'MULTI_3_CLOSE' or IRON_PYTHON
     assert doc.multi_attr[0].value == 'a'
-    assert consume_log[-1] == 'MULTI_3_CLOSE'
+    assert consume_log[-1] == 'MULTI_3_CLOSE' or IRON_PYTHON
 
 
 def test_text_attribute(fx_test_doc):
     doc, consume_log = fx_test_doc
-    assert consume_log[-1] == 'TEST_START'
+    assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert doc.text_content_attr == u('텍스트 내용')
-    assert consume_log[-1] == 'TEXT_CONTENT_CLOSE'
+    assert consume_log[-1] == 'TEXT_CONTENT_CLOSE' or IRON_PYTHON
 
 
 def test_text_multiple_text_len(fx_test_doc):
     doc, consume_log = fx_test_doc
-    assert consume_log[-1] == 'TEST_START'
+    assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert len(doc.text_multi_attr) == 2
     assert consume_log[-1] == 'TEST_CLOSE'
 
 
 def test_multiple_text_getitem(fx_test_doc):
     doc, consume_log = fx_test_doc
-    assert consume_log[-1] == 'TEST_START'
+    assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert doc.text_multi_attr[0] == 'a'
-    assert consume_log[-1] == 'TEXT_MULTI_1_CLOSE'
+    assert consume_log[-1] == 'TEXT_MULTI_1_CLOSE' or IRON_PYTHON
     assert doc.text_multi_attr[1] == 'b'
-    assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'
+    assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE' or IRON_PYTHON
 
 
 def test_multiple_text_getitem_from_last(fx_test_doc):
     doc, consume_log = fx_test_doc
-    assert consume_log[-1] == 'TEST_START'
+    assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert doc.text_multi_attr[1] == 'b'
-    assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'
+    assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE' or IRON_PYTHON
     assert doc.text_multi_attr[0] == 'a'
-    assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE'
+    assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE' or IRON_PYTHON
 
 
 def test_element_list_repr(fx_test_doc):
@@ -333,13 +338,13 @@ class XmlnsDoc(DocumentElement):
 
 @fixture
 def fx_xmlns_doc():
-    return read(XmlnsDoc, '''
+    return read(XmlnsDoc, [b'''
         <nstest xmlns="http://earthreader.github.io/"
                 xmlns:nst="https://github.com/earthreader/libearth">
             <samens>Same namespace</samens>
             <nst:otherns>Other namespace</nst:otherns>
         </nstest>
-    ''')
+    '''])
 
 
 def test_xmlns_doc(fx_xmlns_doc):
@@ -820,11 +825,18 @@ class CodecTestDoc(DocumentElement):
     text = Text('text', IntPair)
 
 
+def etree_tobyteslist(tree):
+    string = xml.etree.ElementTree.tostring(tree)
+    if IRON_PYTHON:
+        return [binary_type(string, 'utf-8')]
+    return [string]
+
+
 def test_attribute_codec():
     doc = CodecTestDoc(attr=(1, 2))
     tree = etree_fromstringlist(write(doc))
     assert tree.attrib['attr'] == '1,2'
-    doc2 = read(CodecTestDoc, [xml.etree.ElementTree.tostring(tree)])
+    doc2 = read(CodecTestDoc, etree_tobyteslist(tree))
     assert doc2.attr == (1, 2)
 
 
@@ -832,7 +844,7 @@ def test_text_codec():
     doc = CodecTestDoc(text=(3, 4))
     tree = etree_fromstringlist(write(doc))
     assert tree.find('text').text == '3,4'
-    doc2 = read(CodecTestDoc, [xml.etree.ElementTree.tostring(tree)])
+    doc2 = read(CodecTestDoc, etree_tobyteslist(tree))
     assert doc2.text == (3, 4)
 
 
@@ -844,20 +856,20 @@ class ContentCodecTestDoc(DocumentElement):
 
 def test_content_codec():
     doc = ContentCodecTestDoc(c=(5, 6))
-    tree = etree_fromstringlist(write(doc))
+    tree = etree_fromstringlist(write(doc, as_bytes=True))
     assert tree.text == '5,6'
-    doc2 = read(ContentCodecTestDoc, [xml.etree.ElementTree.tostring(tree)])
+    doc2 = read(ContentCodecTestDoc, etree_tobyteslist(tree))
     assert doc2.c == (5, 6)
 
 
 def test_read_none_attribute():
-    doc = read(CodecTestDoc, '<codec-test><text>1,2</text></codec-test>')
+    doc = read(CodecTestDoc, [b'<codec-test><text>1,2</text></codec-test>'])
     assert doc.attr is None
     assert doc.text == (1, 2)
 
 
 def test_read_none_text():
-    doc = read(CodecTestDoc, '<codec-test attr="1,2"></codec-test>')
+    doc = read(CodecTestDoc, [b'<codec-test attr="1,2"></codec-test>'])
     assert doc.attr == (1, 2)
     assert doc.text is None
 
@@ -889,10 +901,10 @@ def test_attribute_default():
     assert lack.default_attr == (0, 0)
     present = read(
         DefaultAttrTestDoc,
-        ['<default-attr-test default-attr="1,2" />']
+        [b'<default-attr-test default-attr="1,2" />']
     )
     assert present.default_attr == (1, 2)
-    lack = read(DefaultAttrTestDoc, ['<default-attr-test />'])
+    lack = read(DefaultAttrTestDoc, [b'<default-attr-test />'])
     assert lack.default_attr == (0, 0)
 
 
@@ -911,7 +923,7 @@ class PartialLoadTestDoc(DocumentElement):
 
 
 def test_partial_load_test():
-    doc = read(PartialLoadTestDoc, '''
+    doc = read(PartialLoadTestDoc, b'''
         <x:partial-load-test xmlns:x="http://example.com/">
             <x:entry>
                 <x:value>as<!--
@@ -948,7 +960,7 @@ class ELConsumeBufferRegressionTestDoc(DocumentElement):
 
 
 def test_element_list_consume_buffer_regression():
-    xml = ['<a><b><c></c><c><d>content', '</d></c><c></c></b><b></b></a>']
+    xml = [b'<a><b><c></c><c><d>content', b'</d></c><c></c></b><b></b></a>']
     doc = read(ELConsumeBufferRegressionTestDoc, xml)
     assert len(doc.b) == 2
     b = doc.b[0]

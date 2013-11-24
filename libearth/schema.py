@@ -54,14 +54,17 @@ import copy
 import inspect
 import itertools
 import operator
+import platform
 import weakref
 import xml.sax
 import xml.sax.handler
 import xml.sax.saxutils
 
 from .compat import UNICODE_BY_DEFAULT, string_type
+from .compat.xmlpullreader import PullReader
 
-__all__ = ('Attribute', 'Child', 'Codec', 'CodecDescriptor', 'CodecError',
+__all__ = ('PARSER_LIST',
+           'Attribute', 'Child', 'Codec', 'CodecDescriptor', 'CodecError',
            'Content', 'ContentHandler', 'DecodeError', 'Descriptor',
            'DescriptorConflictError', 'DocumentElement', 'Element',
            'ElementList', 'EncodeError', 'IntegrityError',
@@ -868,12 +871,22 @@ class DocumentElement(Element):
         parser = getattr(self, '_parser', None)
         if not parser:
             return False
+        if isinstance(parser, PullReader):
+            if parser.feed():
+                return True
+        else:
+            try:
+                chunk = next(self._iterator)
+            except StopIteration:
+                pass
+            else:
+                parser.feed(chunk)
+                return True
         try:
-            chunk = next(self._iterator)
-        except StopIteration:
-            return False
-        parser.feed(chunk)
-        return True
+            parser.close()
+        except xml.sax.SAXException:
+            pass
+        return False
 
 
 class ElementList(collections.MutableSequence):
@@ -1301,11 +1314,19 @@ def inspect_content_tag(element_type):
     return content
 
 
+#: (:class:`collections.Sequence`) The list of :mod:`xml.sax` parser
+#: implementations to try to import.
+PARSER_LIST = []
+
+if platform.python_implementation() == 'IronPython':
+    PARSER_LIST = ['libearth.compat.clrxmlreader']
+
+
 def read(cls, iterable):
     """Initialize a document in read mode by opening the ``iterable``
     of XML string.  ::
 
-        with open('doc.xml', 'r') as f:
+        with open('doc.xml', 'rb') as f:
             read(Person, f)
 
     Returned document element is not fully read but partially loaded
@@ -1327,15 +1348,17 @@ def read(cls, iterable):
             'cls must be a subtype of {0.__module__}.{0.__name__}, not '
             '{1.__module__}.{1.__name__}'.format(cls, DocumentElement)
         )
-    iterator = iter(iterable)
     doc = cls()
-    parser = xml.sax.make_parser()
+    parser = xml.sax.make_parser(PARSER_LIST)
     handler = ContentHandler(doc)
     parser.setContentHandler(handler)
     parser.setFeature(xml.sax.handler.feature_namespaces, True)
+    if isinstance(parser, PullReader):
+        parser.prepareParser(iterable)
+    else:
+        doc._iterator = iter(iterable)
     doc._parser = parser
     doc._handler = handler
-    doc._iterator = iterator
     stack = handler.stack
     while not stack:
         if not doc._parse_next():
