@@ -7,10 +7,11 @@ multiple Python versions (2.6, 2.7, 3.2, 3.3) and VM implementations
 
 """
 import io
+import platform
 import sys
 import types
 
-__all__ = ('PY3', 'UNICODE_BY_DEFAULT', 'binary', 'binary_type',
+__all__ = ('IRON_PYTHON', 'PY3', 'UNICODE_BY_DEFAULT', 'binary', 'binary_type',
            'encode_filename', 'file_types', 'string_type', 'text', 'text_type',
            'xrange')
 
@@ -18,13 +19,16 @@ __all__ = ('PY3', 'UNICODE_BY_DEFAULT', 'binary', 'binary_type',
 #: (:class:`bool`) Whether it is Python 3.x or not.
 PY3 = sys.version_info >= (3,)
 
+#: (:class:`bool`) Whether it is IronPython or not.
+IRON_PYTHON = platform.python_implementation() == 'IronPython'
+
 #: (:class:`bool`) Whether the Python VM uses Unicode strings by default.
 #: It must be :const:`True` if :const:`PY3` or IronPython.
-UNICODE_BY_DEFAULT = PY3
+UNICODE_BY_DEFAULT = PY3 or IRON_PYTHON
 
 #: (:class:`type`) Type for representing binary data.  :class:`str` in Python 2
 #: and :class:`bytes` in Python 3.
-binary_type = bytes if PY3 else str
+binary_type = bytes if PY3 or IRON_PYTHON else str
 
 #: (:class:`type`) Type for text data.  :class:`basestring` in Python 2
 #: and :class:`str` in Python 3.
@@ -59,7 +63,7 @@ def binary(string, var=None):
 
 
 def text(string):
-    """Makes ``string`` to :class:`str` in Python 3.
+    """Makes ``string`` to :class:`str` in Python 3 or IronPython.
     Does nothing in Python 2.
 
     :param string: a string to cast it to :data:`text_type`
@@ -69,7 +73,7 @@ def text(string):
     return string
 
 
-if PY3:
+if PY3 or IRON_PYTHON:
     def text(string):
         if isinstance(string, bytes):
             return string.decode('utf-8')
