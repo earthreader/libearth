@@ -10,7 +10,7 @@ except ImportError:
     concurrent = None
     import multiprocessing.pool
 import logging
-import sys
+import numbers
 try:
     import urllib.request as urllib2
 except ImportError:
@@ -39,6 +39,8 @@ class crawl(object):
     __slots__ = 'pool', 'async_results'
 
     def __init__(self, feeds, pool_size):
+        if pool_size is None or not isinstance(pool_size, numbers.Integral):
+            raise TypeError('the pool_size must be integer')
         if concurrent:
             self.pool = concurrent.futures.ThreadPoolExecutor(
                 max_workers=pool_size
