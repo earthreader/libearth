@@ -36,16 +36,16 @@ install:
 script:
 - if [[ "$PYTHON_VM" == "cpython" ]]; then
     python -mlibearth.version;
-    py.test --cov libearth --durations=20 || exit $?;
+    py.test --cov libearth --durations=20 tests || exit $?;
     pep8 || exit $?;
     python docs/coverage.py || exit $?;
   fi
 - if [[ "$PYTHON_VM" == "pypy" ]]; then
     python -mlibearth.version;
-    py.test --durations=20 || exit $?;
+    py.test --durations=20 tests || exit $?;
   fi
 - if [[ "$PYTHON_VM" == "ironpython" ]]; then
-    mono IronPython-2.7.4/ipy.exe -X:FullFrames pytest.py -s --assert=plain || exit $?;
+    mono IronPython-2.7.4/ipy.exe -X:FullFrames pytest.py -s --assert=plain tests || exit $?;
     # http://stackoverflow.com/a/6128672/383405
   fi
 after_success:
