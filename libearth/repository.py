@@ -6,6 +6,7 @@ import collections
 import io
 import os
 import os.path
+import pipes
 import tempfile
 
 from .compat import IRON_PYTHON, xrange
@@ -215,7 +216,16 @@ class FileSystemRepository(Repository):
             for chunk in iterable:
                 f.write(chunk)
         if self.atomic:
-            os.rename(f.name, filename)
+            if IRON_PYTHON:
+                # FIXME: no mv in windows
+                cmd = '/bin/mv {0} {1}'.format(
+                    pipes.quote(f.name),
+                    pipes.quote(filename)
+                )
+                with os.popen(cmd) as pf:
+                    pf.read()
+            else:
+                os.rename(f.name, filename)
 
     def exists(self, key):
         super(FileSystemRepository, self).exists(key)
