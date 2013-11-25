@@ -221,10 +221,13 @@ class Rfc822(Codec):
 
     def decode(self, text):
         text = text.strip()
-        timestamp = text[:25]
+        day = text[:5]
+        if not re.match(r'^(Sun|Mon|Tue|Wed|Thu|Fri|Sat), $', day, re.I):
+            raise DecodeError(repr(text) + ' is an invalid rfc822 string')
+        timestamp = text[5:25]
         timezone = text[26:]
         try:
-            res = datetime.datetime.strptime(timestamp, "%a, %d %b %Y %H:%M:%S")
+            res = datetime.datetime.strptime(timestamp, '%d %b %Y %H:%M:%S')
             matched = re.match(r'^([\+\-])([0-9]{2})([0-9]{2})$', timezone)
             if matched:
                 offset = FixedOffset(
@@ -236,10 +239,7 @@ class Rfc822(Codec):
             elif timezone in self.TIMEZONES:
                 res = res.replace(tzinfo=self.TIMEZONES[timezone])
             else:
-                raise DecodeError(
-                    'given argument was not valid RFC822 string. '
-                    'it needs tzinfo'
-                )
+                raise DecodeError(repr(text) + ' is an invalid rfc822 string')
         except ValueError as e:
             raise DecodeError(e)
 
