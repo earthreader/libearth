@@ -28,8 +28,9 @@ import xml.sax
 
 from .codecs import Rfc3339
 from .compat import string_type
-from .schema import (Attribute, Codec, DecodeError, DocumentElement,
-                     Element, EncodeError, inspect_attributes,
+from .compat.xmlpullreader import PullReader
+from .schema import (PARSER_LIST, Attribute, Codec, DecodeError,
+                     DocumentElement, Element, EncodeError, inspect_attributes,
                      inspect_child_tags, inspect_content_tag)
 from .tz import now
 
@@ -527,17 +528,22 @@ def parse_revision(iterable):
     :rtype: :class:`collections.Sequence`
 
     """
-    iterator = iter(iterable)
-    parser = xml.sax.make_parser()
+    parser = xml.sax.make_parser(PARSER_LIST)
     handler = RevisionParserHandler()
     parser.setContentHandler(handler)
     parser.setFeature(xml.sax.handler.feature_namespaces, True)
-    while not handler.done:
-        try:
-            chunk = next(iterator)
-        except StopIteration:
-            break
-        parser.feed(chunk)
+    if isinstance(parser, PullReader):
+        parser.prepareParser(iterable)
+        while not handler.done and parser.feed():
+            pass
+    else:
+        iterator = iter(iterable)
+        while not handler.done:
+            try:
+                chunk = next(iterator)
+            except StopIteration:
+                break
+            parser.feed(chunk)
     if handler.revision is None:
         return
     rev_codec = RevisionCodec()
