@@ -1,5 +1,5 @@
-""":mod:`libearth.session` --- Merging concurrent updates between devices
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`libearth.session` --- Isolate data from other installations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module provides merging facilities to avoid conflict between concurrent
 updates of the same document/entity from different devices (installations).
@@ -24,6 +24,7 @@ import collections
 import datetime
 import re
 import uuid
+import xml.sax
 
 from .codecs import Rfc3339
 from .compat import string_type
@@ -33,8 +34,9 @@ from .schema import (Attribute, Codec, DecodeError, DocumentElement,
 from .tz import now
 
 __all__ = ('SESSION_XMLNS', 'MergeableDocumentElement', 'Revision',
-           'RevisionCodec', 'RevisionSet', 'RevisionSetCodec', 'Session',
-           'ensure_revision_pair')
+           'RevisionCodec', 'RevisionParserHandler', 'RevisionSet',
+           'RevisionSetCodec', 'Session',
+           'ensure_revision_pair', 'parse_revision')
 
 
 #: (:class:`str`) The XML namespace name used for session metadata.
@@ -79,6 +81,15 @@ class Session(object):
             session.identifier = identifier
             cls.interns[identifier] = session
         return session
+
+    def __eq__(self, other):
+        return self is other
+
+    def __ne__(self, other):
+        return self is not other
+
+    def __hash__(self):
+        return hash(self.identifier)
 
     def revise(self, document):
         """Mark the given ``document`` as the latest revision of the current
@@ -144,7 +155,7 @@ class Session(object):
             self.revise(copy)
         return copy
 
-    def merge(self, a, b):
+    def merge(self, a, b, force=False):
         """Merge the given two documents and return new merged document.
         The given documents are not manipulated in place.  Two documents
         must have the same type.
@@ -153,6 +164,10 @@ class Session(object):
         :type a: :class:`MergeableDocumentElement`
         :param b: the second document to be merged
         :type b: :class:`MergeableDocumentElement`
+        :param force: by default (:const:`False`) it doesn't merge but
+                      simply pull a or b if one already contains other.
+                      if ``force`` is :const:`True` it always merge
+                      two.  it assumes ``b`` is newer than ``a``
 
         """
         element_type = type(a)
@@ -163,15 +178,16 @@ class Session(object):
                 '{0.__name__} and {1.__module__}.{1.__name__} are not the '
                 'same type'.format(element_type, cls_b)
             )
-        if a.__base_revisions__.contains(b.__revision__):
-            return self.pull(a)
-        elif b.__base_revisions__.contains(a.__revision__):
-            return self.pull(b)
+        if not force:
+            if a.__base_revisions__.contains(b.__revision__):
+                return self.pull(a)
+            elif b.__base_revisions__.contains(a.__revision__):
+                return self.pull(b)
         entity_id = lambda e: (e.__entity_id__()
                                if isinstance(e, Element)
                                else e)
         # The latest one should be `b`.
-        if a.__revision__.updated_at > b.__revision__.updated_at:
+        if not force and a.__revision__.updated_at > b.__revision__.updated_at:
             a, b = b, a
         merged = element_type()
         for attr_name, desc in inspect_child_tags(element_type).values():
@@ -198,9 +214,9 @@ class Session(object):
                 older_attr = getattr(a, attr_name, None)
                 newer_attr = getattr(b, attr_name, None)
                 if older_attr is None:
-                    merged_attr = older_attr
-                elif newer_attr is None:
                     merged_attr = newer_attr
+                elif newer_attr is None:
+                    merged_attr = older_attr
                 elif isinstance(newer_attr, Element):
                     merged_attr = newer_attr.__merge_entities__(older_attr)
                 else:
@@ -452,3 +468,79 @@ class MergeableDocumentElement(DocumentElement):
     __base_revisions__ = Attribute('bases', RevisionSetCodec,
                                    xmlns=SESSION_XMLNS,
                                    default=RevisionSet())
+
+
+class RevisionParserHandler(xml.sax.handler.ContentHandler):
+    """SAX content handler that picks session metadata
+    (:attr:`~MergeableDocumentElement.__revision__` and
+    :attr:`~MergeableDocumentElement.__base_revisions__`) from the given
+    document element.
+
+    Parsed result goes :attr:`revision` and :attr:`base_revisions`.
+
+    Used by :func:`parse_revision()`.
+
+    """
+
+    #: (:class:`bool`) Represents whether the parsing is complete.
+    done = None
+
+    #: (:class:`Revision`) The parsed
+    #: :attr:`~MergeableDocumentElement.__revision__`.  It might be
+    #: :const:`None`.
+    revision = None
+
+    #: (:class:`RevisionSet`). The parsed
+    #: :attr:`~MergeableDocumentElement.__base_revisions__`.  It might be
+    #: :const:`None`.
+
+    def __init__(self):
+        self.done = False
+        self.revision = None
+        self.base_revisions = None
+
+    def startElementNS(self, tag, qname, attrs):
+        if self.done:
+            return
+        revision_desc = MergeableDocumentElement.__revision__
+        bases_desc = MergeableDocumentElement.__base_revisions__
+        self.revision = attrs.get((revision_desc.xmlns, revision_desc.name))
+        self.base_revisions = attrs.get((bases_desc.xmlns, bases_desc.name))
+        self.done = True
+
+
+def parse_revision(iterable):
+    """Efficiently parse only :attr:`~MergeableDocumentElement.__revision__`
+    and :attr:`~MergeableDocumentElement.__base_revisions__` from the given
+    ``iterable`` which contains chunks of XML.  It reads only head of
+    the given document, and ``iterable`` will be not completely consumed
+    in most cases.
+
+    Note that it doesn't validate the document.
+
+    :param iterable: chunks of bytes which contains
+                     a :class:`MergeableDocumentElement` element
+    :type iterable: :class:`collections.Iterable`
+    :returns: a pair of (:attr:`~MergeableDocumentElement.__revision__`,
+              :attr:`~MergeableDocumentElement.__base_revisions__`).
+              it might be :const:`None` if the document is not stamped
+    :rtype: :class:`collections.Sequence`
+
+    """
+    iterator = iter(iterable)
+    parser = xml.sax.make_parser()
+    handler = RevisionParserHandler()
+    parser.setContentHandler(handler)
+    parser.setFeature(xml.sax.handler.feature_namespaces, True)
+    while not handler.done:
+        try:
+            chunk = next(iterator)
+        except StopIteration:
+            break
+        parser.feed(chunk)
+    if handler.revision is None:
+        return
+    rev_codec = RevisionCodec()
+    revset_codec = RevisionSetCodec()
+    return (rev_codec.decode(handler.revision),
+            revset_codec.decode(handler.base_revisions))

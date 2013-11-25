@@ -6,6 +6,7 @@ import collections
 import io
 import os
 import os.path
+import tempfile
 
 from .compat import xrange
 
@@ -157,6 +158,8 @@ class FileSystemRepository(Repository):
     :param mkdir: create the directory if it doesn't exist yet.
                   :const:`True` by default
     :type mkdir: :class:`bool`
+    :param atomic: make the update invisible until it's complete.
+                   :const:`False` by default
     :raises FileNotFoundError: when the ``path`` doesn't exist
     :raises NotADirectoryError: when the ``path`` is not a directory
 
@@ -166,7 +169,7 @@ class FileSystemRepository(Repository):
     #: It should be readable and writable.
     path = None
 
-    def __init__(self, path, mkdir=True):
+    def __init__(self, path, mkdir=True, atomic=False):
         if not os.path.exists(path):
             if mkdir:
                 os.makedirs(path)
@@ -175,6 +178,7 @@ class FileSystemRepository(Repository):
         if not os.path.isdir(path):
             raise NotADirectoryError(repr(path) + ' is not a directory')
         self.path = path
+        self.atomic = atomic
 
     def read(self, key):
         super(FileSystemRepository, self).read(key)
@@ -198,11 +202,20 @@ class FileSystemRepository(Repository):
         dirpath.insert(0, self.path)
         for i in xrange(len(dirpath)):
             p = os.path.join(*dirpath[:i + 1])
-            if not os.path.isdir(p):
+            if not os.path.exists(p):
                 os.mkdir(p)
-        with io.open(os.path.join(self.path, *key), 'wb') as f:
+            elif not os.path.isdir(p):
+                raise RepositoryKeyError(key)
+        filename = os.path.join(self.path, *key)
+        if self.atomic:
+            f = tempfile.NamedTemporaryFile('wb', delete=False)
+        else:
+            f = io.open(filename, 'wb')
+        with f:
             for chunk in iterable:
                 f.write(chunk)
+        if self.atomic:
+            os.rename(f.name, filename)
 
     def exists(self, key):
         super(FileSystemRepository, self).exists(key)

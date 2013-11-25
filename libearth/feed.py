@@ -9,17 +9,20 @@ all valid and well-formed.
 
 """
 import cgi
+import collections
 import re
 
 from .codecs import Boolean, Enum, Rfc3339
-from .compat import UNICODE_BY_DEFAULT, text_type
+from .compat import UNICODE_BY_DEFAULT, string_type, text_type
 from .sanitizer import clean_html, sanitize_html
 from .session import MergeableDocumentElement
 from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
-                     Element, Text as TextChild)
+                     Element, Text as TextChild, element_list_for)
+from .tz import now
 
 __all__ = ('ATOM_XMLNS', 'MARK_XMLNS', 'Category', 'Content', 'Entry', 'Feed',
-           'Generator', 'Link', 'Mark', 'Metadata', 'Person', 'Source', 'Text')
+           'Generator', 'Link', 'LinkList', 'Mark', 'Metadata', 'Person',
+           'Source', 'Text')
 
 
 #: (:class:`str`) The XML namespace name used for Atom (:rfc:`4287`).
@@ -63,6 +66,13 @@ class Text(Element):
             return sanitize_html(self.value)
         elif self.type == 'text':
             return cgi.escape(self.value, quote=True).replace('\n', '<br>\n')
+
+    @classmethod
+    def __coerce_from__(cls, value):
+        if isinstance(value, string_type):
+            return cls(value=value, type='text')
+        raise TypeError('expected a string or an instance of {0.__module__}.'
+                        '{0.__name__}, not {1!r}'.format(cls, value))
 
     def __eq__(self, other):
         return (isinstance(other, type(self)) and
@@ -225,6 +235,40 @@ class Link(Element):
                                              self.relation, self.mimetype,
                                              self.language, self.title,
                                              self.byte_size)
+
+
+@element_list_for(Link)
+class LinkList(collections.MutableSequence):
+    """Element list mixin specialized for :class:`Link`."""
+
+    def filter_by_mimetype(self, pattern):
+        """Filter links by their :attr:`~Link.mimetype` e.g.::
+
+            links.filter_by_mimetype('text/html')
+
+        ``pattern`` can include wildcards (``*``) as well e.g.::
+
+            links.filter_by_mimetype('application/xml+*')
+
+        :param pattern: the mimetype pattern to filter
+        :type pattern: :class:`str`
+        :returns: the filtered links
+        :rtype: :class:`LinkList`
+
+        """
+        if '*' in pattern:
+            regex = re.compile(
+                '.+?'.join(re.escape(s) for s in pattern.split('*')) + '$'
+            )
+            return LinkList.list_type(
+                link for link in self
+                if link.mimetype and regex.match(link.mimetype)
+            )
+        return LinkList.list_type(l for l in self if l.mimetype == pattern)
+
+
+# FIXME: it probably would be common for all specialized element list types
+LinkList.list_type = type('LinkList.list_type', (list, LinkList), {})
 
 
 class Category(Element):
@@ -400,7 +444,7 @@ class Metadata(Element):
     #: (section 4.2.14).
     title = Child('title', Text, xmlns=ATOM_XMLNS, required=True)
 
-    #: (:class:`collections.MutableSequence`) The list of :class:`Link` objects
+    #: (:class:`collections.LinkList`) The list of :class:`Link` objects
     #: that define a reference from an entry or feed to a web resource.
     #: It corresponds to ``atom:link`` element of :rfc:`4287#section-4.2.7`
     #: (section 4.2.7).
@@ -519,6 +563,13 @@ class Mark(Element):
 
     def __merge_entities__(self, other):
         return max(self, other, key=lambda mark: mark.updated_at)
+
+    @classmethod
+    def __coerce_from__(cls, value):
+        if isinstance(value, bool):
+            return cls(marked=value, updated_at=now())
+        raise TypeError('expected bool or an instance of {0.__module__}.'
+                        '{0.__name__}, not {1!r}'.format(cls, value))
 
     def __repr__(self):
         fmt = '{0.__module__}.{0.__name__}(marked={1!r}, updated_at={2!r})'

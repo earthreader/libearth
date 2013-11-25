@@ -69,6 +69,7 @@ __all__ = ('PARSER_LIST',
            'DescriptorConflictError', 'DocumentElement', 'Element',
            'ElementList', 'EncodeError', 'IntegrityError',
            'SchemaError', 'Text',
+           'element_list_for',
            'index_descriptors', 'inspect_attributes', 'inspect_child_tags',
            'inspect_content_tag', 'inspect_xmlns_set', 'read', 'validate',
            'write')
@@ -260,18 +261,34 @@ class Child(Descriptor):
                     raise NameError('name {0!r} is not defined'.format(name))
         return self._element_type
 
+    def __get__(self, obj, cls=None):
+        if isinstance(obj, Element):
+            if self.multiple:
+                return ElementList(obj, self, self.element_type)
+        return super(Child, self).__get__(obj, cls)
+
     def __set__(self, obj, value):
         if isinstance(obj, Element):
+            element_type = self.element_type
             if self.multiple:
                 if isinstance(value, collections.Sequence):
                     if len(value) < 1 or \
-                       isinstance(value[0], self.element_type):
-                        obj._data[self] = list(value)
+                       isinstance(value[0], element_type):
+                        value = [e if isinstance(e, element_type)
+                                 else element_type.__coerce_from__(e)
+                                 for e in value]
+                        for e in value:
+                            if not isinstance(e, element_type):
+                                raise TypeError(
+                                    'expected instances of {0.__module__}.'
+                                    '{0.__name__}, not {1!r}'.format(e)
+                                )
+                        obj._data[self] = value
                     else:
                         raise TypeError(
                             'expected a sequence of {0.__module__}.'
                             '{0.__name__}, not {1!r}'.format(
-                                self.element_type, value
+                                element_type, value
                             )
                         )
                 else:
@@ -279,13 +296,14 @@ class Child(Descriptor):
                                     'only accepts a sequence, not ' +
                                     repr(value))
             else:
-                if isinstance(value, self.element_type):
-                    obj._data[self] = value
-                elif value is not None:
+                if not (value is None or isinstance(value, element_type)):
+                    value = element_type.__coerce_from__(value)
+                if not (value is None or isinstance(value, element_type)):
                     raise TypeError(
                         'expected an instance of {0.__module__}.{0.__name__}, '
-                        'not {1!r}'.format(self.element_type, value)
+                        'not {1!r}'.format(element_type, value)
                     )
+                obj._data[self] = value
         else:
             raise AttributeError('cannot change the class attribute')
 
@@ -628,6 +646,12 @@ class Text(Descriptor, CodecDescriptor):
         CodecDescriptor.__init__(self, codec=codec,
                                  encoder=encoder, decoder=decoder)
 
+    def __get__(self, obj, cls=None):
+        if isinstance(obj, Element):
+            if self.multiple:
+                return ElementList(obj, self, string_type)
+        return super(Text, self).__get__(obj, cls)
+
     def start_element(self, element, attribute):
         return element
 
@@ -780,7 +804,8 @@ class Element(object):
             self._parent = weakref.ref(_parent)
             self._root = _parent._root
             if hasattr(self._root(), '_handler'):
-                self._stack_top = len(self._root()._handler.stack)
+                self._stack_top = (1 if self._root() is self
+                                   else len(self._root()._handler.stack))
         cls = type(self)
         acceptable_desc_types = Descriptor, Content, Attribute, property
         # FIXME: ^-- hardcoded type list
@@ -823,6 +848,30 @@ class Element(object):
 
         """
         return self
+
+    @classmethod
+    def __coerce_from__(cls, value):
+        """Cast a value which isn't an instance of the element type to
+        the element type.  It's useful when a boxed element type could
+        be more naturally represented using builtin type.
+
+        For example, :class:`~libearth.feed.Mark` could be represented
+        as a boolean value, and :class:`~libearth.feed.Text` also
+        could be represented as a string.
+
+        The following example shows how the element type can be
+        automatically casted from string by implementing
+        :meth:`__coerce_from__()` class method::
+
+            @classmethod
+            def __coerce_from__(cls, value):
+                if isinstance(value, str):
+                    return Text(value=value)
+                raise TypeError('expected a string or Text')
+
+        """
+        raise TypeError('expected an instance of {0.__module__}.{0.__name__}, '
+                        'not {1!r}'.format(cls, value))
 
 
 class DocumentElement(Element):
@@ -894,11 +943,98 @@ class ElementList(collections.MutableSequence):
     to lazily consume the buffer when an element of a particular offset
     is requested.
 
+    You can extend methods or properties for a particular element type
+    using :func:`element_list_for()` class decorator e.g.::
+
+        @element_list_for(Link)
+        class LinkList(collections.Sequence):
+            '''Specialized ElementList for Link elements.'''
+
+            def filter_by_mimetype(self, mimetype):
+                '''Filter links by their mimetype.'''
+                return [link for link in self if link.mimetype == mimetype]
+
+    Extended methods/properties can be used for element lists for the type::
+
+        assert isinstance(feed.links, LinkList)
+        assert isinstance(feed.links, ElementList)
+        feed.links.filter_by_mimetype('text/html')
+
     """
 
-    __slots__ = 'element', 'descriptor', 'tag', 'xmlns', 'key_pair'
+    __slots__ = ('element', 'descriptor', 'value_type',
+                 'tag', 'xmlns', 'key_pair')
 
-    def __init__(self, element, descriptor):
+    #: (:class:`collections.MutableMapping`) The internal table for
+    #: specialized subtypes used by :meth:`register_specialized_type()`
+    #: method and :func:`element_list_for()` class decorator.
+    specialized_types = {}
+
+    @classmethod
+    def register_specialized_type(cls, value_type, specialized_type):
+        """Register specialized :class:`collections.Sequence` type for
+        a particular ``value_type``.
+
+        An imperative version of :func`element_list_for()` class decorator.
+
+        :param value_type: a particular element type that ``specialized_type``
+                             would be used for instead of default
+                             :class:`ElementList` class.
+                             it has to be a subtype of :class:`Element`
+        :type value_type: :class:`type`
+        :param specialized_type: a :class:`collections.Sequence` type which
+                                 extends methods and properties for
+                                 ``value_type``
+        :type specialized_type: :class:`type`
+
+        """
+        if not isinstance(value_type, type):
+            raise TypeError('value_type must be a type object, not ' +
+                            repr(value_type))
+        elif not issubclass(value_type, Element):
+            raise TypeError(
+                'value_type must be a subtype of {0.__module__}.{0.__name__},'
+                ' not {1.__module__}.{1.__name__}'.format(Element, value_type)
+            )
+        elif not isinstance(specialized_type, type):
+            raise TypeError('specialized_type must be a type object, not ' +
+                            repr(specialized_type))
+        elif not issubclass(specialized_type, collections.Sequence):
+            raise TypeError(
+                'specialized_type must be a subtype of {0.__module__}.'
+                '{0.__name__}, not {1.__module__}.{1.__name__}'
+                ''.format(collections.Sequence, specialized_type)
+            )
+        try:
+            t, t2 = cls.specialized_types[value_type]
+        except KeyError:
+            pass
+        else:
+            if t is specialized_type or t2 is specialized_type:
+                return
+            raise TypeError(
+                '{0.__module__}.{0.__name__} already has its own specialized '
+                'subtype: {1.__module__}.{1.__name__}'.format(value_type, t)
+            )
+        cls.specialized_types[value_type] = specialized_type, None
+
+    def __new__(cls, element, descriptor, value_type=None):
+        try:
+            supcls, subcls = cls.specialized_types[value_type]
+        except KeyError:
+            subcls = cls
+        else:
+            if issubclass(supcls, cls):
+                cls = supcls
+                subcls = supcls
+                cls.specialized_types[value_type] = supcls, supcls
+            if subcls is None:
+                subcls = type(supcls.__name__, (cls, supcls), {})
+                subcls.__module__ = supcls.__module__
+                cls.specialized_types[value_type] = supcls, subcls
+        return object.__new__(subcls)
+
+    def __init__(self, element, descriptor, value_type=None):
         if not isinstance(element, Element):
             raise TypeError(
                 'element must be an instance of {0.__module__}.{0.__name__}, '
@@ -909,8 +1045,12 @@ class ElementList(collections.MutableSequence):
                 'descriptor must be an instance of {0.__module__}.{0.__name__}'
                 ', not {1!r}'.format(Descriptor, descriptor)
             )
+        elif not (value_type is None or isinstance(value_type, type)):
+            raise TypeError('value_type must be a type, not ' +
+                            repr(value_type))
         self.element = element
         self.descriptor = descriptor
+        self.value_type = value_type
 
     def consume_buffer(self):
         """Consume the buffer for the parser.  It returns a generator,
@@ -969,6 +1109,18 @@ class ElementList(collections.MutableSequence):
                 continue
         return self.element._data.setdefault(key, [])
 
+    def validate_value(self, value):
+        if self.value_type is None or isinstance(value, self.value_type):
+            return value
+        elif self.value_type is string_type:
+            raise TypeError('expected a string, not ' + repr(value))
+        elif issubclass(self.value_type, Element):
+            value = self.value_type.__coerce_from__(value)
+            if isinstance(value, self.value_type):
+                return value
+        raise TypeError('expected an instance of {0.__module__}.{0.__name__}, '
+                        'not {1!r}'.format(self.value_type, value))
+
     def __len__(self):
         key = self.descriptor
         data = self.element._data
@@ -985,7 +1137,10 @@ class ElementList(collections.MutableSequence):
 
     def __setitem__(self, index, value):
         data = self.consume_index(index)
-        data[index] = value
+        if isinstance(index, slice):
+            data[index] = map(self.validate_value, value)
+        else:
+            data[index] = self.validate_value(value)
 
     def __delitem__(self, index):
         data = self.consume_index(index)
@@ -993,7 +1148,7 @@ class ElementList(collections.MutableSequence):
 
     def insert(self, index, value):
         data = self.consume_index(index)
-        data.insert(index, value)
+        data.insert(index, self.validate_value(value))
 
     def __nonzero__(self):
         data = self.consume_index(1)
@@ -1010,6 +1165,42 @@ class ElementList(collections.MutableSequence):
         return '<{0.__module__}.{0.__name__} {1}>'.format(
             type(self), list_repr
         )
+
+
+class element_list_for(object):
+    """Class decorator which registers specialized :class:`ElementList`
+    subclass for a particular ``value_type`` e.g.::
+
+        @element_list_for(Link)
+        class LinkList(collections.Sequence):
+            '''Specialized ElementList for Link elements.'''
+
+            def filter_by_mimetype(self, mimetype):
+                '''Filter links by their mimetype.'''
+                return [link for link in self if link.mimetype == mimetype]
+
+    :param value_type: a particular element type that ``specialized_type``
+                         would be used for instead of default
+                         :class:`ElementList` class.
+                         it has to be a subtype of :class:`Element`
+    :type value_type: :class:`type`
+
+    """
+
+    def __init__(self, value_type):
+        if not isinstance(value_type, type):
+            raise TypeError('value_type must be a type object, not ' +
+                            repr(value_type))
+        elif not issubclass(value_type, Element):
+            raise TypeError(
+                'value_type must be a subtype of {0.__module__}.{0.__name__},'
+                ' not {1.__module__}.{1.__name__}'.format(Element, value_type)
+            )
+        self.value_type = value_type
+
+    def __call__(self, specialized_type):
+        ElementList.register_specialized_type(self.value_type, specialized_type)
+        return specialized_type
 
 
 # Semi-structured record type for only internal use.

@@ -7,16 +7,22 @@ for the purpose.
 """
 import collections
 import distutils.version
+import hashlib
 
 from .codecs import Boolean, Integer, Rfc822
 from .compat import text_type
-from .feed import Person
+from .feed import Feed, Person
 from .schema import Attribute, Child, Codec, Element, Text
 from .session import MergeableDocumentElement
 from .tz import now
 
 __all__ = ('Body', 'Category', 'CommaSeparatedList', 'Head', 'Outline',
            'Subscription', 'SubscriptionList', 'SubscriptionSet')
+
+
+#: (:class:`str`) The XML namespace name used for Earth Reader subscription
+#: list metadata.
+METADATA_XMLNS = 'http://earthreader.org/subscription-list/'
 
 
 class CommaSeparatedList(Codec):
@@ -88,6 +94,9 @@ class SubscriptionSet(collections.MutableSet):
                     yield outline
                     continue
                 outline = Subscription(
+                    feed_id=(outline.feed_id or
+                             hashlib.sha1(outline.feed_uri.encode('utf-8'))
+                                    .hexdigest()),
                     label=outline.label,
                     _title=outline.label,
                     feed_uri=outline.feed_uri,
@@ -149,6 +158,32 @@ class SubscriptionSet(collections.MutableSet):
             except ValueError:
                 break
 
+    def subscribe(self, feed):
+        """Add a subscription from :class:`~libearth.feed.Feed` instance.
+        Prefer this method over :meth:`add()` method.
+
+        :param feed: feed to subscribe
+        :type feed: :class:`~libearth.feed.Feed`
+
+        """
+        if not isinstance(feed, Feed):
+            raise TypeError('feed must be an instance of {0.__module__}.'
+                            '{0.__name__}, not {1!r}'.format(Feed, feed))
+        sub = Subscription(
+            feed_id=hashlib.sha1(feed.id.encode('utf-8')).hexdigest(),
+            label=str(feed.title),
+            _title=str(feed.title),
+            feed_uri=next(l.uri for l in feed.links if l.relation == 'self'),
+            alternate_uri=next(
+                (l.uri for l in feed.links
+                 if l.relation == 'alternate' and l.mimetype == 'text/html'),
+                None
+            ),
+            created_at=now()
+        )
+        self.add(sub)
+        return sub
+
     @property
     def categories(self):
         """(:class:`collections.Mapping`) Label to :class:`Category` instance
@@ -195,6 +230,7 @@ class Outline(Element):
     feed_uri = Attribute('xmlUrl')
     alternate_uri = Attribute('htmlUrl')
     children = Child('outline', 'Outline', multiple=True)
+    feed_id = Attribute('id', xmlns=METADATA_XMLNS)
 
     _title = Attribute('title')
     _category = Attribute('category', CommaSeparatedList)
@@ -239,6 +275,12 @@ class Category(Outline, SubscriptionSet):
 class Subscription(Outline):
     """Subscription which holds referring :attr:`feed_uri`.
 
+    .. attribute:: feed_id
+
+       (:class:`str`) The feed identifier to be used for lookup.
+       It's intended to be SHA1 digest of :class:`Feed.id
+       <libearth.feed.Feed.id>` value (which is UTF-8 encoded).
+
     .. attribute:: feed_uri
 
        (:class:`str`) The feed url.
@@ -252,8 +294,8 @@ class Subscription(Outline):
     type = Attribute('type', default='rss')
 
     def __repr__(self):
-        return '<{0.__module__}.{0.__name__} {1!r} ({2!r})>'.format(
-            type(self), self.label, self.feed_uri
+        return '<{0.__module__}.{0.__name__} {1} {2!r} ({3!r})>'.format(
+            type(self), self.feed_id, self.label, self.feed_uri
         )
 
 
@@ -358,6 +400,10 @@ class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
         head.owner_name = owner.name
         head.owner_email = owner.email
         head.owner_uri = owner.uri
+
+    def __merge_entities__(self, other):
+        self.body.update(other.body)
+        return self
 
     def __repr__(self):
         head = self.head

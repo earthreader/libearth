@@ -1,13 +1,14 @@
 import collections
+import threading
 
 from pytest import fixture, raises
 
-from libearth.repository import Repository, RepositoryKeyError
+from libearth.repository import (FileSystemRepository, Repository,
+                                 RepositoryKeyError)
 from libearth.schema import read
 from libearth.session import MergeableDocumentElement, Session
-from libearth.stage import (BaseStage, Directory, Route, Stage,
-                            compile_format_to_pattern)
-from libearth.subscribe import Subscription, SubscriptionList
+from libearth.stage import (BaseStage, Directory, DirtyBuffer, Route,
+                            TransactionError, compile_format_to_pattern)
 from libearth.tz import now
 
 
@@ -187,15 +188,19 @@ def test_stage_sessions(fx_session, fx_stage, fx_other_session, fx_other_stage):
 
 
 def test_stage_read(fx_session, fx_stage):
-    doc = fx_stage.read(TestDoc, ['doc.{0}.xml'.format(fx_session.identifier)])
-    assert isinstance(doc, TestDoc)
-    assert doc.__revision__.session is fx_session
+    with fx_stage:
+        doc = fx_stage.read(TestDoc,
+                            ['doc.{0}.xml'.format(fx_session.identifier)])
+        assert isinstance(doc, TestDoc)
+        assert doc.__revision__.session is fx_session
 
 
 def test_stage_write(fx_repo, fx_session, fx_stage):
     doc = TestDoc()
     min_ts = now()
-    wdoc = fx_stage.write(['doc.{0}.xml'.format(fx_session.identifier)], doc)
+    with fx_stage:
+        wdoc = fx_stage.write(['doc.{0}.xml'.format(fx_session.identifier)],
+                              doc)
     assert wdoc.__revision__.session is fx_session
     assert min_ts <= wdoc.__revision__.updated_at <= now()
     xml = fx_repo.data['doc.{0}.xml'.format(fx_session.identifier)]
@@ -205,81 +210,119 @@ def test_stage_write(fx_repo, fx_session, fx_stage):
 
 
 def test_get_flat_route(fx_session, fx_stage):
-    doc = fx_stage.doc
+    with fx_stage:
+        doc = fx_stage.doc
     assert isinstance(doc, TestDoc)
     assert doc.__revision__.session is fx_session
-    assert fx_stage.doc.__revision__ == doc.__revision__
+    with fx_stage:
+        assert fx_stage.doc.__revision__ == doc.__revision__
 
 
 def test_set_flat_route(fx_session, fx_stage, fx_other_session, fx_other_stage):
-    fx_stage.doc = TestDoc()
-    doc_a = fx_stage.doc
-    assert doc_a.__revision__.session is fx_session
-    doc_b = fx_other_stage.doc
-    assert doc_b.__revision__.session is fx_other_session
-    fx_session.revise(doc_a)
-    assert (doc_b.__revision__.updated_at ==
-            fx_other_stage.doc.__revision__.updated_at)
-    assert (fx_other_stage.doc.__revision__.updated_at <=
-            doc_a.__revision__.updated_at)
-    fx_stage.doc = doc_a
-    assert (fx_other_stage.doc.__revision__.updated_at >=
-            doc_a.__revision__.updated_at)
+    with fx_stage:
+        fx_stage.doc = TestDoc()
+        doc_a = fx_stage.doc
+        assert doc_a.__revision__.session is fx_session
+    with fx_other_stage:
+        doc_b = fx_other_stage.doc
+        assert doc_b.__revision__.session is fx_other_session
+        fx_session.revise(doc_a)
+        assert (doc_b.__revision__.updated_at ==
+                fx_other_stage.doc.__revision__.updated_at)
+        assert (fx_other_stage.doc.__revision__.updated_at <=
+                doc_a.__revision__.updated_at)
+    with fx_stage:
+        fx_stage.doc = doc_a
+    with fx_other_stage:
+        assert (fx_other_stage.doc.__revision__.updated_at >=
+                doc_a.__revision__.updated_at)
 
 
 def test_get_dir_route(fx_session, fx_stage):
-    dir = fx_stage.dir_docs
-    assert isinstance(dir, Directory)
-    assert len(dir) == 2
-    assert frozenset(dir) == frozenset(['abc', 'def'])
-    with raises(KeyError):
-        dir['not-exist']
-    doc = dir['abc']
-    assert isinstance(doc, TestDoc)
-    assert doc.__revision__.session is fx_session
-    assert dir['abc'].__revision__ == doc.__revision__
+    with fx_stage:
+        dir = fx_stage.dir_docs
+        assert isinstance(dir, Directory)
+        assert len(dir) == 2
+        assert frozenset(dir) == frozenset(['abc', 'def'])
+        with raises(KeyError):
+            dir['not-exist']
+        doc = dir['abc']
+        assert isinstance(doc, TestDoc)
+        assert doc.__revision__.session is fx_session
+        assert dir['abc'].__revision__ == doc.__revision__
 
 
 def test_set_dir_route(fx_session, fx_stage, fx_other_session, fx_other_stage):
-    doc_a = fx_stage.dir_docs['abc']
+    with fx_stage:
+        doc_a = fx_stage.dir_docs['abc']
     assert doc_a.__revision__.session is fx_session
-    doc_b = fx_other_stage.dir_docs['abc']
-    assert doc_b.__revision__.session is fx_other_session
-    fx_session.revise(doc_a)
-    assert (doc_b.__revision__.updated_at ==
-            fx_other_stage.dir_docs['abc'].__revision__.updated_at)
-    assert (fx_other_stage.dir_docs['abc'].__revision__.updated_at <=
-            doc_a.__revision__.updated_at)
-    fx_stage.dir_docs['abc'] = doc_a
-    assert (fx_other_stage.dir_docs['abc'].__revision__.updated_at >=
-            doc_a.__revision__.updated_at)
+    with fx_other_stage:
+        doc_b = fx_other_stage.dir_docs['abc']
+        assert doc_b.__revision__.session is fx_other_session
+        fx_session.revise(doc_a)
+        assert (doc_b.__revision__.updated_at ==
+                fx_other_stage.dir_docs['abc'].__revision__.updated_at)
+        assert (fx_other_stage.dir_docs['abc'].__revision__.updated_at <=
+                doc_a.__revision__.updated_at)
+    with fx_stage:
+        fx_stage.dir_docs['abc'] = doc_a
+    with fx_other_stage:
+        assert (fx_other_stage.dir_docs['abc'].__revision__.updated_at >=
+                doc_a.__revision__.updated_at)
 
 
 def test_get_deep_route(fx_session, fx_stage):
-    dir = fx_stage.deep_docs
-    assert isinstance(dir, Directory)
-    assert len(dir) == 2
-    assert frozenset(dir) == frozenset(['abc', 'def'])
-    with raises(KeyError):
-        dir['not-exist']
-    dir2 = dir['abc']
-    assert isinstance(dir2, Directory)
-    assert len(dir2) == 2
-    assert frozenset(dir2) == frozenset(['xyz', 'xxx'])
-    with raises(KeyError):
-        dir2['not-exist']
-    doc = dir2['xyz']
-    assert isinstance(doc, TestDoc)
-    assert doc.__revision__.session is fx_session
+    with fx_stage:
+        dir = fx_stage.deep_docs
+        assert isinstance(dir, Directory)
+        assert len(dir) == 2
+        assert frozenset(dir) == frozenset(['abc', 'def'])
+        with raises(KeyError):
+            dir['not-exist']
+    with fx_stage:
+        dir2 = dir['abc']
+        assert isinstance(dir2, Directory)
+        assert len(dir2) == 2
+        assert frozenset(dir2) == frozenset(['xyz', 'xxx'])
+        with raises(KeyError):
+            dir2['not-exist']
+    with fx_stage:
+        doc = dir2['xyz']
+        assert isinstance(doc, TestDoc)
+        assert doc.__revision__.session is fx_session
 
 
-@fixture
-def fx_test_opml(fx_test_stages):
-    repo, stage1, stage2 = fx_test_stages
-    sub_list = SubscriptionList()
-    subscription = Subscription(label='test', feed_uri='http://asdf.com')
-    stage1.subscriptions = sub_list
-    assert len(stage1.subscriptions) == 0
-    sub_list.add(subscription)
-    new_stage = Stage(Session('SESSIONID'), repo)
-    assert len(new_stage.subscriptions) == 1
+def test_dirty_buffer(tmpdir):
+    repo = FileSystemRepository(str(tmpdir))
+    dirty = DirtyBuffer(repo, threading.RLock())
+    key = ['key']
+    dir_key = []
+    with raises(RepositoryKeyError):
+        dirty.read(key)
+    assert not dirty.exists(key)
+    assert frozenset(dirty.list(dir_key)) == frozenset([])
+    with raises(RepositoryKeyError):
+        repo.read(key)
+    assert not repo.exists(key)
+    assert frozenset(repo.list(dir_key)) == frozenset([])
+    dirty.write(key, [b'dirty ', b'value'])
+    assert b''.join(dirty.read(key)) == b'dirty value'
+    assert dirty.exists(key)
+    assert frozenset(dirty.list(dir_key)) == frozenset(key)
+    with raises(RepositoryKeyError):
+        repo.read(key)
+    assert not repo.exists(key)
+    assert frozenset(repo.list(dir_key)) == frozenset([])
+    assert dirty.dictionary
+    dirty.flush()
+    assert not dirty.dictionary
+    assert b''.join(repo.read(key)) == b'dirty value'
+    assert repo.exists(key)
+    assert frozenset(repo.list(dir_key)) == frozenset(key)
+
+
+def test_doubly_begun_transaction(fx_stage):
+    with fx_stage:
+        with raises(TransactionError):
+            with fx_stage:
+                pass

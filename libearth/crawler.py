@@ -4,19 +4,25 @@
 Crawl feeds.
 
 """
-import multiprocessing.pool
-import sys
+try:
+    import concurrent.futures
+except ImportError:
+    concurrent = None
+    import multiprocessing.pool
+import logging
+import numbers
 try:
     import urllib.request as urllib2
 except ImportError:
     import urllib2
 
+from .feed import Link
 from .parser.heuristic import get_format
 
 __all__ = 'crawl',
 
 
-def crawl(feeds, pool_size):
+class crawl(object):
     """Crawl feeds in feed list using thread.
 
     .. note::
@@ -29,10 +35,29 @@ def crawl(feeds, pool_size):
     :rtype: :class:`collections.Iterable`
 
     """
-    pool = multiprocessing.pool.ThreadPool(pool_size)
-    for result in pool.imap_unordered(get_feed, feeds):
-        yield result
-    pool.close()
+
+    __slots__ = 'pool', 'async_results'
+
+    def __init__(self, feeds, pool_size):
+        if pool_size is None or not isinstance(pool_size, numbers.Integral):
+            raise TypeError('the pool_size must be integer')
+        if concurrent:
+            self.pool = concurrent.futures.ThreadPoolExecutor(
+                max_workers=pool_size
+            )
+            self.async_results = self.pool.map(get_feed, feeds)
+        else:
+            self.pool = multiprocessing.pool.ThreadPool(pool_size)
+            self.async_results = self.pool.imap_unordered(get_feed, feeds)
+
+    def __iter__(self):
+        for result in self.async_results:
+            yield result
+        if concurrent:
+            self.pool.shutdown()
+        else:
+            self.pool.close()
+            self.pool.join()
 
 
 def get_feed(feed_url):
@@ -40,10 +65,20 @@ def get_feed(feed_url):
         f = urllib2.urlopen(feed_url)
         feed_xml = f.read()
         parser = get_format(feed_xml)
-        return feed_url, parser(feed_xml, feed_url)
-    except Exception:
-        raise CrawlError(
-            'Crawling, {0} failed: {1}'.format(feed_url, sys.exc_info()[0]))
+        feed, crawler_hints = parser(feed_xml, feed_url)
+        self_uri = None
+        for link in feed.links:
+            if link.relation == 'self':
+                self_uri = link.uri
+        if not self_uri:
+            feed.links.append(Link(relation='self', uri=feed_url,
+                                   mimetype=f.info()['content-type']))
+        feed.entries = sorted(feed.entries, key=lambda entry: entry.updated_at,
+                              reverse=True)
+        return feed_url, feed, crawler_hints
+    except Exception as e:
+        logging.getLogger(__name__ + '.get_feed').exception(e)
+        raise CrawlError('{0} failed: {1}'.format(feed_url, e))
 
 
 class CrawlError(IOError):

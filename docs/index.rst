@@ -19,6 +19,7 @@ Design docs
    :maxdepth: 2
 
    design/goal
+   design/concepts
 
 
 References

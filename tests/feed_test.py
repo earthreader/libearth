@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import datetime
 import hashlib
+import threading
 
 from pytest import fixture, raises
 
 from libearth.compat import binary, text_type
 from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
-                           Person, Source, Text, Mark)
+                           LinkList, Person, Source, Text, Mark)
 from libearth.repository import FileSystemRepository
 from libearth.schema import read
 from libearth.session import Session
@@ -114,6 +115,43 @@ def test_link_html():
         '<link rel="alternate" type="text/html" hreflang="en" '
         'href="http://dahlia.kr/" title="Hong Minhee\'s website">'
     )
+
+
+@fixture
+def fx_feed_links(fx_feed):
+    fx_feed.links.extend([
+        Link(relation='alternate', mimetype='text/html',
+             uri='http://example.com/index.html'),
+        Link(relation='alternate', mimetype='text/html',
+             uri='http://example.com/index2.html'),
+        Link(relation='alternate', mimetype='text/xml',
+             uri='http://example.com/index.xml'),
+        Link(relation='alternate', mimetype='application/json',
+             uri='http://example.com/index.json'),
+        Link(relation='alternate', mimetype='text/javascript',
+             uri='http://example.com/index.js'),
+        Link(relation='alternate', mimetype='application/xml+atom',
+             uri='http://example.com/index.atom'),
+        Link(relation='alternate', mimetype='application/xml+rss',
+             uri='http://example.com/index.atom')
+    ])
+    return fx_feed
+
+
+def test_link_list_filter_by_mimetype(fx_feed_links):
+    assert isinstance(fx_feed_links.links, LinkList)
+    result = fx_feed_links.links.filter_by_mimetype('text/html')
+    assert isinstance(result, LinkList)
+    assert len(result) == 2
+    assert [link.mimetype for link in result] == ['text/html', 'text/html']
+    result = fx_feed_links.links.filter_by_mimetype('application/*')
+    assert isinstance(result, LinkList)
+    assert len(result) == 3
+    assert [link.mimetype for link in result] == [
+        'application/json',
+        'application/xml+atom',
+        'application/xml+rss'
+    ]
 
 
 def test_category_str():
@@ -380,20 +418,37 @@ def timestamp(minute, second=0):
 
 def test_merge_marks(fx_stages, fx_feed):
     stage_a, stage_b = fx_stages
-    stage_a.feeds['test'] = fx_feed
-    feed_a = stage_a.feeds['test']
-    feed_b = stage_b.feeds['test']
-    feed_b.entries[0].read = Mark(marked=True, updated_at=timestamp(1))
-    feed_a.entries[0].read = Mark(marked=True, updated_at=timestamp(2))
-    feed_b.entries[0].read = Mark(marked=False, updated_at=timestamp(3))
-    feed_b.entries[0].starred = Mark(marked=True, updated_at=timestamp(4))
-    feed_b.entries[0].starred = Mark(marked=False, updated_at=timestamp(5))
-    feed_a.entries[0].starred = Mark(marked=True, updated_at=timestamp(6))
-    stage_a.feeds['test'] = feed_a
-    stage_b.feeds['test'] = feed_b
-    print(repr(stage_a.feeds['test']))
-    entry_a = stage_a.feeds['test'].entries[0]
-    entry_b = stage_b.feeds['test'].entries[0]
+    with stage_a:
+        stage_a.feeds['test'] = fx_feed
+        feed_a = stage_a.feeds['test']
+    with stage_b:
+        feed_b = stage_b.feeds['test']
+    with stage_b:
+        feed_b.entries[0].read = Mark(marked=True, updated_at=timestamp(1))
+        stage_b.feeds['test'] = feed_b
+    with stage_a:
+        feed_a.entries[0].read = Mark(marked=True, updated_at=timestamp(2))
+        stage_a.feeds['test'] = feed_a
+    with stage_b:
+        feed_b.entries[0].read = Mark(marked=False, updated_at=timestamp(3))
+        stage_b.feeds['test'] = feed_b
+    with stage_b:
+        feed_b.entries[0].starred = Mark(marked=True, updated_at=timestamp(4))
+        stage_b.feeds['test'] = feed_b
+    with stage_b:
+        feed_b.entries[0].starred = Mark(marked=False, updated_at=timestamp(5))
+        stage_b.feeds['test'] = feed_b
+    with stage_a:
+        feed_a.entries[0].starred = Mark(marked=True, updated_at=timestamp(6))
+        stage_a.feeds['test'] = feed_a
+    with stage_b:
+        stage_b.feeds['test'] = feed_b
+    with stage_a:
+        print(repr(stage_a.feeds['test']))
+    with stage_a:
+        entry_a = stage_a.feeds['test'].entries[0]
+    with stage_b:
+        entry_b = stage_b.feeds['test'].entries[0]
     assert not entry_a.read
     assert not entry_b.read
     assert entry_a.starred
@@ -404,11 +459,31 @@ def test_merge_marks(fx_stages, fx_feed):
             timestamp(6))
 
 
+def test_merge_mark_crawled(fx_stages, fx_feed):
+    stage, _ = fx_stages
+    with stage:
+        stage.feeds['test'] = fx_feed
+        feed = stage.feeds['test']
+    feed.updated_at = timestamp(1)
+    feed.entries[1].read = True
+    with stage:
+        stage.feeds['test'] = feed
+    with stage:
+        assert stage.feeds['test'].entries[1].read
+    crawled_feed = fx_feed
+    assert not crawled_feed.entries[1].read
+    crawled_feed.updated_at = timestamp(2)
+    with stage:
+        stage.feeds['test'] = crawled_feed
+    with stage:
+        assert stage.feeds['test'].entries[1].read
+
+
 @fixture
 def fx_test_feeds():
     authors = [Person(name='vio')]
     feed = Feed(id='http://feedone.com/', authors=authors,
-                title=Text(value='Feed One'),
+                title='Feed One',
                 updated_at=datetime.datetime(2013, 10, 29, 20, 55, 30,
                                              tzinfo=utc))
     updated_feed = Feed(id='http://feedone.com/', authors=authors,
@@ -432,15 +507,20 @@ def test_stage(fx_stages, fx_test_feeds):
     feed, updated_feed = fx_test_feeds
     assert feed.id == updated_feed.id
     feed_id = feed.id
-    stage1.feeds[get_hash(feed.id)] = feed
-    feed1 = stage1.feeds[get_hash(feed_id)]
-    feed2 = stage2.feeds[get_hash(feed_id)]
+    with stage1:
+        stage1.feeds[get_hash(feed.id)] = feed
+        feed1 = stage1.feeds[get_hash(feed_id)]
+    with stage2:
+        feed2 = stage2.feeds[get_hash(feed_id)]
     assert (feed1.updated_at == feed2.updated_at ==
             datetime.datetime(2013, 10, 29, 20, 55, 30, tzinfo=utc))
     assert not feed1.entries and not feed2.entries
-    stage2.feeds[get_hash(feed_id)] = updated_feed
-    feed1 = stage1.feeds[get_hash(feed_id)]
-    feed2 = stage2.feeds[get_hash(feed_id)]
+    with stage2:
+        stage2.feeds[get_hash(feed_id)] = updated_feed
+    with stage1:
+        feed1 = stage1.feeds[get_hash(feed_id)]
+    with stage2:
+        feed2 = stage2.feeds[get_hash(feed_id)]
     assert (feed1.updated_at == feed2.updated_at ==
             datetime.datetime(2013, 10, 30, 20, 55, 30, tzinfo=utc))
     assert feed1.entries[0].title == feed2.entries[0].title
@@ -469,10 +549,14 @@ def test_merge_entries(fx_stages, fx_test_feeds, fx_test_entries):
     print(feed2.entries)
     assert entry1 in feed1.entries and entry2 in feed2.entries
     assert entry2 not in feed1.entries and entry1 not in feed2.entries
-    stage1.feeds[get_hash(feed1.id)] = feed1
-    stage2.feeds[get_hash(feed2.id)] = feed2
-    feed1 = stage1.feeds[get_hash(feed1.id)]
-    feed2 = stage2.feeds[get_hash(feed2.id)]
+    with stage1:
+        stage1.feeds[get_hash(feed1.id)] = feed1
+    with stage2:
+        stage2.feeds[get_hash(feed2.id)] = feed2
+    with stage1:
+        feed1 = stage1.feeds[get_hash(feed1.id)]
+    with stage2:
+        feed2 = stage2.feeds[get_hash(feed2.id)]
     print(repr(entry1))
     print(repr(entry2))
     print(feed1.entries)
@@ -480,3 +564,27 @@ def test_merge_entries(fx_stages, fx_test_feeds, fx_test_entries):
     assert (frozenset(entry.id for entry in feed1.entries) ==
             frozenset(entry.id for entry in feed2.entries) ==
             frozenset([entry0.id, entry2.id, entry1.id]))
+
+
+def apply_timestamp(stage, feed_id, timestamp):
+    with stage:
+        feed = stage.feeds[feed_id]
+        feed.entries[0].read = Mark(marked=True, updated_at=timestamp)
+        stage.feeds[feed_id] = feed
+
+
+def test_race_condition(fx_stages, fx_feed):
+    stage, _ = fx_stages
+    with stage:
+        stage.feeds['test'] = fx_feed
+    threads = []
+    for i in range(10):
+        t = threading.Thread(target=apply_timestamp,
+                             args=(stage, 'test', timestamp(i)))
+        t.daemon = True
+        threads.append(t)
+        t.start()
+    for thread in threads:
+        thread.join()
+    with stage:
+        assert stage.feeds['test'].entries[0].read.updated_at == timestamp(9)

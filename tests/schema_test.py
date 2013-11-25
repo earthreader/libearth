@@ -3,12 +3,14 @@ import collections
 
 from pytest import fixture, mark, raises
 
-from libearth.compat import IRON_PYTHON, binary_type, text, text_type
+from libearth.compat import (IRON_PYTHON, binary_type, text, text_type,
+                             string_type)
 from libearth.compat.etree import fromstringlist, tostring
 from libearth.schema import (Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
-                             Element, EncodeError, IntegrityError, Text,
-                             index_descriptors,
+                             Element, ElementList, EncodeError, IntegrityError,
+                             Text,
+                             element_list_for, index_descriptors,
                              inspect_attributes, inspect_child_tags,
                              inspect_content_tag, inspect_xmlns_set,
                              read, validate, write)
@@ -24,6 +26,12 @@ class TextElement(Element):
 
     ns_attr_attr = Attribute('ns-attr', xmlns='http://earthreader.github.io/')
     value = Content()
+
+    @classmethod
+    def __coerce_from__(cls, value):
+        if isinstance(value, string_type):
+            return TextElement(value=value)
+        raise TypeError
 
 
 class TextDecoderElement(Element):
@@ -277,6 +285,42 @@ def test_element_list_repr(fx_test_doc):
             text_type('b')
         )
     )
+
+
+class SpecializedElementList(collections.Sequence):
+
+    def test_extended_method(self):
+        return len(self)
+
+
+class AnotherElementList(collections.Sequence):
+
+    pass
+
+
+def test_element_list_register_specialized_type(fx_test_doc):
+    ElementList.register_specialized_type(TextElement, SpecializedElementList)
+    doc, _ = fx_test_doc
+    assert isinstance(doc.multi_attr, SpecializedElementList)
+    assert doc.multi_attr.test_extended_method() == len(doc.multi_attr)
+    # TypeError if try to register another specialized element list type for
+    # the already registered element type
+    with raises(TypeError):
+        ElementList.register_specialized_type(TextElement, AnotherElementList)
+    # Does nothing if the given specialized element list type is the same to
+    # the previously registered element list type
+    ElementList.register_specialized_type(TextElement, SpecializedElementList)
+    ElementList.specialized_types.clear()  # FIXME: implementation details leak
+
+
+def test_element_list_for(fx_test_doc):
+    @element_list_for(TextElement)
+    class Decorated(SpecializedElementList):
+        pass
+    doc, _ = fx_test_doc
+    assert isinstance(doc.multi_attr, Decorated)
+    assert doc.multi_attr.test_extended_method() == len(doc.multi_attr)
+    ElementList.specialized_types.clear()  # FIXME: implementation details leak
 
 
 def test_document_element_tag():
@@ -956,3 +1000,55 @@ def test_element_list_consume_buffer_regression():
     assert len(doc.b) == 2
     b = doc.b[0]
     assert len(b.c) == 3
+
+
+def test_element_list_consume_buffer_regression_root_stack_top_should_be_1():
+    xml = ['<a><b><!-- 1 --><c></c><c><d>', 'content</d></c><c></c></b><b>',
+           '<!-- 2 --><c><d>abc</d></c></b><b><!-- 3 --></b></a>']
+    doc = read(ELConsumeBufferRegressionTestDoc, xml)
+    assert len(doc.b) == 3
+    b = doc.b[0]
+    assert len(b.c) == 3
+
+
+def test_child_set_none(fx_test_doc):
+    doc, _ = fx_test_doc
+    assert doc.title_attr is not None
+    doc.title_attr = None
+    assert doc.title_attr is None
+
+
+def test_element_coerce_from(fx_test_doc):
+    doc, _ = fx_test_doc
+    doc.title_attr = 'coerce test'
+    assert isinstance(doc.title_attr, TextElement)
+    assert doc.title_attr.value == 'coerce test'
+    with raises(TypeError):
+        doc.title_attr = 123
+    doc.multi_attr = [TextElement(value='a'), 'b']
+    for e in doc.multi_attr:
+        assert isinstance(e, TextElement)
+    assert doc.multi_attr[0].value == 'a'
+    assert doc.multi_attr[1].value == 'b'
+    with raises(TypeError):
+        doc.multi_attr = [TextElement(value='a'), 'b', 3]
+    number = len(doc.multi_attr)
+    doc.multi_attr.append('coerce test')
+    assert len(doc.multi_attr) == number + 1
+    for e in doc.multi_attr:
+        assert isinstance(e, TextElement)
+    assert doc.multi_attr[-1].value == 'coerce test'
+    with raises(TypeError):
+        doc.multi_attr.append(123)
+    doc.multi_attr[0] = 'coerce test'
+    assert isinstance(doc.multi_attr[0], TextElement)
+    assert doc.multi_attr[0].value == 'coerce test'
+    with raises(TypeError):
+        doc.multi_attr[1] = 123
+    doc.multi_attr[1:] = ['slice', 'test']
+    for e in doc.multi_attr:
+        assert isinstance(e, TextElement)
+    assert doc.multi_attr[1].value == 'slice'
+    assert doc.multi_attr[2].value == 'test'
+    with raises(TypeError):
+        doc.multi_attr[1:] = ['slice test', 123]

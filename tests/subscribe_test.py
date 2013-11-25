@@ -1,10 +1,12 @@
 from datetime import datetime
-from pytest import fixture
+from pytest import fixture, mark
 
-from libearth.feed import Person
+from libearth.feed import Feed, Link, Person, Text
+from libearth.stage import Stage
 from libearth.subscribe import Body, Category, Subscription, SubscriptionList
 from libearth.schema import read
 from libearth.tz import utc
+from .stage_test import fx_repo, fx_session
 
 
 @fixture
@@ -45,7 +47,7 @@ def test_count_after_remove(fx_subscription):
 
 
 XML = '''
-<opml version="2.0">
+<opml xmlns:e="http://earthreader.org/subscription-list/" version="2.0">
     <head>
         <title>Earth Reader's Subscriptions</title>
         <dateCreated>Sat, 18 Jun 2005 12:11:52 +0000</dateCreated>
@@ -62,7 +64,8 @@ XML = '''
     <body>
         <outline text="CNET News.com" type="rss" version="RSS2"
             xmlUrl="http://news.com/2547-1_3-0-5.xml"/>
-        <outline text="test.com" type="rss" xmlUrl="http://test.com/"/>
+        <outline text="test.com" type="rss" xmlUrl="http://test.com/"
+                 e:id="2f0bdb1d4987309e304ad0d7f982a37791fb06d4" />
     </body>
 </opml>
 '''
@@ -209,6 +212,13 @@ def test_subscription_list_update(fx_subscription_list):
     assert next(iter(fx_subscription_list)).label == 'updated'
 
 
+def test_subscription_feed_id(fx_subscription_list):
+    test_com = next(s for s in fx_subscription_list if s.label == 'test.com')
+    assert test_com.feed_id == '2f0bdb1d4987309e304ad0d7f982a37791fb06d4'
+    cnet = next(s for s in fx_subscription_list if s.label == 'CNET News.com')
+    assert cnet.feed_id == '95e2b8d3378bc34d13685583528d616f9b8dce1b'
+
+
 @fixture
 def fx_categorized_subscription_list():
     return read(SubscriptionList, XML_CATEGORY)
@@ -324,3 +334,41 @@ def test_no_head_set_owner(fx_headless_subscription_list):
     assert fx_headless_subscription_list.head.owner_name == owner.name
     assert fx_headless_subscription_list.head.owner_email == owner.email
     assert fx_headless_subscription_list.head.owner_uri == owner.uri
+
+
+@mark.parametrize('subs', [
+    SubscriptionList(),
+    Category()
+])
+def test_subscription_set_subscribe(subs):
+    feed = Feed(
+        id='urn:earthreader:test:test_subscription_set_subscribe',
+        title=Text(value='Feed title')
+    )
+    feed.links.extend([
+        Link(uri='http://example.com/index.xml',
+             relation='self',
+             mimetype='application/atom+xml'),
+        Link(uri='http://example.com/',
+             relation='alternate',
+             mimetype='text/html')
+    ])
+    rv = subs.subscribe(feed)
+    sub = next(iter(subs))
+    assert rv is sub
+    assert sub.feed_id == '0691e2f0c3ea1d7fa9da48e14a46ac8077815ad3'
+    assert sub.label == 'Feed title'
+    assert sub.feed_uri == 'http://example.com/index.xml'
+    assert sub.alternate_uri == 'http://example.com/'
+
+
+def test_stage_subscription_list(fx_repo, fx_session):
+    stage = Stage(fx_session, fx_repo)
+    with stage:
+        stage.subscriptions = SubscriptionList()
+        subs = stage.subscriptions
+        subs.add(Category(label='Test'))
+        stage.subscriptions = subs
+    with stage:
+        assert (frozenset(stage.subscriptions) ==
+                frozenset([Category(label='Test')]))

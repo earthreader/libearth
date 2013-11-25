@@ -12,3 +12,4 @@ MANIFEST
 py
 _pytest
 pytest.py
+mock.py
