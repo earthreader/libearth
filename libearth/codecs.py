@@ -213,7 +213,10 @@ class Rfc822(Codec):
             )
 
         res = value.strftime("%a, %d %b %Y %H:%M:%S ")
-        res += value.strftime("%z").replace(":", "")
+        # IronPython strftime() seems to ignore %z
+        offset = value.tzinfo.utcoffset(value)
+        minutes = offset.seconds // 60
+        res += '{h:+03d}{m:02d}'.format(h=minutes // 60, m=minutes % 60)
         return res
 
     def decode(self, text):
