@@ -1610,8 +1610,7 @@ def validate(element, recurse=True, raise_error=True):
     return True
 
 
-def write(document, validate=True, indent='  ', newline='\n',
-          canonical_order=False, as_bytes=None):
+class write(collections.Iterable):
     r"""Write the given ``document`` to XML string.  The return value is
     an iterator that yields chunks of an XML string.  ::
 
@@ -1641,48 +1640,70 @@ def write(document, validate=True, indent='  ', newline='\n',
                      return chunks as default string type (:class:`str`)
                      by default
     :returns: chunks of an XML string
-    :rtype: :class:`types.GeneratorType`
+    :rtype: :class:`collections.Iterable`
 
     """
-    if not isinstance(document, DocumentElement):
-        raise TypeError(
-            'document must be an instance of {0.__module__}.{0.__name__}, '
-            'not {1!r}'.format(DocumentElement, document)
-        )
-    escape = xml.sax.saxutils.escape
-    quoteattr = xml.sax.saxutils.quoteattr
-    validate_fn = globals()['validate']
-    doc_cls = type(document)
-    sort = sorted if canonical_order else lambda l, *a, **k: l
-    xmlns_alias = dict(
-        (uri, 'ns{0}'.format(i))
-        for i, uri in enumerate(sort(inspect_xmlns_set(doc_cls)))
-    )
-    if UNICODE_BY_DEFAULT:
-        encode = lambda s: s
-    else:
-        encode = lambda s: s.encode('utf-8')
 
-    def _export(element, tag, xmlns, depth=0):
-        if validate:
-            validate_fn(element, recurse=False, raise_error=True)
+    def __init__(self, document, validate=True, indent='  ', newline='\n',
+                 canonical_order=False, as_bytes=None):
+        if not isinstance(document, DocumentElement):
+            raise TypeError(
+                'document must be an instance of {0.__module__}.{0.__name__}, '
+                'not {1!r}'.format(DocumentElement, document)
+            )
+        self.document = document
+        self.document_type = type(document)
+        self.validate = validate
+        self.indent = indent
+        self.newline = newline
+        self.as_bytes = as_bytes
+        self.sort = sorted if canonical_order else lambda l, *a, **k: l
+        xmlns_set = inspect_xmlns_set(self.document_type)
+        self.xmlns_alias = dict(
+            (uri, 'ns{0}'.format(i))
+            for i, uri in enumerate(self.sort(xmlns_set))
+        )
+
+    def __iter__(self):
+        result = itertools.chain(['<?xml version="1.0" encoding="utf-8"?>\n'],
+                                 self.export(self.document,
+                                             self.document_type.__tag__,
+                                             self.document_type.__xmlns__))
+        if UNICODE_BY_DEFAULT and self.as_bytes:
+            return (chunk.encode('utf-8') for chunk in result)
+        elif not UNICODE_BY_DEFAULT and self.as_bytes is False:
+            return (chunk.decode('utf-8') for chunk in result)
+        return result
+
+    if UNICODE_BY_DEFAULT:
+        encode = staticmethod(lambda s: s)
+    else:
+        encode = staticmethod(lambda s: s.encode('utf-8'))
+
+    def export(self, element, tag, xmlns, depth=0):
+        if self.validate:
+            validate(element, recurse=False, raise_error=True)
         element_type = type(element)
-        for s in itertools.repeat(indent, depth):
+        for s in itertools.repeat(self.indent, depth):
             yield s
         yield '<'
         if xmlns:
-            yield xmlns_alias[xmlns]
+            yield self.xmlns_alias[xmlns]
             yield ':'
         yield tag
+        quoteattr = xml.sax.saxutils.quoteattr
         if not depth:
-            for uri, prefix in sort(xmlns_alias.items(),
-                                    key=operator.itemgetter(0)):
+            for uri, prefix in self.sort(self.xmlns_alias.items(),
+                                         key=operator.itemgetter(0)):
                 yield ' xmlns:'
                 yield prefix
                 yield '='
                 yield quoteattr(uri)
-        attr_descriptors = sort(inspect_attributes(element_type).values(),
-                                key=operator.itemgetter(0))
+        attr_descriptors = self.sort(
+            inspect_attributes(element_type).values(),
+            key=operator.itemgetter(0)
+        )
+        encode = self.encode
         for attr, desc in attr_descriptors:
             raw_attr_value = getattr(element, attr, None)
             if raw_attr_value is None:
@@ -1699,13 +1720,15 @@ def write(document, validate=True, indent='  ', newline='\n',
                 )
             yield ' '
             if desc.xmlns:
-                yield xmlns_alias[desc.xmlns]
+                yield self.xmlns_alias[desc.xmlns]
                 yield ':'
             yield desc.name
             yield '='
             yield encode(quoteattr(encoded_attr_value))
         content = inspect_content_tag(element_type)
         children = inspect_child_tags(element_type)
+        escape = xml.sax.saxutils.escape
+        newline = self.newline
         if content or children:
             assert not (content and children)
             yield '>'
@@ -1724,8 +1747,10 @@ def write(document, validate=True, indent='  ', newline='\n',
                         )
                     yield encode(escape(encoded_content_value))
             else:
-                children = sort(children.values(),
-                                key=lambda pair: pair[1].descriptor_counter)
+                children = self.sort(
+                    children.values(),
+                    key=lambda pair: pair[1].descriptor_counter
+                )
                 for attr, desc in children:
                     child_elements = getattr(element, attr, None)
                     if not desc.multiple:
@@ -1747,47 +1772,38 @@ def write(document, validate=True, indent='  ', newline='\n',
                                                    encoded_child)
                                 )
                             yield newline
-                            for s in itertools.repeat(indent, depth + 1):
+                            for s in itertools.repeat(self.indent, depth + 1):
                                 yield s
                             yield '<'
                             if desc.xmlns:
-                                yield xmlns_alias[desc.xmlns]
+                                yield self.xmlns_alias[desc.xmlns]
                                 yield ':'
                             yield desc.tag
                             yield '>'
                             yield encode(escape(encoded_child))
                             yield '</'
                             if desc.xmlns:
-                                yield xmlns_alias[desc.xmlns]
+                                yield self.xmlns_alias[desc.xmlns]
                                 yield ':'
                             yield desc.tag
                             yield '>'
                         elif child_element is not None:
                             yield newline
-                            subiter = _export(child_element,
-                                              desc.tag,
-                                              desc.xmlns,
-                                              depth=depth + 1)
+                            subiter = self.export(child_element,
+                                                  desc.tag,
+                                                  desc.xmlns,
+                                                  depth=depth + 1)
                             for chunk in subiter:
                                 yield chunk
                 yield newline
             if children:
-                for s in itertools.repeat(indent, depth):
+                for s in itertools.repeat(self.indent, depth):
                     yield s
             yield '</'
             if xmlns:
-                yield xmlns_alias[xmlns]
+                yield self.xmlns_alias[xmlns]
                 yield ':'
             yield tag
             yield '>'
         else:
             yield '/>'
-    result = itertools.chain(
-        ['<?xml version="1.0" encoding="utf-8"?>\n'],
-        _export(document, doc_cls.__tag__, doc_cls.__xmlns__)
-    )
-    if UNICODE_BY_DEFAULT and as_bytes:
-        return (chunk.encode('utf-8') for chunk in result)
-    elif not UNICODE_BY_DEFAULT and as_bytes is False:
-        return (chunk.decode('utf-8') for chunk in result)
-    return result
