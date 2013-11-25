@@ -138,8 +138,8 @@ def test_integer_raises():
 def test_boolean():
     codec = Boolean(true="true", false="false", default_value=False)
 
-    assert codec.encode(True) is "true"
-    assert codec.encode(False) is "false"
+    assert codec.encode(True) == 'true'
+    assert codec.encode(False) == 'false'
 
     assert codec.decode("true") is True
     assert codec.decode("false") is False
