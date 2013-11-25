@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 import collections
-import re
-import xml.etree.ElementTree
 
 from pytest import fixture, mark, raises
 
 from libearth.compat import IRON_PYTHON, binary_type, text, text_type
-from libearth.feed import Feed
+from libearth.compat.etree import fromstringlist, tostring
 from libearth.schema import (Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
                              Element, EncodeError, IntegrityError, Text,
@@ -500,16 +498,10 @@ Namespace test</ns0:ns-element>
 </test>'''
 
 
-def etree_fromstringlist(iterable):
-    if hasattr(xml.etree.ElementTree, 'fromstringlist'):
-        return xml.etree.ElementTree.fromstringlist(iterable)
-    return xml.etree.ElementTree.fromstring(''.join(iterable))
-
-
 def test_write_test_doc_tree(fx_test_doc):
     doc, _ = fx_test_doc
     g = write(doc, canonical_order=True)
-    tree = etree_fromstringlist(g)
+    tree = fromstringlist(g)
     assert tree.tag == 'test'
     assert tree.attrib == {
         'attr': u('속성 값'),
@@ -597,7 +589,7 @@ def test_element_initialize():
     doc.multi_attr.append(TextElement(value='c'))
     assert doc.multi_attr[2].value == 'c'
     assert len(doc.multi_attr) == 3
-    tree = etree_fromstringlist(write(doc))
+    tree = fromstringlist(write(doc))
     assert tree.find('title').text == 'Title test'
     assert tree.find('content').text == u('내용 테스트')
     assert tree.attrib['attr'] == 'Attribute value'
@@ -621,7 +613,7 @@ def test_mutate_element_list():
     doc.multi_attr.insert(1, TextElement(value='Second element'))
     assert doc.multi_attr[1].value == 'Second element'
     assert len(doc.multi_attr) == 2
-    tree = etree_fromstringlist(write(doc, validate=False))
+    tree = fromstringlist(write(doc, validate=False))
     elements = tree.findall('multi')
     assert len(elements) == 2
     assert elements[0].text == 'First element'
@@ -629,7 +621,7 @@ def test_mutate_element_list():
     doc.multi_attr[0] = TextElement(value='Replacing element')
     assert doc.multi_attr[0].value == 'Replacing element'
     assert len(doc.multi_attr) == 2
-    tree = etree_fromstringlist(write(doc, validate=False))
+    tree = fromstringlist(write(doc, validate=False))
     elements = tree.findall('multi')
     assert len(elements) == 2
     assert elements[0].text == 'Replacing element'
@@ -637,7 +629,7 @@ def test_mutate_element_list():
     del doc.multi_attr[0]
     assert doc.multi_attr[0].value == 'Second element'
     assert len(doc.multi_attr) == 1
-    tree = etree_fromstringlist(write(doc, validate=False))
+    tree = fromstringlist(write(doc, validate=False))
     elements = tree.findall('multi')
     assert len(elements) == 1
     assert elements[0].text == 'Second element'
@@ -651,7 +643,7 @@ def test_mutate_read_element_list(fx_test_doc):
     assert doc.multi_attr[2].value == 'inserted'
     assert doc.multi_attr[3].value == 'c'
     assert len(doc.multi_attr) == 4
-    tree = etree_fromstringlist(write(doc))
+    tree = fromstringlist(write(doc))
     elements = tree.findall('multi')
     assert len(elements) == 4
     assert elements[0].text == 'a'
@@ -825,7 +817,7 @@ class CodecTestDoc(DocumentElement):
 
 
 def etree_tobyteslist(tree):
-    string = xml.etree.ElementTree.tostring(tree)
+    string = tostring(tree)
     if IRON_PYTHON:
         return [binary_type(string, 'utf-8')]
     return [string]
@@ -833,7 +825,7 @@ def etree_tobyteslist(tree):
 
 def test_attribute_codec():
     doc = CodecTestDoc(attr=(1, 2))
-    tree = etree_fromstringlist(write(doc))
+    tree = fromstringlist(write(doc))
     assert tree.attrib['attr'] == '1,2'
     doc2 = read(CodecTestDoc, etree_tobyteslist(tree))
     assert doc2.attr == (1, 2)
@@ -841,7 +833,7 @@ def test_attribute_codec():
 
 def test_text_codec():
     doc = CodecTestDoc(text=(3, 4))
-    tree = etree_fromstringlist(write(doc))
+    tree = fromstringlist(write(doc))
     assert tree.find('text').text == '3,4'
     doc2 = read(CodecTestDoc, etree_tobyteslist(tree))
     assert doc2.text == (3, 4)
@@ -855,7 +847,7 @@ class ContentCodecTestDoc(DocumentElement):
 
 def test_content_codec():
     doc = ContentCodecTestDoc(c=(5, 6))
-    tree = etree_fromstringlist(write(doc, as_bytes=True))
+    tree = fromstringlist(write(doc, as_bytes=True))
     assert tree.text == '5,6'
     doc2 = read(ContentCodecTestDoc, etree_tobyteslist(tree))
     assert doc2.c == (5, 6)
@@ -875,14 +867,14 @@ def test_read_none_text():
 
 def test_write_none_attribute():
     doc = CodecTestDoc(attr=None, text=(1, 2))
-    tree = etree_fromstringlist(write(doc))
+    tree = fromstringlist(write(doc))
     assert tree.find('text').text == '1,2'
     assert 'attr' not in tree.attrib
 
 
 def test_write_none_text():
     doc = CodecTestDoc(attr=(1, 2), text=None)
-    tree = etree_fromstringlist(write(doc))
+    tree = fromstringlist(write(doc))
     assert tree.find('text') is None
     assert tree.attrib['attr'] == '1,2'
 

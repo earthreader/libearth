@@ -6,6 +6,9 @@
 
       libearth/codecs
       libearth/compat
+      libearth/compat/etree
+      libearth/compat/clrxmlreader
+      libearth/compat/xmlpullreader
       libearth/crawler
       libearth/feed
       libearth/parser

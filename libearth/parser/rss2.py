@@ -10,15 +10,8 @@ try:
 except ImportError:
     import urllib.request as urllib2
 
-try:
-    from lxml import etree
-except ImportError:
-    try:
-        from xml.etree import cElementTree as etree
-    except ImportError:
-        from xml.etree import ElementTree as etree
-
 from ..codecs import Rfc822
+from ..compat.etree import fromstring
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Text)
 from ..tz import now
@@ -49,7 +42,7 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
     :rtype: :class:`tuple`
 
     """
-    root = etree.fromstring(xml)
+    root = fromstring(xml)
     channel = root.find('channel')
     items = channel.findall('item')
     feed_data, crawler_hints = rss_get_channel_data(channel, feed_url)

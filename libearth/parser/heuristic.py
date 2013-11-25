@@ -4,14 +4,7 @@
 Guess the syndication format of given arbitrary XML documents.
 
 """
-try:
-    from lxml import etree
-except ImportError:
-    try:
-        from xml.etree import cElementTree as etree
-    except ImportError:
-        from xml.etree import ElementTree as etree
-
+from ..compat.etree import fromstring
 from .atom import parse_atom
 from .rss2 import parse_rss
 
@@ -33,7 +26,7 @@ def get_format(document):
 
     """
     try:
-        root = etree.fromstring(document)
+        root = fromstring(document)
     except Exception:
         return None
     if root.tag == '{http://www.w3.org/2005/Atom}feed':

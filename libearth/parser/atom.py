@@ -13,15 +13,8 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
-try:
-    from lxml import etree
-except ImportError:
-    try:
-        from xml.etree import cElementTree as etree
-    except ImportError:
-        from xml.etree import ElementTree as etree
-
 from ..codecs import Rfc3339
+from ..compat.etree import fromstring
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Source, Text)
 
@@ -53,7 +46,7 @@ def parse_atom(xml, feed_url, parse_entry=True):
     :rtype: :class:`tuple`
 
     """
-    root = etree.fromstring(xml)
+    root = fromstring(xml)
     entries = root.findall('{' + XMLNS_ATOM + '}' + 'entry')
     feed_data = atom_get_feed_data(root, feed_url)
     if parse_entry:
