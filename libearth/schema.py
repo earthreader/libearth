@@ -60,7 +60,7 @@ import xml.sax
 import xml.sax.handler
 import xml.sax.saxutils
 
-from .compat import UNICODE_BY_DEFAULT, string_type
+from .compat import UNICODE_BY_DEFAULT, binary_type, string_type
 from .compat.xmlpullreader import PullReader
 
 __all__ = ('PARSER_LIST',
@@ -1670,7 +1670,7 @@ class write(collections.Iterable):
                                              self.document_type.__tag__,
                                              self.document_type.__xmlns__))
         if UNICODE_BY_DEFAULT and self.as_bytes:
-            return (chunk.encode('utf-8') for chunk in result)
+            return (binary_type(chunk, 'utf-8') for chunk in result)
         elif not UNICODE_BY_DEFAULT and self.as_bytes is False:
             return (chunk.decode('utf-8') for chunk in result)
         return result
