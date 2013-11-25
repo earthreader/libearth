@@ -26,13 +26,15 @@ processes.*
 """
 import collections
 import contextlib
+import io
 import re
-import sys
 import threading
 import traceback
 
+from .compat import IRON_PYTHON, PY3
 
-if sys.version_info >= (3,):
+
+if PY3:
     try:
         import _thread
     except ImportError:
@@ -397,7 +399,13 @@ class DirtyBuffer(Repository):
             d = d.setdefault(k, {})
         if not isinstance(d, dict):
             raise RepositoryKeyError(key)
-        bytearray = b''.join(iterable)
+        if IRON_PYTHON:
+            chunks = io.BytesIO()
+            for chunk in iterable:
+                chunks.write(chunk)
+            bytearray = chunks.getvalue()
+        else:
+            bytearray = b''.join(iterable)
         d[key[-1]] = _type_hint, bytearray
 
     def exists(self, key):
