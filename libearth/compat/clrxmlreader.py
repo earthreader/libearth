@@ -1,7 +1,8 @@
 """:mod:`xml.compat.clrxmlreader` --- ``System.Xml.XmlReader`` backed SAX
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Python :mod:`xml.sax` parser implementation using CLR ``System.Xml.XmlReader``.
+Python :mod:`xml.sax` parser implementation and ElementTree builder using
+CLR ``System.Xml.XmlReader``.
 
 .. seealso::
 
@@ -17,12 +18,19 @@ clr.AddReference('System.Xml')
 import collections
 import System
 import System.IO
+import System.Text
 import System.Xml
+import xml.etree.ElementTree
 import xml.sax.xmlreader
 
 from .xmlpullreader import PullReader
 
-__all__ = 'IteratorStream', 'XmlReader', 'create_parser'
+__all__ = ('XMLNS_XMLNS', 'IteratorStream', 'TreeBuilder', 'XmlReader',
+           'create_parser')
+
+
+#: (:class:`str`) The reserved namespace URI for XML namespace.
+XMLNS_XMLNS = 'http://www.w3.org/2000/xmlns/'
 
 
 def create_parser():
@@ -57,6 +65,8 @@ class XmlReader(PullReader):
             qnames = {}
             if reader.HasAttributes:
                 while reader.MoveToNextAttribute():
+                    if reader.NamespaceURI == XMLNS_XMLNS:
+                        continue
                     attr = reader.NamespaceURI or None, reader.LocalName
                     attrs[attr] = reader.Value
                     qnames[attr] = reader.Name
@@ -66,6 +76,11 @@ class XmlReader(PullReader):
                 reader.Name,
                 xml.sax.xmlreader.AttributesNSImpl(attrs, qnames)
             )
+            if reader.IsEmptyElement:
+                handler.endElementNS(
+                    (reader.NamespaceURI or None, reader.LocalName),
+                    reader.Name
+                )
         elif node_type == XmlNodeType.Text or node_type == XmlNodeType.CDATA:
             handler.characters(reader.Value)
         elif node_type == XmlNodeType.EndElement:
@@ -172,3 +187,52 @@ class IteratorStream(System.IO.Stream):
         raise System.InvalidOperationException(
             'Write is unsupported on this stream'
         )
+
+
+class TreeBuilder(object):
+    """ElementTree builder using ``System.Xml.XmlReader``."""
+
+    def __init__(self):
+        self.buffer = System.IO.MemoryStream()
+        self.encode = System.Text.Encoding.Default.GetBytes
+
+    def feed(self, data):
+        if isinstance(data, str):
+            data = self.encode(data)
+        else:
+            data = data.ToByteArray()
+        self.buffer.Write(data, 0, len(data))
+
+    def close(self):
+        self.buffer.Seek(0, System.IO.SeekOrigin.Begin)
+        builder = xml.etree.ElementTree.TreeBuilder()
+        reader = System.Xml.XmlReader.Create(self.buffer)
+        XmlNodeType = System.Xml.XmlNodeType
+        fixname = self.fixname
+        while reader.Read():
+            node_type = reader.NodeType
+            if node_type == XmlNodeType.Element:
+                attrib = {}
+                if reader.HasAttributes:
+                    while reader.MoveToNextAttribute():
+                        if reader.NamespaceURI == XMLNS_XMLNS:
+                            continue
+                        attrib[fixname(reader)] = reader.Value
+                    reader.MoveToElement()
+                builder.start(fixname(reader), attrib)
+                if reader.IsEmptyElement:
+                    builder.end(fixname(reader))
+            elif (node_type == XmlNodeType.Text or
+                  node_type == XmlNodeType.CDATA):
+                builder.data(reader.Value)
+            elif node_type == XmlNodeType.EndElement:
+                builder.end(fixname(reader))
+        return builder.close()
+
+    @staticmethod
+    def fixname(reader):
+        name = reader.LocalName
+        xmlns = reader.NamespaceURI
+        if xmlns:
+            return '{' + xmlns + '}' + name
+        return name

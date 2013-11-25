@@ -54,10 +54,25 @@ except ImportError:
         except ImportError:
             fromstringlist = None
 
+from . import IRON_PYTHON
+
 __all__ = 'fromstring', 'fromstringlist'
 
 
-if fromstringlist is None:
+if IRON_PYTHON:
+    from xml.etree import ElementTree
+    from .clrxmlreader import TreeBuilder
+
+    def fromstring(string, parser=None):
+        if parser is None:
+            parser = TreeBuilder()
+        return ElementTree.fromstring(string, parser)
+
+    def fromstringlist(iterable, parser=None):
+        if parser is None:
+            parser = TreeBuilder()
+        return ElementTree.fromstringlist(iterable, parser)
+elif fromstringlist is None:
     def fromstringlist(iterable):
         it = iter(iterable)
         try:

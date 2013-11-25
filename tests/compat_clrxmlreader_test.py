@@ -3,7 +3,7 @@ from pytest import mark
 from libearth.compat import IRON_PYTHON
 if IRON_PYTHON:
     import System  # to import bytes.ToByteArray()
-    from libearth.compat.clrxmlreader import IteratorStream
+    from libearth.compat.clrxmlreader import IteratorStream, TreeBuilder
 
 
 iron_python_only = mark.skipif('not IRON_PYTHON',
@@ -32,3 +32,20 @@ def test_iterator_stream():
     assert read_size == 3 and bytes(buffer_) == b'mnojkl'
     assert is_.Position == 15
     assert len(is_.buffer) == 0, 'is_.buffer = ' + repr(is_.buffer)
+
+
+@iron_python_only
+@mark.parametrize('as_bytes', [True, False])
+def test_etree_builder(as_bytes):
+    p = TreeBuilder()
+    text = '''<root xmlns='http://example.com/' xmlns:x="http://test.com/">
+       <tag attribute='value' x:attribute2="value2" />
+    </root>'''
+    if as_bytes:
+        text = bytes(text, 'ascii')
+    p.feed(text)
+    tree = p.close()
+    tag = tree.find('{http://example.com/}tag')
+    assert tag is not None
+    assert tag.attrib['attribute'] == 'value'
+    assert tag.attrib['{http://test.com/}attribute2'] == 'value2'
