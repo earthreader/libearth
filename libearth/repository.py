@@ -8,7 +8,7 @@ import os
 import os.path
 import tempfile
 
-from .compat import xrange
+from .compat import IRON_PYTHON, xrange
 
 __all__ = ('FileNotFoundError', 'FileSystemRepository', 'NotADirectoryError',
            'Repository', 'RepositoryKeyError')
@@ -169,7 +169,7 @@ class FileSystemRepository(Repository):
     #: It should be readable and writable.
     path = None
 
-    def __init__(self, path, mkdir=True, atomic=False):
+    def __init__(self, path, mkdir=True, atomic=IRON_PYTHON):
         if not os.path.exists(path):
             if mkdir:
                 os.makedirs(path)
