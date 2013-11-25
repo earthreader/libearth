@@ -109,7 +109,8 @@ class Rfc3339(Codec):
             value = value.astimezone(utc)
         dt = value.strftime('%Y-%m-%dT%H:%M:%S')
         if value.microsecond:
-            dt += value.strftime('.%f').rstrip('0')
+            # IronPython strftime() seems to ignore %f
+            dt += '.{0:06}'.format(value.microsecond).rstrip('0')
         offset = value.tzinfo.utcoffset(value)
         if offset == datetime.timedelta(0):
             dt += 'Z'
