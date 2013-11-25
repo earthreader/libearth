@@ -171,7 +171,7 @@ def test_generator_html():
 
 def test_entry_read():
     # http://www.intertwingly.net/wiki/pie/FormatTests
-    entry = read(Entry, ['''
+    entry = read(Entry, [b'''
         <entry xmlns="http://www.w3.org/2005/Atom">
             <title>Atom-Powered Robots Run Amok</title>
             <link href="http://example.org/2003/12/13/atom03"/>
@@ -215,7 +215,7 @@ def test_entry_str():
 
 
 def test_source():
-    entry = read(Entry, ['''
+    entry = read(Entry, [b'''
         <entry xmlns="http://www.w3.org/2005/Atom">
             <source>
                 <title>Source of all knowledge</title>
@@ -247,7 +247,7 @@ def test_source():
 
 @fixture
 def fx_feed():
-    return read(Feed, ['''
+    return read(Feed, [b'''
         <feed xmlns="http://www.w3.org/2005/Atom"
               xmlns:mark="http://earthreader.org/mark/">
             <title>Example Feed</title>
