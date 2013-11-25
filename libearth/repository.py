@@ -3,6 +3,7 @@
 
 """
 import collections
+import io
 import os
 import os.path
 
@@ -178,7 +179,7 @@ class FileSystemRepository(Repository):
     def read(self, key):
         super(FileSystemRepository, self).read(key)
         try:
-            f = open(os.path.join(self.path, *key), 'rb')
+            f = io.open(os.path.join(self.path, *key), 'rb')
         except IOError as e:
             raise RepositoryKeyError(key, str(e))
         return self._read(f)
@@ -199,7 +200,7 @@ class FileSystemRepository(Repository):
             p = os.path.join(*dirpath[:i + 1])
             if not os.path.isdir(p):
                 os.mkdir(p)
-        with open(os.path.join(self.path, *key), 'wb') as f:
+        with io.open(os.path.join(self.path, *key), 'wb') as f:
             for chunk in iterable:
                 f.write(chunk)
 
