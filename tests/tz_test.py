@@ -21,7 +21,7 @@ def test_fixed_offset():
 
 
 def test_fixed_offset_name():
-    tz = FixedOffset(9 * 60, name='custom')
+    tz = FixedOffset(9 * 60, 'custom')
     dt = datetime.datetime(2013, 8, 15, 3, 18, 30, tzinfo=tz)
     assert (dt.astimezone(utc).replace(tzinfo=None) ==
             datetime.datetime(2013, 8, 14, 18, 18, 30))
