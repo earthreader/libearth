@@ -46,7 +46,6 @@ script:
   fi
 - if [[ "$PYTHON_VM" == "ironpython" ]]; then
     mono IronPython-2.7.4/ipy.exe -X:FullFrames pytest.py -s --assert=plain tests || exit $?;
-    # http://stackoverflow.com/a/6128672/383405
   fi
 after_success:
 - if [[ "$PYTHON_VM" == "cpython" ]]; then coveralls; fi
