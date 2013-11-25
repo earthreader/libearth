@@ -2,7 +2,6 @@
 import collections
 import re
 import xml.etree.ElementTree
-import xmllib
 
 from pytest import fixture, mark, raises
 
