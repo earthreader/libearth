@@ -15,6 +15,7 @@ except ImportError:
 from pytest import raises, mark
 import mock
 
+from libearth.compat import UNICODE_BY_DEFAULT
 from libearth.feed import Feed
 from libearth.parser import atom, rss2
 from libearth.parser.autodiscovery import FeedUrlNotFoundError, autodiscovery
@@ -154,7 +155,8 @@ autodiscovery_with_regex = '''
 '''
 
 
-@mark.skipif('sys.version_info >= (3, 0)', reason='Error occurs under Python 3')
+@mark.skipif('UNICODE_BY_DEFAULT',
+             reason='Error occurs unless unicode by default')
 def test_autodiscovery_with_regex():
 
     class TestHTMLParser(HTMLParser.HTMLParser):
@@ -260,7 +262,7 @@ def test_autodiscovery_when_atom():
 def test_atom_parser():
     url = 'http://vio.atomtest.com/feed/atom'
     crawled_feed, _ = atom.parse_atom(atom_xml, url)
-    feed = read(Feed, write(crawled_feed))
+    feed = read(Feed, write(crawled_feed, as_bytes=True))
     title = crawled_feed.title
     assert title.type == feed.title.type
     assert title.value == feed.title.value
@@ -409,7 +411,7 @@ def test_rss_parser():
         rss_xml,
         'http://sourcetest.com/rss.xml'
     )
-    feed = read(Feed, write(crawled_feed))
+    feed = read(Feed, write(crawled_feed, as_bytes=True))
     assert crawled_feed.id == feed.id
     title = crawled_feed.title
     assert title.type == feed.title.type
