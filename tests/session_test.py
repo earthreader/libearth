@@ -6,6 +6,7 @@ import time
 from pytest import fixture, mark, raises
 
 from libearth.codecs import Integer
+from libearth.compat import binary
 from libearth.schema import Attribute, Child, Content, Text, Element
 from libearth.session import (SESSION_XMLNS, MergeableDocumentElement, Revision,
                               RevisionCodec, RevisionSet, RevisionSetCodec,
@@ -420,4 +421,4 @@ def test_session_merge():
     (['<doc', ' />'], None),
 ])
 def test_parse_revision(iterable, rv):
-    assert parse_revision(iterable) == rv
+    assert parse_revision(map(binary, iterable)) == rv

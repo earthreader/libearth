@@ -38,14 +38,14 @@ def test_not_implemented_error():
     with raises(NotImplementedError):
         r.read(['key'])
     with raises(NotImplementedError):
-        r.write(['key'], '')
+        r.write(['key'], [b''])
     with raises(NotImplementedError):
         r.exists(['key'])
     with raises(NotImplementedError):
         r.list(['key'])
     r2 = RepositoryImplemented()
     assert r2.read(['key']) == b''
-    r2.write(['key'], b'')
+    r2.write(['key'], [b''])
     assert r2.exists(['key'])
     assert r2.list(['key']) == frozenset()
 

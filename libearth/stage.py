@@ -28,13 +28,11 @@ import collections
 import contextlib
 import io
 import re
+import sys
 import threading
 import traceback
 
-from .compat import IRON_PYTHON, PY3
-
-
-if PY3:
+if sys.version_info >= (3,):
     try:
         import _thread
     except ImportError:
@@ -54,7 +52,7 @@ try:
 except ImportError:
     stackless = None
 
-from .compat import reduce
+from .compat import IRON_PYTHON, binary_type, reduce
 from .feed import Feed
 from .repository import Repository, RepositoryKeyError
 from .schema import read, write
@@ -121,8 +119,8 @@ class BaseStage(object):
 
     #: (:class:`collections.MutableMapping`) Ongoing transactions.  Keys are
     #: the context identifier (that :func:`get_current_context_id()` returns),
-    #: and values are the :class:`DirtyBuffer` that should be written
-    #: when the transaction is committed.
+    #: and values are pairs of the :class:`DirtyBuffer` that should be written
+    #: when the transaction is committed, and stack information.
     transactions = None
 
     def __init__(self, session, repository):
@@ -207,9 +205,12 @@ class BaseStage(object):
            This method is intended to be internal.
 
         """
+        timestamp = now().isoformat()
+        if not isinstance(timestamp, binary_type):
+            timestamp = binary_type(timestamp, 'ascii')
         self.repository.write(
             self.SESSION_DIRECTORY_KEY + [self.session.identifier],
-            [now().isoformat().encode()]
+            [timestamp]
         )
 
     def read(self, document_type, key):

@@ -204,7 +204,7 @@ def test_stage_write(fx_repo, fx_session, fx_stage):
     assert wdoc.__revision__.session is fx_session
     assert min_ts <= wdoc.__revision__.updated_at <= now()
     xml = fx_repo.data['doc.{0}.xml'.format(fx_session.identifier)]
-    read_doc = read(TestDoc, xml)
+    read_doc = read(TestDoc, [xml])
     assert isinstance(read_doc, TestDoc)
     assert read_doc.__revision__ == wdoc.__revision__
 

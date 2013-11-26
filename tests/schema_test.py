@@ -1003,8 +1003,8 @@ def test_element_list_consume_buffer_regression():
 
 
 def test_element_list_consume_buffer_regression_root_stack_top_should_be_1():
-    xml = ['<a><b><!-- 1 --><c></c><c><d>', 'content</d></c><c></c></b><b>',
-           '<!-- 2 --><c><d>abc</d></c></b><b><!-- 3 --></b></a>']
+    xml = [b'<a><b><!-- 1 --><c></c><c><d>', b'content</d></c><c></c></b><b>',
+           b'<!-- 2 --><c><d>abc</d></c></b><b><!-- 3 --></b></a>']
     doc = read(ELConsumeBufferRegressionTestDoc, xml)
     assert len(doc.b) == 3
     b = doc.b[0]

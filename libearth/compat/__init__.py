@@ -46,7 +46,7 @@ unichr = chr if PY3 else unichr
 
 def binary(string, var=None):
     """Makes ``string`` to :class:`str` in Python 2.
-    Makes ``string`` to :class:`bytes` in Python 3.
+    Makes ``string`` to :class:`bytes` in Python 3 or IronPython.
 
     :param string: a string to cast it to :data:`binary_type`
     :type string: :class:`bytes`, :class:`str`, :class:`unicode`
@@ -55,7 +55,7 @@ def binary(string, var=None):
 
     """
     if isinstance(string, text_type):
-        return string.encode()
+        return bytes(string, sys.getdefaultencoding())
     elif isinstance(string, binary_type):
         return string
     if var:
