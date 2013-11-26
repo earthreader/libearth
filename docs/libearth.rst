@@ -8,6 +8,7 @@
       libearth/compat
       libearth/compat/etree
       libearth/compat/clrxmlreader
+      libearth/compat/parallel
       libearth/compat/xmlpullreader
       libearth/crawler
       libearth/feed
