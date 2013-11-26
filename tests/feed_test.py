@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 import datetime
+import functools
 import hashlib
-import threading
 
 from pytest import fixture, raises
 
-from libearth.compat import binary, text_type
+from libearth.compat import IRON_PYTHON, binary, text_type
+from libearth.compat.parallel import parallel_map
 from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
                            LinkList, Person, Source, Text, Mark)
 from libearth.repository import FileSystemRepository
-from libearth.schema import read
+from libearth.schema import read, write
 from libearth.session import Session
 from libearth.stage import Stage
 from libearth.tz import utc
+from .stage_test import MemoryRepository
 
 
 def u(text):
@@ -403,7 +405,10 @@ def test_mark(fx_mark_true, fx_mark_false):
 
 @fixture
 def fx_stages(tmpdir):
-    repo = FileSystemRepository(str(tmpdir))
+    if IRON_PYTHON:
+        repo = MemoryRepository()
+    else:
+        repo = FileSystemRepository(str(tmpdir))
     session_a = Session(identifier='a')
     session_b = Session(identifier='b')
     stage_a = Stage(session_a, repo)
@@ -570,6 +575,11 @@ def apply_timestamp(stage, feed_id, timestamp):
     with stage:
         feed = stage.feeds[feed_id]
         feed.entries[0].read = Mark(marked=True, updated_at=timestamp)
+        assert feed.entries[0].read.updated_at == timestamp
+        written = read(Feed, write(feed, as_bytes=True))
+        assert written.entries[0].read.updated_at == timestamp, repr(
+            (written.entries[0].read.updated_at, timestamp)
+        )
         stage.feeds[feed_id] = feed
 
 
@@ -577,14 +587,13 @@ def test_race_condition(fx_stages, fx_feed):
     stage, _ = fx_stages
     with stage:
         stage.feeds['test'] = fx_feed
-    threads = []
-    for i in range(10):
-        t = threading.Thread(target=apply_timestamp,
-                             args=(stage, 'test', timestamp(i)))
-        t.daemon = True
-        threads.append(t)
-        t.start()
-    for thread in threads:
-        thread.join()
+    result = parallel_map(
+        10,
+        functools.partial(apply_timestamp, stage, 'test'),
+        map(timestamp, range(10))
+    )
+    for _ in result:
+        pass
     with stage:
-        assert stage.feeds['test'].entries[0].read.updated_at == timestamp(9)
+        updated_at = stage.feeds['test'].entries[0].read.updated_at
+    assert updated_at == timestamp(9)
