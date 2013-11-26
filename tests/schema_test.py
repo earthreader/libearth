@@ -10,10 +10,10 @@ from libearth.schema import (Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
                              Element, ElementList, EncodeError, IntegrityError,
                              Text,
-                             element_list_for, index_descriptors,
+                             complete, element_list_for, index_descriptors,
                              inspect_attributes, inspect_child_tags,
                              inspect_content_tag, inspect_xmlns_set,
-                             read, validate, write)
+                             is_partially_loaded, read, validate, write)
 
 
 def u(text):
@@ -155,10 +155,13 @@ def fx_test_doc():
 def test_document_parse(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.title_attr.value == u('제목 test')
     assert consume_log[-1] == 'TITLE_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.content_attr.value == 'Content test'
     assert consume_log[-1] == 'CONTENT_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert isinstance(doc.multi_attr, collections.Sequence)
 
 
@@ -166,99 +169,134 @@ def test_attribute(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert doc.attr_attr == u('속성 값')
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
 
 
 def test_xmlns_attribute(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert doc.ns_element_attr.ns_attr_attr == 'namespace attribute value'
     assert consume_log[-1] == 'NS_ELEMENT_START' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
 
 
 def test_attribute_decoder(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert doc.attr_decoder == 'decoder test'
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
 
 
 def test_content_decoder(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert doc.content_decoder.value == 'CONTENT DECODER'
+    assert is_partially_loaded(doc) or IRON_PYTHON
 
 
 def test_multiple_child_iter(fx_test_doc):
     doc, consume_log = fx_test_doc
     it = iter(doc.multi_attr)
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
-    assert next(it).value == 'a'
+    assert is_partially_loaded(doc) or IRON_PYTHON
+    el = next(it)
+    assert el.value == 'a'
     assert consume_log[-1] == 'MULTI_1_CLOSE' or IRON_PYTHON
-    assert next(it).value == 'b'
+    assert is_partially_loaded(doc) or IRON_PYTHON
+    assert not is_partially_loaded(el)
+    el = next(it)
+    assert el.value == 'b'
     assert consume_log[-1] == 'MULTI_2_CLOSE' or IRON_PYTHON
-    assert next(it).value == 'c'
+    assert is_partially_loaded(doc) or IRON_PYTHON
+    assert not is_partially_loaded(el)
+    el = next(it)
+    assert el.value == 'c'
     assert consume_log[-1] == 'MULTI_3_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
+    assert not is_partially_loaded(el)
     with raises(StopIteration):
         next(it)
     assert consume_log[-1] == 'TEST_CLOSE'
+    assert not is_partially_loaded(doc)
 
 
 def test_multiple_child_len(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert len(doc.multi_attr) == 3
     assert consume_log[-1] == 'TEST_CLOSE'
+    assert not is_partially_loaded(doc)
 
 
 def test_multiple_child_getitem(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.multi_attr[0].value == 'a'
     assert consume_log[-1] == 'MULTI_1_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.multi_attr[1].value == 'b'
     assert consume_log[-1] == 'MULTI_2_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.multi_attr[2].value == 'c'
     assert consume_log[-1] == 'MULTI_3_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
 
 
 def test_multiple_child_getitem_from_last(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.multi_attr[2].value == 'c'
     assert consume_log[-1] == 'MULTI_3_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.multi_attr[1].value == 'b'
     assert consume_log[-1] == 'MULTI_3_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.multi_attr[0].value == 'a'
     assert consume_log[-1] == 'MULTI_3_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
 
 
 def test_text_attribute(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.text_content_attr == u('텍스트 내용')
     assert consume_log[-1] == 'TEXT_CONTENT_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
 
 
 def test_text_multiple_text_len(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert len(doc.text_multi_attr) == 2
     assert consume_log[-1] == 'TEST_CLOSE'
+    assert not is_partially_loaded(doc)
 
 
 def test_multiple_text_getitem(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.text_multi_attr[0] == 'a'
     assert consume_log[-1] == 'TEXT_MULTI_1_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.text_multi_attr[1] == 'b'
     assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
 
 
 def test_multiple_text_getitem_from_last(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.text_multi_attr[1] == 'b'
     assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.text_multi_attr[0] == 'a'
     assert consume_log[-1] == 'TEXT_MULTI_2_CLOSE' or IRON_PYTHON
+    assert is_partially_loaded(doc) or IRON_PYTHON
 
 
 def test_element_list_repr(fx_test_doc):
@@ -399,6 +437,13 @@ def test_xmlns_same_xmlns_child(fx_xmlns_doc):
 
 def test_xmlns_other_xmlns_child(fx_xmlns_doc):
     assert fx_xmlns_doc.otherns_attr == 'Other namespace'
+
+
+def test_complete(fx_test_doc):
+    doc, _ = fx_test_doc
+    assert is_partially_loaded(doc)
+    complete(doc)
+    assert not is_partially_loaded(doc)
 
 
 @fixture

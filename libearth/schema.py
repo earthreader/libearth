@@ -69,10 +69,10 @@ __all__ = ('PARSER_LIST',
            'DescriptorConflictError', 'DocumentElement', 'Element',
            'ElementList', 'EncodeError', 'IntegrityError',
            'SchemaError', 'Text',
-           'element_list_for',
+           'complete', 'element_list_for',
            'index_descriptors', 'inspect_attributes', 'inspect_child_tags',
-           'inspect_content_tag', 'inspect_xmlns_set', 'read', 'validate',
-           'write')
+           'inspect_content_tag', 'inspect_xmlns_set', 'is_partially_loaded',
+           'read', 'validate', 'write')
 
 
 class SchemaError(TypeError):
@@ -319,10 +319,10 @@ class Child(Descriptor):
     def end_element(self, reserved_value, content):
         element_type = type(reserved_value)
         attr = inspect_content_tag(element_type)
-        if attr is None:
-            return
-        content_desc = attr[1]
-        content_desc.read(reserved_value, content)
+        if attr is not None:
+            content_desc = attr[1]
+            content_desc.read(reserved_value, content)
+        reserved_value._partial = False
 
 
 class Codec(object):
@@ -791,12 +791,13 @@ class Element(object):
 
     """
 
-    __slots__ = '_attrs', '_content', '_data', '_parent', '_root'
+    __slots__ = '_attrs', '_content', '_data', '_parent', '_root', '_partial'
 
     def __init__(self, _parent=None, **attributes):
         self._attrs = getattr(self, '_attrs', {})  # FIXME
         self._content = getattr(self, '_content', None)
         self._data = getattr(self, '_data', {})
+        self._partial = False
         if _parent is not None:
             if not isinstance(_parent, Element):
                 raise TypeError('expected a {0.__module__}.{0.__name__} '
@@ -806,6 +807,7 @@ class Element(object):
             if hasattr(self._root(), '_handler'):
                 self._stack_top = (1 if self._root() is self
                                    else len(self._root()._handler.stack))
+                self._partial = True
         cls = type(self)
         acceptable_desc_types = Descriptor, Content, Attribute, property
         # FIXME: ^-- hardcoded type list
@@ -1323,8 +1325,42 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             if attr is not None:
                 content_desc = attr[1]
                 content_desc.read(context.reserved_value, text)
+            context.reserved_value._partial = False
         else:
             context.descriptor.end_element(context.reserved_value, text)
+
+
+def complete(element):
+    """Completely load the given ``element``.
+
+    :param element: an element loaded by :func:`read()`
+    :type element: :class:`Element`
+
+    """
+    if not isinstance(element, Element):
+        raise TypeError('element must be an instance of {0.__module__}.'
+                        '{0.__name__}, not {1!r}'.format(Element, element))
+    if element._partial:
+        parse_next = element._root()._parse_next
+        while element._partial:
+            parse_next()
+
+
+def is_partially_loaded(element):
+    """Return whether the given ``element`` is not completely loaded
+    by :func:`read()` yet.
+
+    :param element: an element
+    :type element: :class:`Element`
+    :returns: whether :const:`True` if the given ``element`` is partially
+              loaded
+    :rtype: :class:`bool`
+
+    """
+    if not isinstance(element, Element):
+        raise TypeError('element must be an instance of {0.__module__}.'
+                        '{0.__name__}, not {1!r}'.format(Element, element))
+    return element._partial
 
 
 def index_descriptors(element_type):
