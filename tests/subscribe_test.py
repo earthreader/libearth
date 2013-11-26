@@ -46,7 +46,7 @@ def test_count_after_remove(fx_subscription):
     assert list(subs) == []
 
 
-XML = '''
+XML = b'''
 <opml xmlns:e="http://earthreader.org/subscription-list/" version="2.0">
     <head>
         <title>Earth Reader's Subscriptions</title>
@@ -70,7 +70,7 @@ XML = '''
 </opml>
 '''
 
-XML_CATEGORY = '''
+XML_CATEGORY = b'''
 <opml version="2.0">
     <head>
         <title>Earth Reader's Subscriptions</title>
@@ -99,7 +99,7 @@ XML_CATEGORY = '''
 </opml>
 '''
 
-XML_DUPLICATION = '''
+XML_DUPLICATION = b'''
 <opml version="2.0">
     <head>
         <title>Earth Reader's Subscriptions</title>
@@ -119,7 +119,7 @@ XML_DUPLICATION = '''
 </opml>
 '''
 
-XML_RECURSIVE = '''
+XML_RECURSIVE = b'''
 <opml version="2.0">
     <head>
         <title>Earth Reader's Subscriptions</title>
@@ -155,7 +155,7 @@ XML_RECURSIVE = '''
 
 @fixture
 def fx_subscription_list():
-    return read(SubscriptionList, XML)
+    return read(SubscriptionList, [XML])
 
 
 def test_subscription_list_datetime(fx_subscription_list):
@@ -221,7 +221,7 @@ def test_subscription_feed_id(fx_subscription_list):
 
 @fixture
 def fx_categorized_subscription_list():
-    return read(SubscriptionList, XML_CATEGORY)
+    return read(SubscriptionList, [XML_CATEGORY])
 
 
 def test_subscription_list_contains_category(fx_categorized_subscription_list):
@@ -274,7 +274,7 @@ def test_subscription_set_categories_subscriptions():
 
 @fixture
 def fx_duplicated_subscription_list():
-    return read(SubscriptionList, XML_DUPLICATION)
+    return read(SubscriptionList, [XML_DUPLICATION])
 
 
 def test_subscription_set_iter_uniqueness(fx_duplicated_subscription_list):
@@ -285,7 +285,7 @@ def test_subscription_set_iter_uniqueness(fx_duplicated_subscription_list):
 
 @fixture
 def fx_recursive_subscription_list():
-    return read(SubscriptionList, XML_RECURSIVE)
+    return read(SubscriptionList, [XML_RECURSIVE])
 
 
 def test_recursive_subscription_list(fx_recursive_subscription_list):
@@ -294,7 +294,7 @@ def test_recursive_subscription_list(fx_recursive_subscription_list):
     assert len(game_category.recursive_subscriptions) == 3
 
 
-XML_NO_HEAD = '''
+XML_NO_HEAD = b'''
 <opml version="2.0">
     <body>
         <outline text="CNET News.com" type="rss" version="RSS2"
@@ -307,7 +307,7 @@ XML_NO_HEAD = '''
 
 @fixture
 def fx_headless_subscription_list():
-    return read(SubscriptionList, XML_NO_HEAD)
+    return read(SubscriptionList, [XML_NO_HEAD])
 
 
 def test_no_head(fx_headless_subscription_list):
