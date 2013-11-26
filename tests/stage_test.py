@@ -1,8 +1,10 @@
 import collections
+import io
 import threading
 
 from pytest import fixture, raises
 
+from libearth.compat import IRON_PYTHON, binary_type
 from libearth.repository import (FileSystemRepository, Repository,
                                  RepositoryKeyError)
 from libearth.schema import read
@@ -89,7 +91,58 @@ class TestStage(BaseStage):
     )
 
 
-class TestRepository(Repository):
+class MemoryRepository(Repository):
+
+    def __init__(self):
+        self.data = {}
+
+    def read(self, key):
+        super(MemoryRepository, self).read(key)
+        data = self.data
+        for k in key:
+            try:
+                data = data[k]
+            except KeyError:
+                raise RepositoryKeyError(key)
+        if isinstance(data, collections.Mapping):
+            raise RepositoryKeyError(key)
+        return data,
+
+    def write(self, key, iterable):
+        super(MemoryRepository, self).write(key, iterable)
+        data = self.data
+        for k in key[:-1]:
+            data = data.setdefault(k, {})
+        buffer_ = io.BytesIO()
+        for chunk in iterable:
+            assert isinstance(chunk, binary_type), 'chunk = ' + repr(chunk)
+            buffer_.write(chunk)
+        data[key[-1]] = buffer_.getvalue()
+
+    def exists(self, key):
+        super(MemoryRepository, self).exists(key)
+        data = self.data
+        for k in key:
+            try:
+                data = data[k]
+            except KeyError:
+                return False
+        return True
+
+    def list(self, key):
+        super(MemoryRepository, self).list(key)
+        data = self.data
+        for k in key:
+            try:
+                data = data[k]
+            except KeyError:
+                raise RepositoryKeyError(key)
+        if isinstance(data, collections.Mapping):
+            return frozenset(data)
+        raise RepositoryKeyError(key)
+
+
+class TestRepository(MemoryRepository):
 
     DATA = {
         'doc.SESSID.xml': b'<test />',
@@ -114,47 +167,6 @@ class TestRepository(Repository):
 
     def __init__(self):
         self.data = dict(self.DATA)
-
-    def read(self, key):
-        super(TestRepository, self).read(key)
-        data = self.data
-        for k in key:
-            try:
-                data = data[k]
-            except KeyError:
-                raise RepositoryKeyError(key)
-        if isinstance(data, collections.Mapping):
-            raise RepositoryKeyError(key)
-        return data,
-
-    def write(self, key, iterable):
-        super(TestRepository, self).write(key, iterable)
-        data = self.data
-        for k in key[:-1]:
-            data = data.setdefault(k, {})
-        data[key[-1]] = b''.join(iterable).decode()
-
-    def exists(self, key):
-        super(TestRepository, self).exists(key)
-        data = self.data
-        for k in key:
-            try:
-                data = data[k]
-            except KeyError:
-                return False
-        return True
-
-    def list(self, key):
-        super(TestRepository, self).list(key)
-        data = self.data
-        for k in key:
-            try:
-                data = data[k]
-            except KeyError:
-                raise RepositoryKeyError(key)
-        if isinstance(data, collections.Mapping):
-            return frozenset(data)
-        raise RepositoryKeyError(key)
 
 
 @fixture
@@ -293,7 +305,10 @@ def test_get_deep_route(fx_session, fx_stage):
 
 
 def test_dirty_buffer(tmpdir):
-    repo = FileSystemRepository(str(tmpdir))
+    if IRON_PYTHON:
+        repo = MemoryRepository()
+    else:
+        repo = FileSystemRepository(str(tmpdir))
     dirty = DirtyBuffer(repo, threading.RLock())
     key = ['key']
     dir_key = []
