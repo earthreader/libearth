@@ -4,30 +4,21 @@
 Crawl feeds.
 
 """
-try:
-    import concurrent.futures
-except ImportError:
-    concurrent = None
-    import multiprocessing.pool
 import logging
-import numbers
 try:
     import urllib.request as urllib2
 except ImportError:
     import urllib2
 
+from .compat.parallel import parallel_map
 from .feed import Link
 from .parser.heuristic import get_format
 
-__all__ = 'crawl',
+__all__ = 'crawl', 'get_feed'
 
 
-class crawl(object):
+def crawl(feeds, pool_size):
     """Crawl feeds in feed list using thread.
-
-    .. note::
-
-       It will not crawl feeds unless iterate the generator.
 
     :param feeds: feeds
     :type feeds: :class: `collections.Sequence`
@@ -35,32 +26,11 @@ class crawl(object):
     :rtype: :class:`collections.Iterable`
 
     """
-
-    __slots__ = 'pool', 'async_results'
-
-    def __init__(self, feeds, pool_size):
-        if pool_size is None or not isinstance(pool_size, numbers.Integral):
-            raise TypeError('the pool_size must be integer')
-        if concurrent:
-            self.pool = concurrent.futures.ThreadPoolExecutor(
-                max_workers=pool_size
-            )
-            self.async_results = self.pool.map(get_feed, feeds)
-        else:
-            self.pool = multiprocessing.pool.ThreadPool(pool_size)
-            self.async_results = self.pool.imap_unordered(get_feed, feeds)
-
-    def __iter__(self):
-        for result in self.async_results:
-            yield result
-        if concurrent:
-            self.pool.shutdown()
-        else:
-            self.pool.close()
-            self.pool.join()
+    return parallel_map(pool_size, get_feed, feeds)
 
 
 def get_feed(feed_url):
+    # TODO: should be documented
     try:
         f = urllib2.urlopen(feed_url)
         feed_xml = f.read()
