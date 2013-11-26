@@ -54,6 +54,7 @@ except ImportError:
         from System import Action
         from System.Collections.Concurrent import BlockingCollection
         from System.Collections.Generic import IEnumerable
+        from System.Threading import Thread, ThreadStart
         from System.Threading.Tasks import Parallel, ParallelOptions
 
         class parallel_map(collections.Iterable):
@@ -74,20 +75,32 @@ except ImportError:
                 elif not iterables:
                     raise TypeError('missing iterable')
                 self.function = function
-                self.results = BlockingCollection[object]()
+                self.results = BlockingCollection[tuple]()
                 args = zip(*iterables)
                 self.length = len(args)
                 options = ParallelOptions()
                 options.MaxDegreeOfParallelism = pool_size
-                self.ForEach(args, options, self.store_result)
+                Thread.__new__.Overloads[ThreadStart](
+                    Thread,
+                    lambda: self.ForEach(args, options, self.store_result)
+                ).Start()
 
             def store_result(self, args):
-                result = self.function(*args)
+                try:
+                    value = self.function(*args)
+                except Exception as e:
+                    result = None, e
+                else:
+                    result = value, None
                 self.results.Add(result)
 
             def __iter__(self):
                 for _ in xrange(self.length):
-                    yield self.results.Take()
+                    value, error = self.results.Take()
+                    if error is None:
+                        yield value
+                    else:
+                        raise error
     else:
         from multiprocessing.pool import ThreadPool
 
