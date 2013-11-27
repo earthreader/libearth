@@ -243,7 +243,6 @@ class Child(Descriptor):
             multiple=multiple
         )
         self._element_type = element_type
-        self.loading = False
 
     @property
     def element_type(self):
@@ -271,8 +270,6 @@ class Child(Descriptor):
     def __set__(self, obj, value):
         if isinstance(obj, Element):
             element_type = self.element_type
-            if not self.loading:
-                complete(obj)
             if self.multiple:
                 if isinstance(value, collections.Sequence):
                     if len(value) < 1 or \
@@ -316,9 +313,8 @@ class Child(Descriptor):
             element_list = element._data.setdefault(self, [])
             element_list.append(child_element)
         else:
-            self.loading = True
-            setattr(element, attribute, child_element)
-            self.loading = False
+            if self not in element._data:
+                setattr(element, attribute, child_element)
         return child_element
 
     def end_element(self, reserved_value, content):
@@ -665,7 +661,7 @@ class Text(Descriptor, CodecDescriptor):
         if self.multiple:
             reserved_value._data.setdefault(self, []).append(content)
         else:
-            reserved_value._data[self] = content
+            reserved_value._data.setdefault(self, content)
 
 
 class Attribute(CodecDescriptor):

@@ -366,7 +366,8 @@ class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
     def title(self, title):
         head = self.head
         if head is None:
-            head = self.head = Head()
+            head = Head()
+            self.head = head
         head.title = title
 
     @property
