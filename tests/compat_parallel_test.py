@@ -1,7 +1,5 @@
 import numbers
 
-from pytest import raises
-
 from libearth.compat.parallel import cpu_count, parallel_map
 
 
@@ -29,8 +27,14 @@ def test_parallel_map_errors():
     input = [1, 2, 3, 0]
     result = parallel_map(4, lambda n: 1 // n, input)
     it = iter(result)
-    with raises(ZeroDivisionError):
+    # Although coudn't find why, pytest.raises() context manager
+    # seems not to work on IronPython.
+    try:
         next(it)
         next(it)
         next(it)
         next(it)
+    except ZeroDivisionError:
+        pass
+    else:
+        assert False, 'expected ZeroDivisionError, but it was not raised'
