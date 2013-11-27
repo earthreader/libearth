@@ -116,7 +116,12 @@ except ImportError:
                 elif not iterables:
                     raise TypeError('missing iterable')
                 self.pool = ThreadPool(pool_size)
-                self.results = self.pool.imap_unordered(function, *iterables)
+                self.function = function
+                self.results = self.pool.imap_unordered(self.map_function,
+                                                        zip(*iterables))
+
+            def map_function(self, args):
+                return self.function(*args)
 
             def __iter__(self):
                 for value in self.results:
