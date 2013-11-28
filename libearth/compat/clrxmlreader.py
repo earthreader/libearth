@@ -1,5 +1,5 @@
-""":mod:`xml.compat.clrxmlreader` --- ``System.Xml.XmlReader`` backed SAX
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`libearth.xml.compat.clrxmlreader` --- XML parser implementation for CLR
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Python :mod:`xml.sax` parser implementation and ElementTree builder using
 CLR ``System.Xml.XmlReader``.
@@ -101,6 +101,13 @@ class XmlReader(PullReader):
 
 
 class IteratorStream(System.IO.Stream):
+    """``System.IO.Stream`` implementation that takes a Python iterable
+    and then transforms it into CLR stream.
+
+    :param iterable: a Python iterable to transform
+    :type iterable: :class:`collections.Iterable`
+
+    """
 
     def __new__(cls, iterable):
         stream = System.IO.Stream.__new__(cls)
