@@ -25,7 +25,8 @@ ul, ol {
   line-height: 1.5;
 }
 
-ul ul, ul ol, ol ul, ol ol { padding-left: 35px; }
+ul ul, ul ol, ol ul, ol ol,
+.admonition ul, .admonition ol { padding-left: 35px; }
 
 ul.simple li, ol.simple li {
   margin: 1em 0;

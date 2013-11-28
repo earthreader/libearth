@@ -286,5 +286,24 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'python': ('http://docs.python.org/', None)
+    'python': ('http://docs.python.org/3/', None)
 }
+
+
+# IronPython runtime mock
+try:
+    import clr
+except ImportError:
+    module = type(sys)
+    clr = module('clr')
+    clr.AddReference = lambda a: None
+    sys.modules['clr'] = clr
+    System = module('System')
+    System.IO = module('System.IO')
+    System.IO.Stream = object
+    System.Text = module('System.Text')
+    System.Xml = module('System.Xml')
+    sys.modules['System'] = System
+    sys.modules['System.IO'] = System.IO
+    sys.modules['System.Text'] = System.Text
+    sys.modules['System.Xml'] = System.Xml
