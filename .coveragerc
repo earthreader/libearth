@@ -1,0 +1,14 @@
+[run]
+omit = libearth/compat/*.py
+
+[report]
+exclude_lines =
+    def __repr__:
+    raise NotImplementedError
+    raise TypeError
+    raise ValueError
+    except ImportError:
+    if (not )?UNICODE_BY_DEFAULT
+    if (not )?PY3
+    if (not )?IRON_PYTHON
+    if __name__ == .__main__.:
