@@ -12,6 +12,22 @@ actually implements.
 .. _web: https://github.com/earthreader/web
 
 
+Compatibility & portability
+---------------------------
+
+Libearth officially supports the following Python implementations:
+
+- Python 2.6, 2.7, 3.2, 3.3
+- CPython, PyPy, IronPython
+
+For environments :mod:`setuptools` not available, it has no required
+dependencies.
+
+See also :file:`tox.ini` file and CI_ builds.
+
+.. _CI: https://travis-ci.org/earthreader/libearth.png?branch=master
+
+
 Design docs
 -----------
 
