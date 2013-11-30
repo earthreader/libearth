@@ -7,6 +7,7 @@ import io
 import os
 import os.path
 import pipes
+import shutil
 import tempfile
 
 from .compat import IRON_PYTHON, xrange
@@ -225,7 +226,7 @@ class FileSystemRepository(Repository):
                 with os.popen(cmd) as pf:
                     pf.read()
             else:
-                os.rename(f.name, filename)
+                shutil.move(f.name, filename)
 
     def exists(self, key):
         super(FileSystemRepository, self).exists(key)
