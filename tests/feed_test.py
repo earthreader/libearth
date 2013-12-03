@@ -2,10 +2,11 @@
 import datetime
 import functools
 import hashlib
+import uuid
 
 from pytest import fixture, raises
 
-from libearth.compat import IRON_PYTHON, binary, text_type
+from libearth.compat import IRON_PYTHON, binary, text_type, xrange
 from libearth.compat.parallel import parallel_map
 from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
                            LinkList, Person, Source, Text, Mark)
@@ -597,3 +598,36 @@ def test_race_condition(fx_stages, fx_feed):
     with stage:
         updated_at = stage.feeds['test'].entries[0].read.updated_at
     assert updated_at == timestamp(9)
+
+
+@fixture
+def fx_entries():
+    entries = [
+        Entry(
+            title='entry {0}'.format(i),
+            updated_at=timestamp(i),
+            id='urn:uuid:{0}'.format(uuid.uuid4())
+        ) for i in xrange(10)
+    ]
+    return entries
+
+
+def test_merge_sorted(fx_stages, fx_feed, fx_entries):
+    stage, _ = fx_stages
+
+    with stage:
+        stage.feeds[fx_feed.id] = fx_feed
+
+    with stage:
+        for entry in fx_entries:
+            feed = stage.feeds[fx_feed.id]
+            feed.entries = [entry]
+            stage.feeds[fx_feed.id] = feed
+
+    with stage:
+        entries = stage.feeds[fx_feed.id].entries
+        print [entry.title.value for entry in entries]
+        print [entry.title.value for entry in
+               sorted(entries, key=lambda x: x.updated_at, reverse=True)]
+        assert entries == sorted(entries, key=lambda x: x.updated_at,
+                                 reverse=True)
