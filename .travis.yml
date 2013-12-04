@@ -49,7 +49,7 @@ script:
     py.test --durations=20 tests || exit $?;
   fi
 - if [[ "$PYTHON_VM" == "ironpython" ]]; then
-    mono IronPython-2.7.4/ipy.exe -X:ExceptionDetail -X:ShowClrExceptions -X:FullFrames pytest.py -v -s --assert=plain tests || exit $?;
+    mono IronPython-2.7.4/ipy.exe -X:ExceptionDetail -X:ShowClrExceptions -X:Frames pytest.py -v -s --assert=plain tests || exit $?;
   fi
 after_success:
 - if [[ "$PYTHON_VM" == "cpython" ]]; then coveralls; fi
