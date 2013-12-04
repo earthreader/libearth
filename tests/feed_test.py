@@ -626,8 +626,8 @@ def test_merge_sorted(fx_stages, fx_feed, fx_entries):
 
     with stage:
         entries = stage.feeds[fx_feed.id].entries
-        print [entry.title.value for entry in entries]
-        print [entry.title.value for entry in
-               sorted(entries, key=lambda x: x.updated_at, reverse=True)]
-        assert entries == sorted(entries, key=lambda x: x.updated_at,
-                                 reverse=True)
+        sorted_entries = sorted(entries, key=lambda entry: entry.updated_at,
+                                reverse=True)
+        assert len(entries) == len(sorted_entries)
+        for i in range(len(entries)):
+            assert entries[i] == sorted_entries[i]
