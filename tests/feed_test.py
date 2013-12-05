@@ -8,8 +8,8 @@ from pytest import fixture, raises
 
 from libearth.compat import IRON_PYTHON, binary, text_type, xrange
 from libearth.compat.parallel import parallel_map
-from libearth.feed import (Category, Content, Entry, Feed, Generator, Link,
-                           LinkList, Person, Source, Text, Mark)
+from libearth.feed import (Category, Content, Entry, EntryList, Feed, Generator,
+                           Link, LinkList, Person, Source, Text, Mark)
 from libearth.repository import FileSystemRepository
 from libearth.schema import read, write
 from libearth.session import Session
@@ -253,6 +253,19 @@ def test_entry_read():
 def test_entry_str():
     assert text_type(Entry(title=Text(value='Title desu'))) == 'Title desu'
     assert text_type(Entry()) == ''
+
+
+@fixture
+def fx_feed_entries(fx_feed, fx_test_entries):
+    fx_feed.entries.extend(fx_test_entries)
+    return fx_feed
+
+
+def test_entry_list_sorted(fx_feed_entries):
+    assert isinstance(fx_feed_entries.entries, EntryList)
+    sorted_entries = sorted(fx_feed_entries.entries, key=lambda entry:
+                            entry.updated_at, reverse=True)
+    assert sorted_entries == fx_feed_entries.entries.sorted_entries()
 
 
 def test_source():

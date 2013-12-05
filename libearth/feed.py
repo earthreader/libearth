@@ -637,6 +637,16 @@ class Entry(DocumentElement, Metadata):
         return self
 
 
+@element_list_for(Entry)
+class EntryList(collections.MutableSequence):
+    """Element list mixin specialized for :class:`Entry`."""
+    
+    def sorted_entries(self):
+        """Sort entries in time order. """
+
+        return sorted(self, key=lambda entry: entry.updated_at, reverse=True)
+
+
 class Feed(MergeableDocumentElement, Source):
     """Atom feed document, acting as a container for metadata and data
     associated with the feed.
