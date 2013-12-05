@@ -640,7 +640,7 @@ class Entry(DocumentElement, Metadata):
 @element_list_for(Entry)
 class EntryList(collections.MutableSequence):
     """Element list mixin specialized for :class:`Entry`."""
-    
+
     def sort_entries(self):
         """Sort entries in time order. """
 
