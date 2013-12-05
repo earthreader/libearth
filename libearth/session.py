@@ -240,7 +240,7 @@ class Session(object):
         self.revise(merged)
         from .subscribe import Feed
         if isinstance(merged, Feed):
-            merged.entries = merged.entries.sorted_entries()
+            merged.entries = merged.entries.sort_entries()
         return merged
 
     def __str__(self):

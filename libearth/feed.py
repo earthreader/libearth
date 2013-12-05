@@ -641,7 +641,7 @@ class Entry(DocumentElement, Metadata):
 class EntryList(collections.MutableSequence):
     """Element list mixin specialized for :class:`Entry`."""
     
-    def sorted_entries(self):
+    def sort_entries(self):
         """Sort entries in time order. """
 
         return sorted(self, key=lambda entry: entry.updated_at, reverse=True)
