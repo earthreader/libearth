@@ -20,9 +20,9 @@ from .schema import (Attribute, Child, Content as ContentValue, DocumentElement,
                      Element, Text as TextChild, element_list_for)
 from .tz import now
 
-__all__ = ('ATOM_XMLNS', 'MARK_XMLNS', 'Category', 'Content', 'Entry', 'Feed',
-           'Generator', 'Link', 'LinkList', 'Mark', 'Metadata', 'Person',
-           'Source', 'Text')
+__all__ = ('ATOM_XMLNS', 'MARK_XMLNS', 'Category', 'Content', 'Entry',
+           'EntryList', 'Feed', 'Generator', 'Link', 'LinkList', 'Mark',
+           'Metadata', 'Person', 'Source', 'Text')
 
 
 #: (:class:`str`) The XML namespace name used for Atom (:rfc:`4287`).
