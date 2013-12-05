@@ -644,7 +644,11 @@ class EntryList(collections.MutableSequence):
     def sort_entries(self):
         """Sort entries in time order. """
 
-        return sorted(self, key=lambda entry: entry.updated_at, reverse=True)
+        return EntryList.list_type(sorted(
+            self, key=lambda entry: entry.updated_at, reverse=True))
+
+
+EntryList.list_type = type('EntryList.list_type', (list, EntryList), {})
 
 
 class Feed(MergeableDocumentElement, Source):

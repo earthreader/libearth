@@ -263,9 +263,11 @@ def fx_feed_entries(fx_feed, fx_test_entries):
 
 def test_entry_list_sorted(fx_feed_entries):
     assert isinstance(fx_feed_entries.entries, EntryList)
+    result = fx_feed_entries.entries.sort_entries()
+    assert isinstance(result, EntryList)
     sorted_entries = sorted(fx_feed_entries.entries, key=lambda entry:
                             entry.updated_at, reverse=True)
-    assert sorted_entries == fx_feed_entries.entries.sort_entries()
+    assert sorted_entries == result
 
 
 def test_source():
