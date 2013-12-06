@@ -62,7 +62,7 @@ def test_not_implemented_error():
 
 @mark.parametrize('without_pkg_resources', [True, False])
 def test_from_url(without_pkg_resources, tmpdir, monkeypatch):
-    if without_pkg_resources or IRON_PYTHON:
+    if without_pkg_resources and not IRON_PYTHON:
         monkeypatch.delattr('pkg_resources.iter_entry_points')
     url = 'file://' + str(tmpdir)
     fs = from_url(url)
