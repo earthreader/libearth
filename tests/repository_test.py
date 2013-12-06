@@ -8,6 +8,7 @@ except ImportError:
 
 from pytest import mark, raises
 
+from libearth.compat import IRON_PYTHON
 from libearth.repository import (FileNotFoundError, FileSystemRepository,
                                  NotADirectoryError, Repository,
                                  RepositoryKeyError, from_url)
@@ -61,7 +62,7 @@ def test_not_implemented_error():
 
 @mark.parametrize('without_pkg_resources', [True, False])
 def test_from_url(without_pkg_resources, tmpdir, monkeypatch):
-    if without_pkg_resources:
+    if without_pkg_resources or IRON_PYTHON:
         monkeypatch.delattr('pkg_resources.iter_entry_points')
     url = 'file://' + str(tmpdir)
     fs = from_url(url)
