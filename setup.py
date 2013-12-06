@@ -48,6 +48,10 @@ setup(
     author_email='minhee' '@' 'dahlia.kr',
     license='MIT License',
     packages=find_packages(exclude=['tests']),
+    entry_points='''
+        [libearth.repositories]
+        file = libearth.repository:FileSystemRepository
+    ''',
     install_requires=install_requires,
     tests_require=['pytest >= 2.3.0', 'mock >= 1.0.1'],
     cmdclass={'test': pytest},

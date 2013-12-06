@@ -1,12 +1,16 @@
 import os.path
 import tempfile
 import threading
+try:
+    from urllib import parse as urlparse
+except ImportError:
+    import urlparse
 
 from pytest import mark, raises
 
 from libearth.repository import (FileNotFoundError, FileSystemRepository,
                                  NotADirectoryError, Repository,
-                                 RepositoryKeyError)
+                                 RepositoryKeyError, from_url)
 from libearth.stage import DirtyBuffer
 
 
@@ -34,7 +38,12 @@ class RepositoryImplemented(Repository):
 
 
 def test_not_implemented_error():
+    url = urlparse.urlparse('test://')
+    with raises(NotImplementedError):
+        RepositoryNotImplemented.from_url(url)
     r = RepositoryNotImplemented()
+    with raises(NotImplementedError):
+        r.to_url('file')
     with raises(NotImplementedError):
         r.read(['key'])
     with raises(NotImplementedError):
@@ -48,6 +57,28 @@ def test_not_implemented_error():
     r2.write(['key'], [b''])
     assert r2.exists(['key'])
     assert r2.list(['key']) == frozenset()
+
+
+@mark.parametrize('without_pkg_resources', [True, False])
+def test_from_url(without_pkg_resources, tmpdir, monkeypatch):
+    if without_pkg_resources:
+        monkeypatch.delattr('pkg_resources.iter_entry_points')
+    url = 'file://' + str(tmpdir)
+    fs = from_url(url)
+    assert isinstance(fs, FileSystemRepository)
+    assert fs.path == str(tmpdir)
+    with raises(LookupError):
+        from_url('unregistered-scheme://')
+
+
+def test_file_from_to_url(tmpdir):
+    url = 'file://' + str(tmpdir)
+    parsed = urlparse.urlparse(url)
+    fs = FileSystemRepository.from_url(parsed)
+    assert isinstance(fs, FileSystemRepository)
+    assert fs.path == str(tmpdir)
+    assert fs.to_url('file') == url
+    assert fs.to_url('fs') == 'fs://' + str(tmpdir)
 
 
 def test_file_read(tmpdir):
