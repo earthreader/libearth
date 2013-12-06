@@ -39,12 +39,14 @@ install:
   fi
 script:
 - if [[ "$PYTHON_VM" == "cpython" ]]; then
+    pip install -e .;
     python -mlibearth.version;
     py.test --cov libearth --durations=20 tests || exit $?;
     pep8 || exit $?;
     python docs/coverage.py || exit $?;
   fi
 - if [[ "$PYTHON_VM" == "pypy" ]]; then
+    pip install -e .;
     python -mlibearth.version;
     py.test --durations=20 tests || exit $?;
   fi
