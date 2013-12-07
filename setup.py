@@ -41,7 +41,7 @@ if sys.version_info < (3, 2):
 setup(
     name='libearth',
     version=VERSION,
-    description='The core implementation of Earth Reader',
+    description='The shared common library for Earth Reader apps',
     long_description=readme(),
     url='http://libearth.earthreader.org/',
     author='Hong Minhee',
@@ -56,7 +56,7 @@ setup(
     tests_require=['pytest >= 2.3.0', 'mock >= 1.0.1'],
     cmdclass={'test': pytest},
     classifiers=[
-        'Development Status :: 1 - Planning',  # FIXME
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: MIT License',
@@ -70,6 +70,7 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: Stackless',
         'Topic :: Communications',
+        'Topic :: Internet :: WWW/HTTP :: Dynamic Content :: News/Diary',
         'Topic :: Internet :: WWW/HTTP :: Indexing/Search',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Text Processing :: Markup :: XML'
