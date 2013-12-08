@@ -50,8 +50,9 @@ except ImportError:
 
 from .compat import IRON_PYTHON, string_type, xrange
 
-__all__ = ('FileNotFoundError', 'FileSystemRepository', 'NotADirectoryError',
-           'Repository', 'RepositoryKeyError', 'from_url')
+__all__ = ('FileIterator', 'FileNotFoundError', 'FileSystemRepository',
+           'NotADirectoryError', 'Repository', 'RepositoryKeyError',
+           'from_url')
 
 
 def from_url(url):
@@ -334,19 +335,10 @@ class FileSystemRepository(Repository):
 
     def read(self, key):
         super(FileSystemRepository, self).read(key)
-        try:
-            f = io.open(os.path.join(self.path, *key), 'rb')
-        except IOError as e:
-            raise RepositoryKeyError(key, str(e))
-        return self._read(f)
-
-    def _read(self, f):
-        with f:
-            while 1:
-                chunk = f.read(4096)
-                if not chunk:
-                    break
-                yield chunk
+        path = os.path.join(self.path, *key)
+        if not os.path.isfile(path):
+            raise RepositoryKeyError(key)
+        return FileIterator(path, buffer_size=4096)
 
     def write(self, key, iterable):
         super(FileSystemRepository, self).write(key, iterable)
@@ -393,6 +385,56 @@ class FileSystemRepository(Repository):
     def __repr__(self):
         return '{0.__module__}.{0.__name__}({1!r})'.format(type(self),
                                                            self.path)
+
+
+class FileIterator(collections.Iterator):
+    """Read a file through :class:`~collections.Iterator` protocol,
+    with automatic closing of the file when it ends.
+
+    :param path: the path of file
+    :type path: :class:`str`
+    :param buffer_size: the size of bytes that would be produced each step
+    :type buffer_size: :class:`numbers.Integral`
+
+    """
+
+    def __init__(self, path, buffer_size):
+        self.path = path
+        self.buffer_size = buffer_size
+        self.file_ = None
+
+    def __iter__(self):
+        self.file_ = io.open(self.path, 'rb')
+        return self
+
+    def __next__(self):
+        f = self.file_
+        if f is None:
+            f = self.__iter__().file_
+        elif f.closed:
+            raise StopIteration
+        try:
+            chunk = f.read(self.buffer_size)
+        except:
+            self.file_.close()
+            raise
+        if chunk:
+            return chunk
+        self.file_.close()
+        raise StopIteration
+
+    next = __next__
+
+    def tell(self):
+        return self.file_ and self.file_.tell()
+
+    def seek(self, *args):
+        if self.file_ is not None:
+            self.file_.seek(*args)
+
+    def read(self, *args):
+        if self.file_ is not None:
+            return self.file_.read(*args)
 
 
 try:

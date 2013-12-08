@@ -9,9 +9,9 @@ except ImportError:
 from pytest import mark, raises
 
 from libearth.compat import IRON_PYTHON
-from libearth.repository import (FileNotFoundError, FileSystemRepository,
-                                 NotADirectoryError, Repository,
-                                 RepositoryKeyError, from_url)
+from libearth.repository import (FileIterator, FileNotFoundError,
+                                 FileSystemRepository, NotADirectoryError,
+                                 Repository, RepositoryKeyError, from_url)
 from libearth.stage import DirtyBuffer
 
 
@@ -195,3 +195,16 @@ def test_atomicity(tmpdir):
         assert b''.join(repo.read(['key'])) == b'first revision'
     repo.write(['key'], gen())
     assert b''.join(repo.read(['key'])) == b'second revision'
+
+
+def test_file_iterator(tmpdir):
+    f = tmpdir.join('test.txt')
+    f.write('hello earth reader')
+    it = iter(FileIterator(str(f), 5))
+    assert next(it) == b'hello'
+    assert next(it) == b' eart'
+    assert next(it) == b'h rea'
+    assert next(it) == b'der'
+    with raises(StopIteration):
+        next(it)
+    assert it.file_.closed
