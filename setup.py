@@ -7,7 +7,6 @@ except ImportError:
     from ez_setup import use_setuptools
     use_setuptools()
     from setuptools import find_packages, setup
-from setuptools.command.test import test
 
 from libearth.version import VERSION
 
@@ -18,19 +17,6 @@ def readme():
             return f.read()
     except (IOError, OSError):
         return ''
-
-
-class pytest(test):
-
-    def finalize_options(self):
-        test.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        from pytest import main
-        errno = main(self.test_args)
-        raise SystemExit(errno)
 
 
 install_requires = []
@@ -54,7 +40,6 @@ setup(
     ''',
     install_requires=install_requires,
     tests_require=['pytest >= 2.4.0', 'mock >= 1.0.1'],
-    cmdclass={'test': pytest},
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
