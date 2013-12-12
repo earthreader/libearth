@@ -132,6 +132,8 @@ class Descriptor(object):
     #:
     #: It's available only when :attr:`multiple` is :const:`True`.
     #:
+    #: Use :attr:`sort_reverse` for descending order.
+    #:
     #: .. note::
     #:
     #:    It doesn't guarantee that all elements must be sorted in
@@ -139,8 +141,15 @@ class Descriptor(object):
     #:    using :func:`write()` function.
     sort_key = None
 
+    #: (:class:`bool`) Whether to reverse elements when they become
+    #: sorted.  It is the same to ``reverse`` option of :func:`sorted()`
+    #: built-in function.
+    #:
+    #: It's available only when :attr:`sort_key` is present.
+    sort_reverse = None
+
     def __init__(self, tag, xmlns=None, required=False, multiple=False,
-                 sort_key=None):
+                 sort_key=None, sort_reverse=None):
         global _descriptor_counter
         if required and multiple:
             raise TypeError('required and multiple are exclusive')
@@ -150,12 +159,16 @@ class Descriptor(object):
         elif not (sort_key is None or callable(sort_key)):
             raise TypeError('sort_key function must be callable, not ' +
                             repr(sort_key))
+        elif sort_key is None and sort_reverse is not None:
+            raise TypeError('sort_reverse option is available only when '
+                            'sort_key is also present')
         self.tag = tag
         self.xmlns = xmlns
         self.key_pair = self.xmlns, self.tag
         self.required = bool(required)
         self.multiple = bool(multiple)
         self.sort_key = sort_key
+        self.sort_reverse = bool(sort_reverse)
         try:
             _descriptor_counter += 1
         except NameError:
@@ -245,8 +258,14 @@ class Child(Descriptor):
                      note that *it doesn't guarantee that all elements must
                      be sorted in runtime*, but all elements become sorted
                      when it's written using :func:`write()` function.
-                     it's available only when ``multiple`` is :const:`True`
+                     it's available only when ``multiple`` is :const:`True`.
+                     use ``sort_reverse`` for descending order.
     :type sort_key: :class:`collections.Callable`
+    :param sort_reverse: ehether to reverse elements when they become
+                         sorted.  it is the same to ``reverse`` option of
+                         :func:`sorted()` built-in function.
+                         it's available only when ``sort_key`` is present
+    :type sort_reverse: :class:`bool`
 
     .. todo::
 
@@ -255,7 +274,7 @@ class Child(Descriptor):
     """
 
     def __init__(self, tag, element_type, xmlns=None, required=False,
-                 multiple=False, sort_key=None):
+                 multiple=False, sort_key=None, sort_reverse=None):
         if isinstance(element_type, type):
             if not issubclass(element_type, Element):
                 raise TypeError(
@@ -273,7 +292,8 @@ class Child(Descriptor):
             xmlns=xmlns,
             required=required,
             multiple=multiple,
-            sort_key=sort_key
+            sort_key=sort_key,
+            sort_reverse=sort_reverse
         )
         self._element_type = element_type
 
@@ -678,16 +698,23 @@ class Text(Descriptor, CodecDescriptor):
                      note that *it doesn't guarantee that all elements must
                      be sorted in runtime*, but all elements become sorted
                      when it's written using :func:`write()` function.
-                     it's available only when ``multiple`` is :const:`True`
+                     it's available only when ``multiple`` is :const:`True`.
+                     use ``sort_reverse`` for descending order.
     :type sort_key: :class:`collections.Callable`
+    :param sort_reverse: ehether to reverse elements when they become
+                         sorted.  it is the same to ``reverse`` option of
+                         :func:`sorted()` built-in function.
+                         it's available only when ``sort_key`` is present
+    :type sort_reverse: :class:`bool`
 
     """
 
     def __init__(self, tag, codec=None, xmlns=None, required=False,
-                 multiple=False, encoder=None, decoder=None, sort_key=None):
+                 multiple=False, encoder=None, decoder=None,
+                 sort_key=None, sort_reverse=None):
         Descriptor.__init__(self, tag,
                             xmlns=xmlns, required=required, multiple=multiple,
-                            sort_key=sort_key)
+                            sort_key=sort_key, sort_reverse=sort_reverse)
         CodecDescriptor.__init__(self, codec=codec,
                                  encoder=encoder, decoder=decoder)
 
@@ -1843,7 +1870,8 @@ class write(collections.Iterable):
                     if desc.sort_key is not None:
                         child_elements = sorted(
                             child_elements,
-                            key=desc.sort_key
+                            key=desc.sort_key,
+                            reverse=bool(desc.sort_reverse)
                         )
                     for child_element in child_elements:
                         if isinstance(desc, Text):  # FIXME: remove type query

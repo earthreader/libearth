@@ -53,7 +53,7 @@ class TestDoc(DocumentElement):
     text_content_attr = Text('text-content')
     text_multi_attr = Text('text-multi', multiple=True)
     sorted_texts = Text('s-text-multi',
-                        multiple=True, sort_key=lambda t: t)
+                        multiple=True, sort_key=lambda t: t, sort_reverse=True)
     text_decoder = Text('text-decoder', decoder=float, encoder=str)
     text_decoder_decorator = Text('text-decoder-decorator')
     text_combined_decoder = Text('text-combined-decoder',
@@ -589,9 +589,9 @@ def test_write_test_doc(fx_test_doc):
     <text-content>텍스트 내용</text-content>
     <text-multi>a</text-multi>
     <text-multi>b</text-multi>
-    <s-text-multi>a</s-text-multi>
-    <s-text-multi>b</s-text-multi>
     <s-text-multi>c</s-text-multi>
+    <s-text-multi>b</s-text-multi>
+    <s-text-multi>a</s-text-multi>
     <text-decoder>123.456</text-decoder>
     <text-decoder-decorator>123</text-decoder-decorator>
     <text-combined-decoder>1234</text-combined-decoder>
@@ -636,9 +636,9 @@ def test_write_test_doc_tree(fx_test_doc):
     assert tree[10].text == 'b'
     assert tree[11].tag == tree[12].tag == tree[13].tag == 's-text-multi'
     assert tree[11].attrib == tree[12].attrib == tree[13].attrib == {}
-    assert tree[11].text == 'a'
+    assert tree[11].text == 'c'
     assert tree[12].text == 'b'
-    assert tree[13].text == 'c'
+    assert tree[13].text == 'a'
     assert tree[14].tag == 'text-decoder'
     assert not tree[14].attrib
     assert tree[14].text == '123.456'
