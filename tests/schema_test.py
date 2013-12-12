@@ -48,8 +48,12 @@ class TestDoc(DocumentElement):
     title_attr = Child('title', TextElement, required=True)
     content_attr = Child('content', TextElement, required=True)
     multi_attr = Child('multi', TextElement, multiple=True)
+    sorted_children = Child('s-multi', TextElement,
+                            multiple=True, sort_key=lambda e: e.value)
     text_content_attr = Text('text-content')
     text_multi_attr = Text('text-multi', multiple=True)
+    sorted_texts = Text('s-text-multi',
+                        multiple=True, sort_key=lambda t: t)
     text_decoder = Text('text-decoder', decoder=float, encoder=str)
     text_decoder_decorator = Text('text-decoder-decorator')
     text_combined_decoder = Text('text-combined-decoder',
@@ -134,6 +138,10 @@ def fx_test_doc():
         '\t', '<text-multi>', 'a', '</text-multi>',
         ['TEXT_MULTI_1_CLOSE'], '\n',
         '\t', '<multi>', 'c', '</multi>', ['MULTI_3_CLOSE'], '\n',
+        '\t', '<s-multi>c</s-multi><s-multi>a</s-multi><s-multi>b</s-multi>\n',
+        '\t', '<s-text-multi>c</s-text-multi>', '\n',
+        '\t', '<s-text-multi>a</s-text-multi>', '\n',
+        '\t', '<s-text-multi>b</s-text-multi>', '\n',
         '\t', '<text-multi>', 'b', '</text-multi>',
         ['TEXT_MULTI_2_CLOSE'], '\n',
         '\t', '<text-decoder>', '123.456', '</text-decoder>', '\n',
@@ -565,6 +573,7 @@ def test_attribute_descriptor_conflict():
 def test_write_test_doc(fx_test_doc):
     doc, _ = fx_test_doc
     g = write(doc, indent='    ', canonical_order=True)
+    print(''.join(write(doc, indent='    ', canonical_order=True)))
     assert ''.join(g) == '''\
 <?xml version="1.0" encoding="utf-8"?>
 <test xmlns:ns0="http://earthreader.github.io/"\
@@ -574,9 +583,15 @@ def test_write_test_doc(fx_test_doc):
     <multi>a</multi>
     <multi>b</multi>
     <multi>c</multi>
+    <s-multi>a</s-multi>
+    <s-multi>b</s-multi>
+    <s-multi>c</s-multi>
     <text-content>텍스트 내용</text-content>
     <text-multi>a</text-multi>
     <text-multi>b</text-multi>
+    <s-text-multi>a</s-text-multi>
+    <s-text-multi>b</s-text-multi>
+    <s-text-multi>c</s-text-multi>
     <text-decoder>123.456</text-decoder>
     <text-decoder-decorator>123</text-decoder-decorator>
     <text-combined-decoder>1234</text-combined-decoder>
@@ -607,34 +622,44 @@ def test_write_test_doc_tree(fx_test_doc):
     assert tree[2].text == 'a'
     assert tree[3].text == 'b'
     assert tree[4].text == 'c'
-    assert tree[5].tag == 'text-content'
-    assert not tree[5].attrib
-    assert tree[5].text == u('텍스트 내용')
-    assert tree[6].tag == tree[7].tag == 'text-multi'
-    assert tree[6].attrib == tree[7].attrib == {}
-    assert tree[6].text == 'a'
-    assert tree[7].text == 'b'
-    assert tree[8].tag == 'text-decoder'
+    assert tree[5].tag == tree[6].tag == tree[7].tag == 's-multi'
+    assert tree[5].attrib == tree[6].attrib == tree[7].attrib == {}
+    assert tree[5].text == 'a'
+    assert tree[6].text == 'b'
+    assert tree[7].text == 'c'
+    assert tree[8].tag == 'text-content'
     assert not tree[8].attrib
-    assert tree[8].text == '123.456'
-    assert tree[9].tag == 'text-decoder-decorator'
-    assert not tree[9].attrib
-    assert tree[9].text == '123'
-    assert tree[10].tag == 'text-combined-decoder'
-    assert not tree[10].attrib
-    assert tree[10].text == '1234'
-    assert tree[11].tag == '{http://earthreader.github.io/}ns-element'
-    assert tree[11].attrib == {
+    assert tree[8].text == u('텍스트 내용')
+    assert tree[9].tag == tree[10].tag == 'text-multi'
+    assert tree[9].attrib == tree[10].attrib == {}
+    assert tree[9].text == 'a'
+    assert tree[10].text == 'b'
+    assert tree[11].tag == tree[12].tag == tree[13].tag == 's-text-multi'
+    assert tree[11].attrib == tree[12].attrib == tree[13].attrib == {}
+    assert tree[11].text == 'a'
+    assert tree[12].text == 'b'
+    assert tree[13].text == 'c'
+    assert tree[14].tag == 'text-decoder'
+    assert not tree[14].attrib
+    assert tree[14].text == '123.456'
+    assert tree[15].tag == 'text-decoder-decorator'
+    assert not tree[15].attrib
+    assert tree[15].text == '123'
+    assert tree[16].tag == 'text-combined-decoder'
+    assert not tree[16].attrib
+    assert tree[16].text == '1234'
+    assert tree[17].tag == '{http://earthreader.github.io/}ns-element'
+    assert tree[17].attrib == {
         '{http://earthreader.github.io/}ns-attr': 'namespace attribute value'
     }
-    assert tree[11].text == 'Namespace test'
-    assert tree[12].tag == '{http://earthreader.github.io/}ns-text'
-    assert not tree[12].attrib
-    assert tree[12].text == 'Namespace test'
-    assert tree[13].tag == 'content-decoder'
-    assert tree[13].text == 'CONTENT DECODER'
-    assert not tree[13].attrib
-    assert len(tree) == 14
+    assert tree[17].text == 'Namespace test'
+    assert tree[18].tag == '{http://earthreader.github.io/}ns-text'
+    assert not tree[18].attrib
+    assert tree[18].text == 'Namespace test'
+    assert tree[19].tag == 'content-decoder'
+    assert tree[19].text == 'CONTENT DECODER'
+    assert not tree[19].attrib
+    assert len(tree) == 20
 
 
 def test_write_xmlns_doc(fx_xmlns_doc):

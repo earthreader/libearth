@@ -125,15 +125,37 @@ class Descriptor(object):
     #: If it's :const:`True` :attr:`required` has to be :const:`False`.
     multiple = None
 
-    def __init__(self, tag, xmlns=None, required=False, multiple=False):
+    #: (:class:`collections.Callable`) An optional function to be used
+    #: for sorting multiple elements.  It has to take an element and
+    #: return a value for sort key.  It is the same to ``key`` option of
+    #: :func:`sorted()` built-in function.
+    #:
+    #: It's available only when :attr:`multiple` is :const:`True`.
+    #:
+    #: .. note::
+    #:
+    #:    It doesn't guarantee that all elements must be sorted in
+    #:    runtime, but all elements become sorted when it's written
+    #:    using :func:`write()` function.
+    sort_key = None
+
+    def __init__(self, tag, xmlns=None, required=False, multiple=False,
+                 sort_key=None):
         global _descriptor_counter
         if required and multiple:
             raise TypeError('required and multiple are exclusive')
+        elif not multiple and sort_key is not None:
+            raise TypeError('sort_key function can be used only for multiple '
+                            'children')
+        elif not (sort_key is None or callable(sort_key)):
+            raise TypeError('sort_key function must be callable, not ' +
+                            repr(sort_key))
         self.tag = tag
         self.xmlns = xmlns
         self.key_pair = self.xmlns, self.tag
         self.required = bool(required)
         self.multiple = bool(multiple)
+        self.sort_key = sort_key
         try:
             _descriptor_counter += 1
         except NameError:
@@ -215,6 +237,16 @@ class Child(Descriptor):
                      it's exclusive to ``required``.
                      :const:`False` by default
     :type multiple: :class:`bool`
+    :param sort_key: an optional function to be used for sorting
+                     multiple child elements.  it has to take a child as
+                     :class:`Element` and return a value for sort key.
+                     it is the same to ``key`` option of :func:`sorted()`
+                     built-in function.
+                     note that *it doesn't guarantee that all elements must
+                     be sorted in runtime*, but all elements become sorted
+                     when it's written using :func:`write()` function.
+                     it's available only when ``multiple`` is :const:`True`
+    :type sort_key: :class:`collections.Callable`
 
     .. todo::
 
@@ -223,7 +255,7 @@ class Child(Descriptor):
     """
 
     def __init__(self, tag, element_type, xmlns=None, required=False,
-                 multiple=False):
+                 multiple=False, sort_key=None):
         if isinstance(element_type, type):
             if not issubclass(element_type, Element):
                 raise TypeError(
@@ -240,7 +272,8 @@ class Child(Descriptor):
             tag,
             xmlns=xmlns,
             required=required,
-            multiple=multiple
+            multiple=multiple,
+            sort_key=sort_key
         )
         self._element_type = element_type
 
@@ -637,13 +670,24 @@ class Text(Descriptor, CodecDescriptor):
                     Python value e.g. :func:`int()`.  the decoder function
                     has to take a string argument
     :type decoder: :class:`collections.Callable`
+    :param sort_key: an optional function to be used for sorting
+                     multiple child elements.  it has to take a child as
+                     :class:`Element` and return a value for sort key.
+                     it is the same to ``key`` option of :func:`sorted()`
+                     built-in function.
+                     note that *it doesn't guarantee that all elements must
+                     be sorted in runtime*, but all elements become sorted
+                     when it's written using :func:`write()` function.
+                     it's available only when ``multiple`` is :const:`True`
+    :type sort_key: :class:`collections.Callable`
 
     """
 
     def __init__(self, tag, codec=None, xmlns=None, required=False,
-                 multiple=False, encoder=None, decoder=None):
+                 multiple=False, encoder=None, decoder=None, sort_key=None):
         Descriptor.__init__(self, tag,
-                            xmlns=xmlns, required=required, multiple=multiple)
+                            xmlns=xmlns, required=required, multiple=multiple,
+                            sort_key=sort_key)
         CodecDescriptor.__init__(self, codec=codec,
                                  encoder=encoder, decoder=decoder)
 
@@ -1796,6 +1840,11 @@ class write(collections.Iterable):
                     child_elements = getattr(element, attr, None)
                     if not desc.multiple:
                         child_elements = [child_elements]
+                    if desc.sort_key is not None:
+                        child_elements = sorted(
+                            child_elements,
+                            key=desc.sort_key
+                        )
                     for child_element in child_elements:
                         if isinstance(desc, Text):  # FIXME: remove type query
                             if child_element is None:
