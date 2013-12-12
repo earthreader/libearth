@@ -654,4 +654,10 @@ class Feed(MergeableDocumentElement, Source):
     #: and data associated with the entry.
     #: It corresponds to ``atom:entry`` element of :rfc:`4287#section-4.1.2`
     #: (section 4.1.2).
-    entries = Child('entry', Entry, xmlns=ATOM_XMLNS, multiple=True)
+    entries = Child(
+        'entry', Entry,
+        xmlns=ATOM_XMLNS,
+        multiple=True,
+        sort_key=lambda e: e.published_at or e.updated_at,
+        sort_reverse=True
+    )

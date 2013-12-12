@@ -220,8 +220,8 @@ atom_xml = """
             <name>kjwon</name>
         </author>
         <title>xml base test</title>
-        <published>2013-08-17T03:28:11Z</published>
-        <updated>2013-08-17T03:28:11Z</updated>
+        <published>2013-04-17T03:28:11Z</published>
+        <updated>2013-04-17T03:28:11Z</updated>
     </entry>
     <entry>
         <id>three</id>
@@ -229,7 +229,7 @@ atom_xml = """
             <name>dahlia</name>
         </author>
         <title>source tag test</title>
-        <updated>2013-10-19T00:33:30Z</updated>
+        <updated>2013-01-19T00:33:30Z</updated>
         <source>
             <author>
                 <name>dahlia</name>
