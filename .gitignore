@@ -1,6 +1,7 @@
 .coverage
 .DS_Store
 .tox
+dist
 docs/_build
 libearth.egg-info
 MANIFEST
