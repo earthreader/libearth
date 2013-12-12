@@ -1,6 +1,19 @@
 How to contribute
 =================
 
+License agreement
+-----------------
+
+All contributed codes have to be free software licensed under the terms of
+the `GNU General Public License Version 2`__ or any later version.
+We treat all pull requests imply agreement of it, but if a significant
+amount of code is involved, it is safest to mention in the pull request
+comments that you agree to let the patch be used under the GNU General
+Public License Version 2 or any later version as part of the libearth code.
+
+__ http://www.gnu.org/licenses/gpl-2.0.html
+
+
 Coding style
 ------------
 

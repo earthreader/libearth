@@ -52,7 +52,8 @@ Open source
 
 Libearth is an open source software written by `Hong Minhee`_ and
 the `Earth Reader team`_.  See also the complete list of contributors_
-as well.  The source code is distributed under `MIT license`_, and you can
+as well.  Libearth is free software licensed under the terms of the
+`GNU General Public License Version 2`__ or any later version, and you can
 find the code at `GitHub repository`_:
 
 .. code-block:: console
@@ -76,7 +77,7 @@ on Ozinger_ network.  (We will make one on freenode as well soon!)
 .. _Hong Minhee: http://dahlia.kr/
 .. _Earth Reader team: https://github.com/earthreader
 .. _contributors: https://github.com/earthreader/libearth/graphs/contributors
-.. _MIT License: http://minhee.mit-license.org/
+__ http://www.gnu.org/licenses/gpl-2.0.html
 .. _GitHub repository: https://github.com/earthreader/libearth
 .. _issue tracker: https://github.com/earthreader/libearth/issues
 .. _Ozinger: http://ozinger.org/

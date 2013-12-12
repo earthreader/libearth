@@ -32,7 +32,7 @@ setup(
     url='http://libearth.earthreader.org/',
     author='Hong Minhee',
     author_email='minhee' '@' 'dahlia.kr',
-    license='MIT License',
+    license='GPLv2 or later',
     packages=find_packages(exclude=['tests']),
     entry_points='''
         [libearth.repositories]
@@ -44,7 +44,8 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Intended Audience :: End Users/Desktop',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved ::'
+        ' GNU General Public License v2 or later (GPLv2+)',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
