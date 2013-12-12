@@ -28,16 +28,6 @@ See also :file:`tox.ini` file and CI_ builds.
 .. _CI: https://travis-ci.org/earthreader/libearth.png?branch=master
 
 
-Design docs
------------
-
-.. toctree::
-   :maxdepth: 2
-
-   design/goal
-   design/concepts
-
-
 References
 ----------
 
@@ -45,6 +35,17 @@ References
    :maxdepth: 3
 
    libearth
+
+
+Additional notes
+----------------
+
+.. toctree::
+   :maxdepth: 2
+
+   design/goal
+   design/concepts
+   changes
 
 
 Open source
