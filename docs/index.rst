@@ -1,7 +1,7 @@
 libearth
 ========
 
-Libearth is the share dcommon library for various `Earth Reader`_ apps.
+Libearth is the shared common library for various `Earth Reader`_ apps.
 Earth Reader try to support many platforms as possible (e.g. web_,
 mobile apps, desktop apps), so there must be a large part of common concepts
 and implementations they share like subscription lists, synchronization
