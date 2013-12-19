@@ -121,8 +121,42 @@ class SubscriptionSet(collections.MutableSet):
                     self.children[i] = outline
                     yield outline
 
+    def contains(self, outline, recursively=False):
+        """Determine whether the set contains the given ``outline``.
+        If ``recursively`` is :const:`False` (which is by default)
+        it works in the same way to :keyword:`in` operator.
+
+        :param outline: the subscription or category to find
+        :type outline: :class:`Outline`
+        :param recursively: if it's :const:`True` find the ``outline``
+                            in the whole tree, or if :const:`False` find
+                            it in only its direct children.
+                            :const:`False` by default
+        :type recursively: :class:`bool`
+        :returns: :const:`True` if the set (or tree) contains the given
+                  ``outline``, or :const:`False`
+        :rtype: :class:`bool`
+
+        .. versionadded:: 0.2.0
+
+        """
+        if not isinstance(outline, Outline):
+            raise TypeError('expected an instance of {0.__module__}.'
+                            '{0.__name__}, not {1!r}'.format(Outline, outline))
+        if outline in self.children:
+            return True
+        if recursively:
+            for subcategory in self:
+                if isinstance(subcategory, SubscriptionSet) and \
+                   subcategory.contains(outline, recursively=True):
+                    return True
+        return False
+
     def __contains__(self, outline):
-        return isinstance(outline, Outline) and outline in self.children
+        try:
+            return self.contains(outline, recursively=False)
+        except TypeError:
+            return False
 
     def add(self, value):
         if not isinstance(value, Outline):

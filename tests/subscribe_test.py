@@ -372,3 +372,27 @@ def test_stage_subscription_list(fx_repo, fx_session):
     with stage:
         assert (frozenset(stage.subscriptions) ==
                 frozenset([Category(label='Test')]))
+
+
+def test_subscription_set_contains(fx_recursive_subscription_list,
+                                   fx_subscription):
+    tree = fx_recursive_subscription_list
+    game_c = next(c for c in tree if c.label == 'Game')
+    riot_c = next(c for c in game_c if c.label == 'Riot')
+    lol_s = next(s for s in riot_c if s.label == 'LOL')
+    none_c = Category(label='None')
+    assert none_c not in tree
+    assert not tree.contains(none_c)
+    assert not tree.contains(none_c, recursively=True)
+    assert fx_subscription not in tree
+    assert not tree.contains(fx_subscription)
+    assert not tree.contains(fx_subscription, recursively=True)
+    assert lol_s not in tree
+    assert not tree.contains(lol_s)
+    assert tree.contains(lol_s, recursively=True)
+    assert riot_c not in tree
+    assert not tree.contains(riot_c)
+    assert tree.contains(riot_c, recursively=True)
+    assert game_c in tree
+    assert tree.contains(game_c)
+    assert tree.contains(game_c, recursively=True)
