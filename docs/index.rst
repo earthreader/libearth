@@ -28,6 +28,20 @@ See also :file:`tox.ini` file and CI_ builds.
 .. _CI: https://travis-ci.org/earthreader/libearth.png?branch=master
 
 
+Installation
+------------
+
+You can install it using :program:`pip`:
+
+.. code-block:: console
+
+   $ pip install libearth
+
+See PyPI_ as well.
+
+.. _PyPI: https://pypi.python.org/pypi/libearth
+
+
 References
 ----------
 
