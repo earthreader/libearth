@@ -44,7 +44,7 @@ class Text(Element):
     #:
     #:    It currently does not support ``'xhtml'``.
     type = Attribute('type', Enum(['text', 'html']),
-                     required=True, default='text')
+                     required=True, default=lambda _: 'text')
 
     #: (:class:`str`) The content of the text.  Interpretation for this
     #: has to differ according to its :attr:`type`.  It corresponds to
@@ -168,7 +168,7 @@ class Link(Element):
 
     #: (:class:`str`) The relation type of the link.  It corresponds to
     #: ``rel`` attribute of :rfc:`4287#section-4.2.7.2` (section 4.2.7.2).
-    relation = Attribute('rel', default='alternate')
+    relation = Attribute('rel', default=lambda _: 'alternate')
 
     #: (:class:`str`) The optional hint for the MIME media type of the linked
     #: content.  It corresponds to ``type`` attribute of

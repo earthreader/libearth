@@ -468,7 +468,7 @@ class MergeableDocumentElement(DocumentElement):
     #: no longer need to be merged.
     __base_revisions__ = Attribute('bases', RevisionSetCodec,
                                    xmlns=SESSION_XMLNS,
-                                   default=RevisionSet())
+                                   default=lambda _: RevisionSet())
 
 
 class RevisionParserHandler(xml.sax.handler.ContentHandler):

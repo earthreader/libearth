@@ -3,6 +3,7 @@ import collections
 
 from pytest import fixture, mark, raises
 
+from libearth.codecs import Integer
 from libearth.compat import (IRON_PYTHON, binary_type, text, text_type,
                              string_type)
 from libearth.compat.etree import fromstringlist, tostring
@@ -996,7 +997,11 @@ def test_write_none_text():
 class DefaultAttrTestDoc(DocumentElement):
 
     __tag__ = 'default-attr-test'
-    default_attr = Attribute('default-attr', IntPair, default=(0, 0))
+    attr = Attribute('attr', Integer)
+    default_attr = Attribute(
+        'default-attr', IntPair,
+        default=lambda e: (e.attr, e.attr * 2) if e.attr else (0, 0)
+    )
 
 
 def test_attribute_default():
@@ -1011,6 +1016,20 @@ def test_attribute_default():
     assert present.default_attr == (1, 2)
     lack = read(DefaultAttrTestDoc, [b'<default-attr-test />'])
     assert lack.default_attr == (0, 0)
+
+
+def test_attribute_default_depending_element():
+    present = DefaultAttrTestDoc(attr=5, default_attr=(1, 2))
+    assert present.default_attr == (1, 2)
+    lack = DefaultAttrTestDoc(attr=5)
+    assert lack.default_attr == (5, 10)
+    present = read(
+        DefaultAttrTestDoc,
+        [b'<default-attr-test attr="5" default-attr="1,2" />']
+    )
+    assert present.default_attr == (1, 2)
+    lack = read(DefaultAttrTestDoc, [b'<default-attr-test attr="5" />'])
+    assert lack.default_attr == (5, 10)
 
 
 class PartialLoadTestEntry(DocumentElement):

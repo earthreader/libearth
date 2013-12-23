@@ -751,6 +751,10 @@ class Attribute(CodecDescriptor):
     :param required: whether the child is required or not.
                      :const:`False` by default
     :type required: :class:`bool`
+    :param default: an optional function that returns default value when
+                    the attribute is not present.  the function takes an
+                    argument which is an :class:`Element` instance
+    :type default: :class:`collections.Callable`
     :param encoder: an optional function that encodes Python value into
                     XML text value e.g. :func:`str()`.  the encoder function
                     has to take an argument
@@ -759,6 +763,11 @@ class Attribute(CodecDescriptor):
                     Python value e.g. :func:`int()`.  the decoder function
                     has to take a string argument
     :type decoder: :class:`collections.Callable`
+
+    .. versionchanged:: 0.2.0
+       The ``default`` option becomes to accept only callable objects.
+       Below 0.2.0, ``default`` is not a function but a value which
+       is simply used as it is.
 
     """
 
@@ -774,8 +783,20 @@ class Attribute(CodecDescriptor):
     #: (:class:`bool`) Whether it is required for the element.
     required = None
 
+    #: (:class:`collections.Callable`) The function that returns default
+    #: value when the attribute is not present.  The function takes an
+    #: argument which is an :class:`Element` instance.
+    #:
+    #: .. versionchanged:: 0.2.0
+    #:    It becomes to accept only callable objects.  Below 0.2.0,
+    #:    :attr:`default` attribute is not a function but a value which
+    #:    is simply used as it is.
+    default = None
+
     def __init__(self, name, codec=None, xmlns=None, required=False,
                  default=None, encoder=None, decoder=None):
+        if not (default is None or callable(default)):
+            raise TypeError('default must be callable, not ' + repr(default))
         super(Attribute, self).__init__(codec=codec,
                                         encoder=encoder,
                                         decoder=decoder)
@@ -787,7 +808,10 @@ class Attribute(CodecDescriptor):
 
     def __get__(self, obj, cls=None):
         if isinstance(obj, Element):
-            return obj._attrs.setdefault(self, self.default)
+            attrs = obj._attrs
+            if self.default is None:
+                return attrs.get(self)
+            return attrs.setdefault(self, self.default(obj))
         return self
 
     def __set__(self, obj, value):

@@ -298,7 +298,7 @@ class Category(Outline, SubscriptionSet):
 
     """
 
-    type = Attribute('type', default='category')
+    type = Attribute('type', default=lambda _: 'category')
 
     def __repr__(self):
         return '<{0.__module__}.{0.__name__} {1!r}>'.format(
@@ -325,7 +325,7 @@ class Subscription(Outline):
 
     """
 
-    type = Attribute('type', default='rss')
+    type = Attribute('type', default=lambda _: 'rss')
 
     def __repr__(self):
         return '<{0.__module__}.{0.__name__} {1} {2!r} ({3!r})>'.format(
@@ -379,10 +379,12 @@ class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
     body = Child('body', Body)
 
     #: (:class:`distutils.version.StrictVersion`) The OPML version number.
-    version = Attribute('version',
-                        encoder=str,
-                        decoder=distutils.version.StrictVersion,
-                        default=distutils.version.StrictVersion('2.0'))
+    version = Attribute(
+        'version',
+        encoder=str,
+        decoder=distutils.version.StrictVersion,
+        default=lambda _: distutils.version.StrictVersion('2.0')
+    )
 
     @property
     def children(self):
