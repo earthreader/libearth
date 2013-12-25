@@ -8,6 +8,7 @@ formats.
 import collections
 import datetime
 import numbers
+import platform
 import re
 
 from .compat import string_type
@@ -313,3 +314,8 @@ class Boolean(Codec):
         else:
             raise DecodeError('invalid string')
         return value
+
+
+# Workaround for http://bugs.python.org/issue7980
+if platform.python_implementation() == 'CPython':
+    __import__('_strptime')
