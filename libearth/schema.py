@@ -1836,7 +1836,10 @@ class write(collections.Iterable):
                 yield ':'
             yield desc.name
             yield '='
-            yield encode(quoteattr(encoded_attr_value))
+            quoted_attr = quoteattr(encoded_attr_value)
+            if not isinstance(quoteattr, binary_type):
+                quoted_attr = encode(quoted_attr)
+            yield quoted_attr
         content = inspect_content_tag(element_type)
         children = inspect_child_tags(element_type)
         escape = xml.sax.saxutils.escape

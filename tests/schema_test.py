@@ -6,6 +6,7 @@ from pytest import fixture, mark, raises
 from libearth.compat import (IRON_PYTHON, binary_type, text, text_type,
                              string_type)
 from libearth.compat.etree import fromstringlist, tostring
+from libearth.parser.rss2 import parse_rss
 from libearth.schema import (Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
                              Element, ElementList, EncodeError, IntegrityError,
@@ -14,6 +15,7 @@ from libearth.schema import (Attribute, Child, Codec, Content,
                              inspect_attributes, inspect_child_tags,
                              inspect_content_tag, inspect_xmlns_set,
                              is_partially_loaded, read, validate, write)
+from libearth.subscribe import SubscriptionList
 
 
 def u(text):
@@ -1122,3 +1124,43 @@ def test_element_coerce_from(fx_test_doc):
     assert doc.multi_attr[2].value == 'test'
     with raises(TypeError):
         doc.multi_attr[1:] = ['slice test', 123]
+
+
+rss_template_with_title = '''
+<rss version="2.0" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/"
+     xmlns:activity="http://activitystrea.ms/spec/1.0/" >
+    <channel>
+        <title>{0}</title>
+    </channel>
+</rss>
+'''
+
+
+def test_write_subscription_with_ascii_title():
+    rss = rss_template_with_title.format('english')
+    feed, _ = parse_rss(rss)
+    feed.id = 'id'
+
+    sublist = SubscriptionList()
+    sublist.subscribe(feed)
+
+    g = write(sublist)
+    assert ''.join(g)
+
+
+def test_write_subscription_with_nonascii_title():
+    '''SubscriptionList convert the feed title to :class:`str`, and
+    :class:`write` try to encode the title in utf8.
+    When non-ascii characters are in the title, UnicodeDecodeError is raised.
+    '''
+    rss = rss_template_with_title.format('한글')
+    feed, _ = parse_rss(rss)
+    feed.id = 'id'
+
+    sublist = SubscriptionList()
+    sublist.subscribe(feed)
+
+    g = write(sublist)
+    assert ''.join(g)
