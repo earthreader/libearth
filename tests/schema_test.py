@@ -1132,7 +1132,7 @@ rss_template_with_title = '''
      xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/"
      xmlns:activity="http://activitystrea.ms/spec/1.0/" >
     <channel>
-	    <title>{}</title>
+        <title>{}</title>
     </channel>
 </rss>
 '''
