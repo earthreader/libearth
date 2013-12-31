@@ -19,7 +19,7 @@ from libearth.compat import UNICODE_BY_DEFAULT
 from libearth.feed import Feed
 from libearth.parser import atom, rss2
 from libearth.parser.autodiscovery import FeedUrlNotFoundError, autodiscovery
-from libearth.schema import read, write
+from libearth.schema import read, validate, write
 from libearth.tz import utc
 
 

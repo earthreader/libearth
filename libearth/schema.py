@@ -1707,18 +1707,23 @@ def validate(element, recurse=True, raise_error=True):
                 )
             return False
     for name, desc in inspect_child_tags(element_type).values():
-        child_element = getattr(element, name, None)
-        if desc.required and not child_element:
-            if raise_error:
-                raise IntegrityError(
-                    '{0.__module__}.{0.__name__}.{1} is required, but '
-                    '{2!r} lacks it'.format(element_type, name, element)
-                )
-            return False
-        if recurse and child_element is not None:
-            if validate(child_element, recurse=True, raise_error=raise_error):
-                continue
-            return False
+        children = getattr(element, name, None)
+        if not desc.multiple:
+            children = children,
+        for child_element in children:
+            if desc.required and not child_element:
+                if raise_error:
+                    raise IntegrityError(
+                        '{0.__module__}.{0.__name__}.{1} is required, but '
+                        '{2!r} lacks it'.format(element_type, name, element)
+                    )
+                return False
+            if recurse and child_element is not None:
+                if validate(child_element,
+                            recurse=True,
+                            raise_error=raise_error):
+                    continue
+                return False
     return True
 
 

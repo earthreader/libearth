@@ -10,6 +10,10 @@ To be released.
   See http://bugs.python.org/issue7980 as well.  [:issue:`32`]
 - Fixed :exc:`UnicodeDecodeError` which is raised when a feed title contains
   any non-ASCII characters.  [:issue:`34` by Jae-Myoung Yu]
+- Fixed :exc:`TypeError` which is raised when any
+  :class:`~libearth.schema.DocumentElement` with ``multiple``
+  :class:`~libearth.schema.Child` elements is passed to
+  :func:`~libearth.schema.validate()` function.
 
 
 Version 0.1.0
