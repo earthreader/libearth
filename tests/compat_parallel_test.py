@@ -38,3 +38,18 @@ def test_parallel_map_errors():
         pass
     else:
         assert False, 'expected ZeroDivisionError, but it was not raised'
+
+
+def test_parallel_map_errors_in_loop():
+    input = [0, 1, 2, 3]
+    result = parallel_map(4, lambda n: 1 // n, input)
+    it = iter(result)
+    results = []
+    while True:
+        try:
+            results.append(next(it))
+        except ZeroDivisionError:
+            continue
+        except StopIteration:
+            break
+    assert len(results) == 3
