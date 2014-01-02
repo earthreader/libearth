@@ -18,7 +18,10 @@ matrix:
     env: PYTHON_VM=cpython
 install:
 - if [[ "$PYTHON_VM" == "cpython" ]]; then
-    pip install pytest mock pytest-cov pep8 coveralls;
+    pip install pytest mock pep8;
+    if [[ `python -c 'from sys import *;print((3,3)<=version_info<(3,4))'` == False ]]; then
+      pip install pytest-cov coveralls;
+    fi
   fi
 - if [[ "$PYTHON_VM" == "pypy" ]]; then
     pip install pytest mock;
@@ -41,7 +44,11 @@ script:
 - if [[ "$PYTHON_VM" == "cpython" ]]; then
     pip install -e .;
     python -mlibearth.version;
-    py.test -v --cov libearth --durations=20 tests || exit $?;
+    if [[ `python -c 'from sys import *;print((3,3)<=version_info<(3,4))'` == True ]]; then
+      py.test -v --durations=20 tests || exit $?;
+    else
+      py.test -v --cov libearth --durations=20 tests || exit $?;
+    fi
     pep8 || exit $?;
     python docs/coverage.py || exit $?;
   fi
@@ -54,7 +61,9 @@ script:
     mono IronPython-2.7.4/ipy.exe -X:ExceptionDetail -X:ShowClrExceptions -X:Frames pytest.py -v -s --assert=plain tests || exit $?;
   fi
 after_success:
-- if [[ "$PYTHON_VM" == "cpython" ]]; then coveralls; fi
+- if [[ "$PYTHON_VM" == "cpython" && `python -c 'from sys import *;print((3,3)<=version_info<(3,4))'` == False ]]; then
+    coveralls;
+  fi
 notifications:
   irc:
     channels:
