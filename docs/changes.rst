@@ -17,7 +17,7 @@ Released on January 2, 2014.
 - Fixed :exc:`UnicodeDecodeError` which is raised when a feed title contains
   any non-ASCII characters.  [:issue:`34` by Jae-Myoung Yu]
 - Now :mod:`libearth.parser.rss2` fills :attr:`Entry.updated_at
-  <libearth.feed.Entry.updated_at>` if it's not given.  [:issue:`35`]
+  <libearth.feed.Metadata.updated_at>` if it's not given.  [:issue:`35`]
 - Fixed :exc:`TypeError` which is raised when any
   :class:`~libearth.schema.DocumentElement` with ``multiple``
   :class:`~libearth.schema.Child` elements is passed to
