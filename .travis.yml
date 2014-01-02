@@ -21,7 +21,7 @@ install:
     pip install pytest mock pep8;
     if [[ `python -c 'from sys import *;print((3,3)<=version_info<(3,4))'` == False ]]; then
       pip install pytest-cov coveralls;
-    fi
+    fi;
   fi
 - if [[ "$PYTHON_VM" == "pypy" ]]; then
     pip install pytest mock;
@@ -48,7 +48,7 @@ script:
       py.test -v --durations=20 tests || exit $?;
     else
       py.test -v --cov libearth --durations=20 tests || exit $?;
-    fi
+    fi;
     pep8 || exit $?;
     python docs/coverage.py || exit $?;
   fi
