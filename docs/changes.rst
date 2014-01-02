@@ -16,6 +16,8 @@ To be released.
   :class:`~libearth.schema.DocumentElement` with ``multiple``
   :class:`~libearth.schema.Child` elements is passed to
   :func:`~libearth.schema.validate()` function.
+- :func:`~libearth.compat.parallel.parallel_map()` becomes to raise exceptions
+  at the last, if any errored.  [:issue:`38`]
 
 
 Version 0.1.0
