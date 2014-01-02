@@ -16,6 +16,9 @@ To be released.
   :class:`~libearth.schema.DocumentElement` with ``multiple``
   :class:`~libearth.schema.Child` elements is passed to
   :func:`~libearth.schema.validate()` function.
+- Fixed the race condition of two :class:`FileSystemRepository
+  <libearth.repository.FileSystemRepository>` objects creating
+  the same directory.  [:issue:`36` by klutzy]
 
 
 Version 0.1.0
