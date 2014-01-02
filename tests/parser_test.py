@@ -19,7 +19,7 @@ from libearth.compat import UNICODE_BY_DEFAULT
 from libearth.feed import Feed
 from libearth.parser import atom, rss2
 from libearth.parser.autodiscovery import FeedUrlNotFoundError, autodiscovery
-from libearth.schema import read, write
+from libearth.schema import read, validate, write
 from libearth.tz import utc
 
 
@@ -512,6 +512,7 @@ rss_with_no_pubDate = '''
 def test_rss_with_no_pubDate():
     feed_data, crawler_hints = rss2.parse_rss(rss_with_no_pubDate)
     assert feed_data.updated_at
+    assert feed_data.entries[0].updated_at
 
 
 rss_with_empty_title = '''

@@ -54,6 +54,8 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
 
 
 def check_valid_as_atom(feed_data):
+    # FIXME: It doesn't only "check" the feed_data but manipulates it
+    # if not valid.  I think the function should be renamed.
     if feed_data.updated_at is None:
         if feed_data.entries:
             try:
@@ -64,6 +66,9 @@ def check_valid_as_atom(feed_data):
                 feed_data.updated_at = now()
         else:
             feed_data.updated_at = now()
+    for entry in feed_data.entries:
+        if entry.updated_at is None:
+            entry.updated_at = feed_data.updated_at
 
 
 def rss_get_channel_data(root, feed_url):

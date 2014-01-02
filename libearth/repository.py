@@ -37,6 +37,7 @@ __ https://pythonhosted.org/setuptools/pkg_resources.html#entry-points
 
 """
 import collections
+import errno
 import io
 import os
 import os.path
@@ -321,7 +322,13 @@ class FileSystemRepository(Repository):
     def __init__(self, path, mkdir=True, atomic=IRON_PYTHON):
         if not os.path.exists(path):
             if mkdir:
-                os.makedirs(path)
+                try:
+                    os.makedirs(path)
+                except OSError as e:
+                    if e.errno == errno.EEXIST:
+                        pass
+                    else:
+                        raise
             else:
                 raise FileNotFoundError(repr(path) + ' does not exist')
         if not os.path.isdir(path):
@@ -347,7 +354,13 @@ class FileSystemRepository(Repository):
         for i in xrange(len(dirpath)):
             p = os.path.join(*dirpath[:i + 1])
             if not os.path.exists(p):
-                os.mkdir(p)
+                try:
+                    os.mkdir(p)
+                except OSError as e:
+                    if e.errno == errno.EEXIST:
+                        pass
+                    else:
+                        raise
             elif not os.path.isdir(p):
                 raise RepositoryKeyError(key)
         filename = os.path.join(self.path, *key)

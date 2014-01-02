@@ -205,8 +205,8 @@ class SubscriptionSet(collections.MutableSet):
                             '{0.__name__}, not {1!r}'.format(Feed, feed))
         sub = Subscription(
             feed_id=hashlib.sha1(feed.id.encode('utf-8')).hexdigest(),
-            label=str(feed.title),
-            _title=str(feed.title),
+            label=text_type(feed.title),
+            _title=text_type(feed.title),
             feed_uri=next(l.uri for l in feed.links if l.relation == 'self'),
             alternate_uri=next(
                 (l.uri for l in feed.links
