@@ -4,8 +4,6 @@ Libearth Changelog
 Version 0.2.0
 -------------
 
-To be released.
-
 - Added :meth:`SubscriptionSet.contains()
   <libearth.subscribe.SubscriptionSet.contains>` method which provides
   ``recursively=True`` option.  It's useful for determining that
@@ -14,6 +12,12 @@ To be released.
   becomes to accept only callable objects.  Below 0.2.0,
   :attr:`~libearth.schema.Attribute.default` is not a function but a value
   which is simply used as it is.
+
+
+Version 0.1.2
+-------------
+
+To be released.
 
 
 Version 0.1.1
@@ -26,7 +30,7 @@ Released on January 2, 2014.
 - Fixed :exc:`UnicodeDecodeError` which is raised when a feed title contains
   any non-ASCII characters.  [:issue:`34` by Jae-Myoung Yu]
 - Now :mod:`libearth.parser.rss2` fills :attr:`Entry.updated_at
-  <libearth.feed.Entry.updated_at>` if it's not given.  [:issue:`35`]
+  <libearth.feed.Metadata.updated_at>` if it's not given.  [:issue:`35`]
 - Fixed :exc:`TypeError` which is raised when any
   :class:`~libearth.schema.DocumentElement` with ``multiple``
   :class:`~libearth.schema.Child` elements is passed to

@@ -30,6 +30,7 @@ setup(
     description='The shared common library for Earth Reader apps',
     long_description=readme(),
     url='http://libearth.earthreader.org/',
+    download_url='https://github.com/earthreader/libearth/releases',
     author='Hong Minhee',
     author_email='minhee' '@' 'dahlia.kr',
     license='GPLv2 or later',
