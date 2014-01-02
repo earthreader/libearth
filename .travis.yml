@@ -41,14 +41,14 @@ script:
 - if [[ "$PYTHON_VM" == "cpython" ]]; then
     pip install -e .;
     python -mlibearth.version;
-    py.test --cov libearth --durations=20 tests || exit $?;
+    py.test -v --cov libearth --durations=20 tests || exit $?;
     pep8 || exit $?;
     python docs/coverage.py || exit $?;
   fi
 - if [[ "$PYTHON_VM" == "pypy" ]]; then
     pip install -e .;
     python -mlibearth.version;
-    py.test --durations=20 tests || exit $?;
+    py.test -v --durations=20 tests || exit $?;
   fi
 - if [[ "$PYTHON_VM" == "ironpython" ]]; then
     mono IronPython-2.7.4/ipy.exe -X:ExceptionDetail -X:ShowClrExceptions -X:Frames pytest.py -v -s --assert=plain tests || exit $?;
