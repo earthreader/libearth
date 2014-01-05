@@ -77,6 +77,10 @@ def autodiscovery(document, url):
 class AutoDiscovery(HTMLParser.HTMLParser):
     """Parse the given HTML and try finding the actual feed urls from it."""
 
+    FEED_PATTERN = r'''rel\s?=\s?('|")?alternate['"\s>]'''
+    FEED_URL_PATTERN = r'''href\s?=\s?(?:'|")?([^'"\s>]+)'''
+    FEED_TYPE_PATTERN = r'''type\s?=\s?(?:'|")?([^'"\s>]+)'''
+
     def __init__(self):
         self.feed_links = []
 
@@ -102,12 +106,10 @@ class AutoDiscovery(HTMLParser.HTMLParser):
         return self.feed_links
 
     def find_feed_url_with_regex(self, chunk):
-        if (re.search('rel\s?=\s?(\'|")?alternate[\'"\s>]', chunk) and
-                (RSS_TYPE in chunk) or (ATOM_TYPE in chunk)):
-            feed_url = re.search('href\s?=\s?(?:\'|")?([^\'"\s>]+)',
-                                 chunk).group(1)
-            feed_type = re.search('type\s?=\s?(?:\'|\")?([^\'"\s>]+)',
-                                  chunk).group(1)
+        if (re.search(self.FEED_PATTERN, chunk) and
+           ((RSS_TYPE in chunk) or (ATOM_TYPE in chunk))):
+            feed_url = re.search(self.FEED_URL_PATTERN, chunk).group(1)
+            feed_type = re.search(self.FEED_TYPE_PATTERN, chunk).group(1)
             self.feed_links.append(FeedLink(feed_type, feed_url))
 
 
