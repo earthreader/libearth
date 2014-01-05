@@ -103,7 +103,7 @@ class AutoDiscovery(HTMLParser.HTMLParser):
 
     def find_feed_url_with_regex(self, chunk):
         if (re.search('rel\s?=\s?(\'|")?alternate[\'"\s>]', chunk) and
-                (RSS_TYPE in chunk) or (ATOM_TYPE in chunk)):
+           ((RSS_TYPE in chunk) or (ATOM_TYPE in chunk))):
             feed_url = re.search('href\s?=\s?(?:\'|")?([^\'"\s>]+)',
                                  chunk).group(1)
             feed_type = re.search('type\s?=\s?(?:\'|\")?([^\'"\s>]+)',
