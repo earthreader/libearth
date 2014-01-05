@@ -21,6 +21,8 @@ Released on January 2, 2014.
   the same directory.  [:issue:`36` by klutzy]
 - :func:`~libearth.compat.parallel.parallel_map()` becomes to raise exceptions
   at the last, if any errored.  [:issue:`38`]
+- Fixed :func:`~libearth.parser.autodiscovery.AutoDiscovery.find_feed_url_with_regex`
+  See [:issue:`40`]
 
 
 Version 0.1.0
