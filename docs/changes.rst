@@ -6,6 +6,9 @@ Version 0.1.2
 
 To be released.
 
+- XML elements in data files are written in canonical order.  For example,
+  ``<title>`` element of the feed was at the back before, but now is in front.
+
 
 Version 0.1.1
 -------------
