@@ -12,6 +12,9 @@ Version 0.2.0
   becomes to accept only callable objects.  Below 0.2.0,
   :attr:`~libearth.schema.Attribute.default` is not a function but a value
   which is simply used as it is.
+- ``libearth.parser.heuristic`` module is gone; and ``get_format()``
+  function in the module is moved to :mod:`libearth.parser.autodiscovery`
+  module: :func:`~libearth.parser.autodiscovery.get_format()`.
 
 
 Version 0.1.2

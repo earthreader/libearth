@@ -6,6 +6,7 @@ Parsing RSS 2.0 feed.
 """
 import logging
 import re
+
 try:
     import urllib2
 except ImportError:
@@ -156,7 +157,7 @@ def rss_get_item_data(entries):
                 #       is required element, so we have to fill some value to
                 #       entry.updated_at.
             elif data.tag == 'source':
-                from .heuristic import get_format
+                from .autodiscovery import get_format
                 url = data.get('url')
                 request = urllib2.Request(url)
                 f = urllib2.urlopen(request)

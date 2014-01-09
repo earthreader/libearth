@@ -5,6 +5,8 @@ Crawl feeds.
 
 """
 import logging
+
+
 try:
     import urllib.request as urllib2
 except ImportError:
@@ -12,7 +14,8 @@ except ImportError:
 
 from .compat.parallel import parallel_map
 from .feed import Link
-from .parser.heuristic import get_format
+from .parser.autodiscovery import get_format
+
 
 __all__ = 'crawl', 'get_feed'
 
@@ -52,4 +55,4 @@ def get_feed(feed_url):
 
 
 class CrawlError(IOError):
-    '''Error which rises when crawling given url failed.'''
+    """Error which rises when crawling given url failed."""
