@@ -341,7 +341,7 @@ class BaseStage(object):
                     document = self.session.pull(document)
                 document = self.session.merge(prev_doc, document, force=True)
         with self.lock:  # FIXME
-            bytearray = write(document, as_bytes=True)
+            bytearray = write(document, canonical_order=True, as_bytes=True)
         repository.write(key, bytearray, _type_hint=type(document))
         self.touch()
         return document
@@ -477,7 +477,11 @@ class DirtyBuffer(Repository):
                                     prev_doc,
                                     force=True
                                 )
-                                bytearray = write(merged_doc, as_bytes=True)
+                                bytearray = write(
+                                    merged_doc,
+                                    canonical_order=True,
+                                    as_bytes=True
+                                )
                     write_to_repository(key, bytearray)
             _dictionary.clear()
 

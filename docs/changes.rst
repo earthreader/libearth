@@ -19,6 +19,13 @@ Version 0.1.2
 
 To be released.
 
+- XML elements in data files are written in canonical order.  For example,
+  ``<title>`` element of the feed was at the back before, but now is in front.
+- Fixed a bug that :mod:`~libearth.parser.autodiscovery` raises
+  :exc:`AttributeError` when the given HTML contains ``<link>`` to
+  both :mimetype:`application/atom+xml` and :mimetype:`application/rss+xml`.
+  [:issue:`40`]
+
 
 Version 0.1.1
 -------------
@@ -40,8 +47,6 @@ Released on January 2, 2014.
   the same directory.  [:issue:`36` by klutzy]
 - :func:`~libearth.compat.parallel.parallel_map()` becomes to raise exceptions
   at the last, if any errored.  [:issue:`38`]
-- Fixed :func:`~libearth.parser.autodiscovery.AutoDiscovery.find_feed_url_with_regex`
-  See [:issue:`40`]
 
 
 Version 0.1.0
