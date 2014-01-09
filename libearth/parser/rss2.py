@@ -67,6 +67,9 @@ def check_valid_as_atom(feed_data):
                 feed_data.updated_at = now()
         else:
             feed_data.updated_at = now()
+    if feed_data.title is None:
+        feed_data.title = feed_data.subtitle
+        # FIXME: what should we do when there's even no subtitle?
     for entry in feed_data.entries:
         if entry.updated_at is None:
             entry.updated_at = feed_data.updated_at

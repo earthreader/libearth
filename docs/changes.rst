@@ -4,6 +4,8 @@ Libearth Changelog
 Version 0.2.0
 -------------
 
+To be released.
+
 - Added :meth:`SubscriptionSet.contains()
   <libearth.subscribe.SubscriptionSet.contains>` method which provides
   ``recursively=True`` option.  It's useful for determining that
@@ -28,6 +30,8 @@ To be released.
   :exc:`AttributeError` when the given HTML contains ``<link>`` to
   both :mimetype:`application/atom+xml` and :mimetype:`application/rss+xml`.
   [:issue:`40`]
+- Fill ``<title>`` to ``<description>`` if there's no ``<title>``
+  (:mod:`~libearth.parser.rss2`).
 
 
 Version 0.1.1
