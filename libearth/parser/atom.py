@@ -83,9 +83,10 @@ def atom_parse_person_construct(data, xml_base):
 def atom_get_feed_data(root, feed_url):
     feed_data = Feed()
     xml_base = atom_get_xml_base(root, feed_url)
+    alt_id = None
     for data in root:
         if data.tag == '{' + XMLNS_ATOM + '}' + 'id':
-            feed_data.id = atom_get_id_tag(data, xml_base)
+            feed_data.id = alt_id = atom_get_id_tag(data, xml_base)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'title':
             feed_data.title = atom_get_title_tag(data)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'updated':
@@ -101,7 +102,10 @@ def atom_get_feed_data(root, feed_url):
                 atom_get_contributor_tag(data, xml_base)
             )
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'link':
-            feed_data.links.append(atom_get_link_tag(data, xml_base))
+            link = atom_get_link_tag(data, xml_base)
+            if link.relation == 'self':
+                alt_id = alt_id or link.uri
+            feed_data.links.append(link)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'generator':
             feed_data.generator = atom_get_generator_tag(data, xml_base)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'icon':
@@ -114,6 +118,8 @@ def atom_get_feed_data(root, feed_url):
             feed_data.subtitle = atom_get_subtitle_tag(data)
         elif data.tag == '{' + XMLNS_ATOM + '}' + 'entry':
             break
+    if feed_data.id is None:
+        feed_data.id = alt_id or feed_url
     return feed_data
 
 

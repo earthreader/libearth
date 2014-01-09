@@ -14,6 +14,8 @@ To be released.
   [:issue:`40`]
 - Fill ``<title>`` to ``<description>`` if there's no ``<title>``
   (:mod:`~libearth.parser.rss2`).
+- Fill ``<id>`` to the feed URL if there's no ``<id>``
+  (:mod:`~libearth.parser.atom`).
 
 
 Version 0.1.1
