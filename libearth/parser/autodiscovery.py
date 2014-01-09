@@ -126,7 +126,7 @@ def get_format(document):
     """Guess the syndication format of an arbitrary ``document``.
 
     :param document: document string to guess
-    :type document: :class:`str`
+    :type document: :class:`str`, :class:`bytes`
     :returns: the function possible to parse the given ``document``
     :rtype: :class:`collections.Callable`
 

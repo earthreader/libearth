@@ -17,8 +17,10 @@ import mock
 
 from libearth.compat import UNICODE_BY_DEFAULT
 from libearth.feed import Feed
-from libearth.parser import atom, rss2
-from libearth.parser.autodiscovery import FeedUrlNotFoundError, autodiscovery
+from libearth.parser.atom import parse_atom
+from libearth.parser.autodiscovery import (FeedUrlNotFoundError, autodiscovery,
+                                           get_format)
+from libearth.parser.rss2 import parse_rss
 from libearth.schema import read, write
 from libearth.tz import utc
 
@@ -259,9 +261,21 @@ def test_autodiscovery_when_atom():
     assert feed_link.url == 'http://vio.atomtest.com/feed/atom'
 
 
+@mark.parametrize('string', [
+    (lambda x: bytes(x, 'ascii')) if UNICODE_BY_DEFAULT else (lambda x: x),
+    (lambda x: x) if UNICODE_BY_DEFAULT else (lambda x: x.decode())
+])
+def test_get_format(string):
+    assert get_format(string(atom_xml)) is parse_atom
+    assert get_format(string(rss_xml)) is parse_rss
+    assert get_format(string(atom_blog)) is None
+    assert get_format(string(rss_blog)) is None
+    assert get_format(string(blog_with_two_feeds)) is None
+
+
 def test_atom_parser():
     url = 'http://vio.atomtest.com/feed/atom'
-    crawled_feed, _ = atom.parse_atom(atom_xml, url)
+    crawled_feed, _ = parse_atom(atom_xml, url)
     feed = read(Feed, write(crawled_feed, as_bytes=True))
     title = crawled_feed.title
     assert title.type == feed.title.type
@@ -407,7 +421,7 @@ class TestHTTPHandler(urllib2.HTTPHandler):
 def test_rss_parser():
     my_opener = urllib2.build_opener(TestHTTPHandler)
     urllib2.install_opener(my_opener)
-    crawled_feed, data_for_crawl = rss2.parse_rss(
+    crawled_feed, data_for_crawl = parse_rss(
         rss_xml,
         'http://sourcetest.com/rss.xml'
     )
@@ -467,7 +481,7 @@ def test_log_warnings_during_rss_parsing():
     my_opener = urllib2.build_opener(TestHTTPHandler)
     urllib2.install_opener(my_opener)
     with mock.patch('logging.getLogger') as mock_func:
-        crawled_feed, data_for_crawl = rss2.parse_rss(
+        crawled_feed, data_for_crawl = parse_rss(
             rss_xml,
             'http://sourcetest.com/rss.xml'
         )
@@ -491,7 +505,7 @@ category_with_no_term = '''
 
 
 def test_category_with_no_term():
-    crawled_feed, crawler_hints = atom.parse_atom(category_with_no_term, None)
+    crawled_feed, crawler_hints = parse_atom(category_with_no_term, None)
     assert not crawled_feed.categories
 
 
@@ -510,7 +524,7 @@ rss_with_no_pubDate = '''
 
 
 def test_rss_with_no_pubDate():
-    feed_data, crawler_hints = rss2.parse_rss(rss_with_no_pubDate)
+    feed_data, crawler_hints = parse_rss(rss_with_no_pubDate)
     assert feed_data.updated_at
     assert feed_data.entries[0].updated_at
 
@@ -529,7 +543,7 @@ rss_with_empty_title = '''
 
 def test_rss_with_empty_title():
     """Empty title should be empty string, not :const:`None`."""
-    feed, crawler_hints = rss2.parse_rss(rss_with_empty_title)
+    feed, crawler_hints = parse_rss(rss_with_empty_title)
     assert feed.title.value == ''
 
 
@@ -554,7 +568,7 @@ rss_with_guid = '''
 
 
 def test_rss_item_guid():
-    feed_data, crawler_hints = rss2.parse_rss(rss_with_guid, None)
+    feed_data, crawler_hints = parse_rss(rss_with_guid, None)
     assert feed_data.entries[0].id == \
         'urn:uuid:3F2504E0-4F89-11D3-9A0C-0305E82C3301'
     assert feed_data.entries[1].id == 'http://guidtest.com/1'
