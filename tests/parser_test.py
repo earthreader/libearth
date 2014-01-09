@@ -353,6 +353,35 @@ def test_atom_parser():
     assert source.subtitle == feed_source.subtitle
 
 
+atom_without_id = '''
+    <feed xmlns="http://www.w3.org/2005/Atom">
+        <title type="text">Atom Test</title>
+        <updated>2013-08-19T07:49:20+07:00</updated>
+        <link rel="alternate" type="text/html" href="http://example.com/" />
+        <link rel="self" type="application/atom+xml"
+            href="http://example.com/atom.xml" />
+        <updated>2013-08-10T15:27:04Z</updated>
+    </feed>
+'''
+
+atom_without_id2 = '''
+    <feed xmlns="http://www.w3.org/2005/Atom">
+        <title type="text">Atom Test</title>
+        <updated>2013-08-19T07:49:20+07:00</updated>
+        <link rel="alternate" type="text/html" href="http://example.com/" />
+        <updated>2013-08-10T15:27:04Z</updated>
+    </feed>
+'''
+
+
+def test_atom_without_id():
+    url = 'http://example.com/atom.xml'
+    feed, _ = parse_atom(atom_without_id, url)
+    assert feed.id == url
+    feed, _ = parse_atom(atom_without_id2, url)
+    assert feed.id == url
+
+
 rss_xml = """
 <rss version="2.0">
 <channel>
