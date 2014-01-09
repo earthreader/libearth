@@ -9,6 +9,7 @@ try:
 except ImportError:
     import html.parser as HTMLParser
 import collections
+import logging
 import re
 try:
     import urlparse
@@ -137,7 +138,9 @@ def get_format(document):
     """
     try:
         root = fromstring(document)
-    except Exception:
+    except Exception as e:
+        logger = logging.getLogger(__name__ + '.get_format')
+        logger.warning(e, exc_info=True)
         return None
     if root.tag == '{http://www.w3.org/2005/Atom}feed':
         return parse_atom
