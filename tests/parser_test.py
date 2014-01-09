@@ -15,7 +15,7 @@ except ImportError:
 from pytest import raises, mark
 import mock
 
-from libearth.compat import UNICODE_BY_DEFAULT
+from libearth.compat import UNICODE_BY_DEFAULT, text_type
 from libearth.feed import Feed
 from libearth.parser import atom, rss2
 from libearth.parser.autodiscovery import FeedUrlNotFoundError, autodiscovery
@@ -559,3 +559,19 @@ def test_rss_item_guid():
         'urn:uuid:3F2504E0-4F89-11D3-9A0C-0305E82C3301'
     assert feed_data.entries[1].id == 'http://guidtest.com/1'
     assert feed_data.entries[2].id == ''
+
+
+rss_without_title = '''
+<rss version="2.0">
+  <channel>
+    <description>only description</description>
+  </channel>
+</rss>
+'''
+
+
+def test_rss_without_title():
+    feed, _ = rss2.parse_rss(rss_without_title, None)
+    assert not feed.entries
+    assert (text_type(feed.title) == text_type(feed.subtitle) ==
+            'only description')
