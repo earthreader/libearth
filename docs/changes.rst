@@ -6,6 +6,8 @@ Version 0.2.0
 
 To be released.
 
+- Session files in :file:`.sessions/` directory become to be touched
+  only once at a transaction.  [:issue:`43`]
 - Added :meth:`SubscriptionSet.contains()
   <libearth.subscribe.SubscriptionSet.contains>` method which provides
   ``recursively=True`` option.  It's useful for determining that

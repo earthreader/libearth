@@ -136,7 +136,6 @@ class BaseStage(object):
         self.repository = repository
         self.transactions = {}
         self.lock = threading.RLock()
-        self.touch()
 
     def __enter__(self):
         context_id = get_current_context_id()
@@ -161,6 +160,7 @@ class BaseStage(object):
         dirty_buffer = self.get_current_transaction(pop=True)
         if exc_type is None:
             dirty_buffer.flush()
+        self.touch()
 
     def get_current_transaction(self, pop=False):
         """Get the current ongoing transaction.  If any transaction is not
@@ -193,7 +193,10 @@ class BaseStage(object):
          the :attr:`repository`.  It includes the session of the current stage.
 
         """
-        identifiers = self.repository.list(self.SESSION_DIRECTORY_KEY)
+        try:
+            identifiers = self.repository.list(self.SESSION_DIRECTORY_KEY)
+        except RepositoryKeyError:
+            return frozenset()
         return frozenset(Session(identifier=ident) for ident in identifiers)
 
     def touch(self):
@@ -249,7 +252,6 @@ class BaseStage(object):
         chunks = repository.read(key)
         document = read(document_type, chunks)
         assert isinstance(document, MergeableDocumentElement)
-        self.touch()
         not_stamped = document.__revision__ is None
         if not_stamped:
             return self.write(key, document, merge=False)
@@ -343,7 +345,6 @@ class BaseStage(object):
         with self.lock:  # FIXME
             bytearray = write(document, canonical_order=True, as_bytes=True)
         repository.write(key, bytearray, _type_hint=type(document))
-        self.touch()
         return document
 
     def __repr__(self):

@@ -195,6 +195,16 @@ def fx_other_stage(fx_repo, fx_other_session):
 
 
 def test_stage_sessions(fx_session, fx_stage, fx_other_session, fx_other_stage):
+    # It's empty at its initial state
+    assert fx_stage.sessions == frozenset()
+    assert fx_other_stage.sessions == frozenset()
+    # They get touched when there's any transaction
+    with fx_stage:
+        pass
+    assert fx_stage.sessions == frozenset([fx_session])
+    assert fx_other_stage.sessions == frozenset([fx_session])
+    with fx_other_stage:
+        pass
     assert fx_stage.sessions == frozenset([fx_session, fx_other_session])
     assert fx_other_stage.sessions == frozenset([fx_session, fx_other_session])
 
