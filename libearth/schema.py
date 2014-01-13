@@ -891,13 +891,15 @@ class Element(object):
 
     """
 
-    __slots__ = '_attrs', '_content', '_data', '_parent', '_root', '_partial'
+    __slots__ = ('_attrs', '_content', '_data', '_parent', '_root', '_partial',
+                 '_hints')
 
     def __init__(self, _parent=None, **attributes):
         self._attrs = getattr(self, '_attrs', {})  # FIXME
         self._content = getattr(self, '_content', None)
         self._data = getattr(self, '_data', {})
         self._partial = False
+        self._hints = {}
         if _parent is not None:
             if not isinstance(_parent, Element):
                 raise TypeError('expected a {0.__module__}.{0.__name__} '
@@ -1194,7 +1196,7 @@ class ElementList(collections.MutableSequence):
                 return False
         return True
 
-    def consume_index(self, index):
+    def consume_index(self, index, ignore_length_hint=False):
         if isinstance(index, slice):
             if index.start is not None and index.start >= 0 and \
                index.stop is not None and index.stop >= 0:
@@ -1203,6 +1205,10 @@ class ElementList(collections.MutableSequence):
                 index = -1
         key = self.descriptor
         if index >= 0:
+            if not ignore_length_hint:
+                length_hint = self._length_hint
+                if length_hint is not None and index >= length_hint:
+                    raise IndexError('list index out of range')
             for data in self.consume_buffer():
                 if key in data and len(data[key]) > index:
                     return data[key]
@@ -1223,7 +1229,23 @@ class ElementList(collections.MutableSequence):
         raise TypeError('expected an instance of {0.__module__}.{0.__name__}, '
                         'not {1!r}'.format(self.value_type, value))
 
+    @property
+    def _length_hint(self):
+        try:
+            length_hint = self.element._hints[self.descriptor]['length']
+        except KeyError:
+            return
+        return int(length_hint)
+
+    @_length_hint.setter
+    def _length_hint(self, value):
+        hints = self.element._hints.setdefault(self.descriptor, {})
+        hints['length'] = str(value)
+
     def __len__(self):
+        length_hint = self._length_hint
+        if length_hint is not None:
+            return length_hint
         key = self.descriptor
         data = self.element._data
         for data in self.consume_buffer():
@@ -1231,8 +1253,11 @@ class ElementList(collections.MutableSequence):
         try:
             lst = data[key]
         except KeyError:
-            return 0
-        return len(lst)
+            length = 0
+        else:
+            length = len(lst)
+        self._length_hint = length
+        return length
 
     def __getitem__(self, index):
         return self.consume_index(index)[index]
@@ -1247,12 +1272,17 @@ class ElementList(collections.MutableSequence):
     def __delitem__(self, index):
         data = self.consume_index(index)
         del data[index]
+        self._length_hint = len(data)
 
     def insert(self, index, value):
-        data = self.consume_index(index)
+        data = self.consume_index(index, ignore_length_hint=True)
         data.insert(index, self.validate_value(value))
+        self._length_hint = len(data)
 
     def __nonzero__(self):
+        length_hint = self._length_hint
+        if length_hint is not None:
+            return bool(length_hint)
         data = self.consume_index(1)
         return bool(data)
 
