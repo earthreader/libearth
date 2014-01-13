@@ -63,7 +63,7 @@ import xml.sax.saxutils
 from .compat import UNICODE_BY_DEFAULT, binary_type, string_type
 from .compat.xmlpullreader import PullReader
 
-__all__ = ('PARSER_LIST',
+__all__ = ('PARSER_LIST', 'SCHEMA_XMLNS',
            'Attribute', 'Child', 'Codec', 'CodecDescriptor', 'CodecError',
            'Content', 'ContentHandler', 'DecodeError', 'Descriptor',
            'DescriptorConflictError', 'DocumentElement', 'Element',
@@ -73,6 +73,10 @@ __all__ = ('PARSER_LIST',
            'index_descriptors', 'inspect_attributes', 'inspect_child_tags',
            'inspect_content_tag', 'inspect_xmlns_set', 'is_partially_loaded',
            'read', 'validate', 'write')
+
+
+#: (:class:`str`) The XML namespace name used for schema metadatq.
+SCHEMA_XMLNS = 'http://earthreader.org/schema/'
 
 
 class SchemaError(TypeError):
@@ -1365,6 +1369,8 @@ class ContentHandler(xml.sax.handler.ContentHandler):
 
     def startElementNS(self, tag, qname, attrs):
         xmlns, name = tag
+        if xmlns == SCHEMA_XMLNS:
+            return
         try:
             parent_context = self.stack[-1]
         except IndexError:
@@ -1445,6 +1451,8 @@ class ContentHandler(xml.sax.handler.ContentHandler):
 
     def endElementNS(self, tag, qname):
         xmlns, name = tag
+        if xmlns == SCHEMA_XMLNS:
+            return
         context = self.stack.pop()
         assert name == context.tag
         assert xmlns == context.xmlns
@@ -1805,6 +1813,9 @@ class write(collections.Iterable):
                             implementations.  useful for testing.
                             :const:`False` by default
     :type canonical_order: :class:`bool`
+    :param hints: export hint values as well.  hints improves efficiency of
+                  :func:`read()`.  :const:`True` by default
+    :type hints: :class:`bool`
     :param as_bytes: return chunks as :class:`bytes` (:class:`str` in Python 2)
                      if :const:`True`.  return chunks as :class:`str`
                      (:class:`unicode` in Python 3) if :const:`False`.
@@ -1816,7 +1827,7 @@ class write(collections.Iterable):
     """
 
     def __init__(self, document, validate=True, indent='  ', newline='\n',
-                 canonical_order=False, as_bytes=None):
+                 canonical_order=False, hints=True, as_bytes=None):
         if not isinstance(document, DocumentElement):
             raise TypeError(
                 'document must be an instance of {0.__module__}.{0.__name__}, '
@@ -1829,11 +1840,14 @@ class write(collections.Iterable):
         self.newline = newline
         self.as_bytes = as_bytes
         self.sort = sorted if canonical_order else lambda l, *a, **k: l
+        self.hints = hints
         xmlns_set = inspect_xmlns_set(self.document_type)
         self.xmlns_alias = dict(
             (uri, 'ns{0}'.format(i))
             for i, uri in enumerate(self.sort(xmlns_set))
         )
+        if hints:
+            self.xmlns_alias[SCHEMA_XMLNS] = 'libearth'
 
     def __iter__(self):
         result = itertools.chain(['<?xml version="1.0" encoding="utf-8"?>\n'],
@@ -1926,6 +1940,28 @@ class write(collections.Iterable):
                     key=lambda pair: pair[1].descriptor_counter
                 )
                 for attr, desc in children:
+                    if self.hints:
+                        hint_pairs = element._hints.get(desc, {}).items()
+                        for hint_id, hint_val in hint_pairs:
+                            yield newline
+                            for s in itertools.repeat(self.indent, depth + 1):
+                                yield s
+                            yield '<'
+                            yield self.xmlns_alias[SCHEMA_XMLNS]
+                            yield ':hint tag='
+                            yield quoteattr(desc.tag)
+                            if desc.xmlns:
+                                yield ' tag-xmlns='
+                                yield quoteattr(desc.xmlns)
+                            yield ' id='
+                            if not isinstance(hint_id, binary_type):
+                                hint_id = encode(hint_id)
+                            yield quoteattr(hint_id)
+                            yield ' value='
+                            if not isinstance(hint_val, binary_type):
+                                hint_val = encode(hint_val)
+                            yield quoteattr(hint_val)
+                            yield '/>'
                     child_elements = getattr(element, attr, None)
                     if not desc.multiple:
                         child_elements = [child_elements]

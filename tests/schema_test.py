@@ -575,9 +575,9 @@ def test_attribute_descriptor_conflict():
 
 def test_write_test_doc(fx_test_doc):
     doc, _ = fx_test_doc
-    g = write(doc, indent='    ', canonical_order=True)
-    print(''.join(write(doc, indent='    ', canonical_order=True)))
-    assert ''.join(g) == '''\
+    gf = lambda: write(doc, indent='    ', canonical_order=True, hints=False)
+    print(''.join(gf()))
+    assert ''.join(gf()) == '''\
 <?xml version="1.0" encoding="utf-8"?>
 <test xmlns:ns0="http://earthreader.github.io/"\
  attr="속성 값" attr-decoder="decoder test">
@@ -671,6 +671,7 @@ def test_write_xmlns_doc(fx_xmlns_doc):
     assert ''.join(g) == text_type('''\
 <?xml version="1.0" encoding="utf-8"?>
 <ns0:nstest xmlns:ns0="http://earthreader.github.io/"\
+ xmlns:libearth="http://earthreader.org/schema/"\
  xmlns:ns1="https://github.com/earthreader/libearth">
     <ns0:samens>Same namespace</ns0:samens>
     <ns1:otherns>Other namespace</ns1:otherns>
