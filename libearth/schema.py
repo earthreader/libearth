@@ -1935,24 +1935,23 @@ class write(collections.Iterable):
                         )
                     yield encode(escape(encoded_content_value))
             else:
-                children = self.sort(
-                    children.values(),
-                    key=lambda pair: pair[1].descriptor_counter
-                )
-                for attr, desc in children:
-                    if self.hints:
-                        hint_pairs = element._hints.get(desc, {}).items()
-                        for hint_id, hint_val in hint_pairs:
+                if self.hints:
+                    hints = self.sort(
+                        (desc.tag, desc.xmlns, hint_dict)
+                        for desc, hint_dict in element._hints.items()
+                    )
+                    for hint_tag, hint_xmlns, hint_dict in hints:
+                        for hint_id, hint_val in self.sort(hint_dict.items()):
                             yield newline
                             for s in itertools.repeat(self.indent, depth + 1):
                                 yield s
                             yield '<'
                             yield self.xmlns_alias[SCHEMA_XMLNS]
                             yield ':hint tag='
-                            yield quoteattr(desc.tag)
-                            if desc.xmlns:
+                            yield quoteattr(hint_tag)
+                            if hint_xmlns:
                                 yield ' tag-xmlns='
-                                yield quoteattr(desc.xmlns)
+                                yield quoteattr(hint_xmlns)
                             yield ' id='
                             if not isinstance(hint_id, binary_type):
                                 hint_id = encode(hint_id)
@@ -1962,6 +1961,11 @@ class write(collections.Iterable):
                                 hint_val = encode(hint_val)
                             yield quoteattr(hint_val)
                             yield '/>'
+                children = self.sort(
+                    children.values(),
+                    key=lambda pair: pair[1].descriptor_counter
+                )
+                for attr, desc in children:
                     child_elements = getattr(element, attr, None)
                     if not desc.multiple:
                         child_elements = [child_elements]

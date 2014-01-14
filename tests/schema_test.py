@@ -8,7 +8,8 @@ from libearth.compat import (IRON_PYTHON, binary_type, text, text_type,
                              string_type)
 from libearth.compat.etree import fromstringlist, tostring
 from libearth.parser.rss2 import parse_rss
-from libearth.schema import (Attribute, Child, Codec, Content,
+from libearth.schema import (SCHEMA_XMLNS,
+                             Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
                              Element, ElementList, EncodeError, IntegrityError,
                              Text,
@@ -1205,3 +1206,34 @@ def test_write_subscription_with_nonascii_title():
 
     g = write(sublist)
     assert ''.join(g)
+
+
+def test_write_hints(fx_test_doc):
+    doc, _ = fx_test_doc
+    doc._hints.update({
+        TestDoc.ns_element_attr: {'abc': '123', 'def': '456'},
+        TestDoc.title_attr: {'ghi': '789', 'jkl': '012'}
+    })
+    g = write(doc, canonical_order=True)
+    tree = fromstringlist(g)
+    hint_tag = '{' + SCHEMA_XMLNS + '}hint'
+    assert tree[0].tag == hint_tag
+    assert tree[0].attrib['tag'] == 'ns-element'
+    assert tree[0].attrib['tag-xmlns'] == 'http://earthreader.github.io/'
+    assert tree[0].attrib['id'] == 'abc'
+    assert tree[0].attrib['value'] == '123'
+    assert tree[1].tag == hint_tag
+    assert tree[1].attrib['tag'] == 'ns-element'
+    assert tree[1].attrib['tag-xmlns'] == 'http://earthreader.github.io/'
+    assert tree[1].attrib['id'] == 'def'
+    assert tree[1].attrib['value'] == '456'
+    assert tree[2].tag == hint_tag
+    assert tree[2].attrib['tag'] == 'title'
+    assert 'tag-xmlns' not in tree[2].attrib
+    assert tree[2].attrib['id'] == 'ghi'
+    assert tree[2].attrib['value'] == '789'
+    assert tree[3].tag == hint_tag
+    assert tree[3].attrib['tag'] == 'title'
+    assert 'tag-xmlns' not in tree[3].attrib
+    assert tree[3].attrib['id'] == 'jkl'
+    assert tree[3].attrib['value'] == '012'
