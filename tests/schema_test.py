@@ -1237,3 +1237,45 @@ def test_write_hints(fx_test_doc):
     assert 'tag-xmlns' not in tree[3].attrib
     assert tree[3].attrib['id'] == 'jkl'
     assert tree[3].attrib['value'] == '012'
+
+
+@fixture
+def fx_hinted_doc():
+    consume_log = []
+    xml = string_chunks(
+        consume_log,
+        '<test xmlns:l="http://earthreader.org/schema/">', '\n',
+        '\t', '<l:hint tag="multi" id="length" value="3" />', '\n',
+        '\t', '<l:hint tag="s-multi" id="length" value="0" />', ['HINT'], '\n',
+        '\t', '<title>Title</title>', '\n',
+        '\t', '<multi>a</multi>', ['MULTI_STARTED'], '\n',
+        '\t', '<content>Content</content>', '\n',
+        '\t', '<multi>b</multi>', '\n',
+        '\t', '<multi>c</multi>', '\n',
+        '</test>'
+    )
+    doc = read(TestDoc, xml)
+    return doc, consume_log
+
+
+def test_read_hints(fx_hinted_doc):
+    doc, consume_log = fx_hinted_doc
+    assert not doc._hints
+    assert is_partially_loaded(doc)
+    assert doc._partial == 1
+    assert not consume_log or IRON_PYTHON
+    doc.title_attr
+    assert is_partially_loaded(doc)
+    assert doc._partial == 2
+    assert consume_log[-1] == 'HINT' or IRON_PYTHON
+    assert doc._hints == {
+        TestDoc.multi_attr: {'length': '3'},
+        TestDoc.sorted_children: {'length': '0'}
+    }
+
+
+def test_element_list_length_hint(fx_hinted_doc):
+    doc, consume_log = fx_hinted_doc
+    assert len(doc.multi_attr) == 3
+    assert len(doc.sorted_children) == 0
+    assert consume_log == ['HINT'] or IRON_PYTHON

@@ -380,7 +380,7 @@ class Child(Descriptor):
         if attr is not None:
             content_desc = attr[1]
             content_desc.read(reserved_value, content)
-        reserved_value._partial = False
+        reserved_value._partial = 0
 
 
 class Codec(object):
@@ -902,7 +902,11 @@ class Element(object):
         self._attrs = getattr(self, '_attrs', {})  # FIXME
         self._content = getattr(self, '_content', None)
         self._data = getattr(self, '_data', {})
-        self._partial = False
+        # _partial has three states:
+        # 0. the element is completely loaded
+        # 1. the element is partially loaded
+        # 2. the element is partially loaded, but _hints are loaded
+        self._partial = 0
         self._hints = {}
         if _parent is not None:
             if not isinstance(_parent, Element):
@@ -913,7 +917,7 @@ class Element(object):
             if hasattr(self._root(), '_handler'):
                 self._stack_top = (1 if self._root() is self
                                    else len(self._root()._handler.stack))
-                self._partial = True
+                self._partial = 1
         cls = type(self)
         acceptable_desc_types = Descriptor, Content, Attribute, property
         # FIXME: ^-- hardcoded type list
@@ -1235,8 +1239,13 @@ class ElementList(collections.MutableSequence):
 
     @property
     def _length_hint(self):
+        element = self.element
+        if element._partial == 1:
+            for data in self.consume_buffer():
+                if element._partial != 1:
+                    break
         try:
-            length_hint = self.element._hints[self.descriptor]['length']
+            length_hint = element._hints[self.descriptor]['length']
         except KeyError:
             return
         return int(length_hint)
@@ -1367,15 +1376,28 @@ class ContentHandler(xml.sax.handler.ContentHandler):
         self.document = weakref.ref(document)
         self.stack = []
 
+    def load_hint(self, parent_element, tag, attrs):
+        xmlns, name = tag
+        if not (xmlns == SCHEMA_XMLNS and name == 'hint'):
+            parent_element._partial = 2
+            return False
+        child_tags = inspect_child_tags(type(parent_element))
+        child_xmlns = attrs.get((None, 'tag-xmlns'))
+        child_name = attrs[None, 'tag']
+        attr, desc = child_tags[child_xmlns, child_name]
+        hint_dict = parent_element._hints.setdefault(desc, {})
+        hint_dict[attrs[None, 'id']] = attrs[None, 'value']
+        return True
+
     def startElementNS(self, tag, qname, attrs):
         xmlns, name = tag
-        if xmlns == SCHEMA_XMLNS:
-            return
         try:
             parent_context = self.stack[-1]
         except IndexError:
             # document element
             doc = self.document()
+            if self.load_hint(doc, tag, attrs):
+                return
             expected = getattr(doc, '__xmlns__', None), doc.__tag__
             if tag != expected:
                 raise IntegrityError('document element must be {0}, '
@@ -1392,6 +1414,8 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             reserved_value = doc
         else:
             parent_element = parent_context.reserved_value
+            if self.load_hint(parent_element, tag, attrs):
+                return
             element_type = type(parent_element)
             child_tags = inspect_child_tags(element_type)
             try:
@@ -1463,7 +1487,7 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             if attr is not None:
                 content_desc = attr[1]
                 content_desc.read(context.reserved_value, text)
-            context.reserved_value._partial = False
+            context.reserved_value._partial = 0
         else:
             context.descriptor.end_element(context.reserved_value, text)
 
@@ -1498,7 +1522,7 @@ def is_partially_loaded(element):
     if not isinstance(element, Element):
         raise TypeError('element must be an instance of {0.__module__}.'
                         '{0.__name__}, not {1!r}'.format(Element, element))
-    return element._partial
+    return bool(element._partial)
 
 
 def index_descriptors(element_type):

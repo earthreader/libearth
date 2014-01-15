@@ -28,6 +28,11 @@ To be released.
 
 - XML elements in data files are written in canonical order.  For example,
   ``<title>`` element of the feed was at the back before, but now is in front.
+- :class:`write() <libearth.schema.write>` becomes to store length hints of
+  children that is :attr:`~libearth.schema.Child.multiple`, and
+  :func:`~libearth.schema.read()` becomes aware of the hints.
+  When hints are read :func:`len()` for the
+  :class:`~libearth.schema.ElementList` is O(1).
 - Fixed a bug that :mod:`~libearth.parser.autodiscovery` raises
   :exc:`AttributeError` when the given HTML contains ``<link>`` to
   both :mimetype:`application/atom+xml` and :mimetype:`application/rss+xml`.
