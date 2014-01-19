@@ -4,7 +4,7 @@ Libearth Changelog
 Version 0.1.2
 -------------
 
-To be released.
+Released on January 19, 2014.
 
 - XML elements in data files are written in canonical order.  For example,
   ``<title>`` element of the feed was at the back before, but now is in front.
