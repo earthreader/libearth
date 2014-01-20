@@ -19,6 +19,7 @@ To be released.
 - ``libearth.parser.heuristic`` module is gone; and ``get_format()``
   function in the module is moved to :mod:`libearth.parser.autodiscovery`
   module: :func:`~libearth.parser.autodiscovery.get_format()`.
+- Added :attr:`Link.html <libearth.feed.Link.html>` property.
 
 
 Version 0.1.2

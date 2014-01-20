@@ -90,6 +90,15 @@ def test_person_html():
     ).__html__()
 
 
+def test_link_html_property():
+    link = Link(uri='http://dahlia.kr/', mimetype='text/html')
+    assert link.html
+    link = Link(uri='http://dahlia.kr/', mimetype='application/xhtml+xml')
+    assert link.html
+    link = Link(uri='http://dahlia.kr/', mimetype='application/xml')
+    assert not link.html
+
+
 def test_link_str():
     link = Link(
         uri='http://dahlia.kr/',
@@ -100,7 +109,7 @@ def test_link_str():
     assert text_type(link) == 'http://dahlia.kr/'
 
 
-def test_link_html():
+def test_link_html_method():
     link = Link(
         uri='http://dahlia.kr/',
         relation='alternate',

@@ -205,6 +205,21 @@ class Link(Element):
         return hash((self.uri, self.relation, self.mimetype, self.language,
                      self.title, self.byte_size))
 
+    @property
+    def html(self):
+        """(:class:`bool`) Whether its :attr:`mimetype` is HTML (or XHTML).
+
+        .. versionadded:: 0.2.0
+
+        """
+        if self.mimetype:
+            match = re.match(r'^\s*([^;/\s]+/[^;/\s]+)\s*(?:;\s*.*)?$',
+                             self.mimetype)
+            if match:
+                mimetype = match.group(1)
+                return mimetype in ('text/html', 'application/xhtml+xml')
+        return False
+
     def __unicode__(self):
         return self.uri
 
