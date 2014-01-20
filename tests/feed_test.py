@@ -166,6 +166,21 @@ def test_link_list_filter_by_mimetype(fx_feed_links):
     ]
 
 
+def test_link_list_permalink(fx_feed_links):
+    links = fx_feed_links.links
+    other_link = Link(relation='other', uri='http://example.com/')
+    html_link = Link(relation='other',
+                     mimetype='text/html', uri='http://example.com/')
+    links.extend([other_link, html_link])
+    assert links.permalink is links[1]
+    del links[1:3]
+    assert links.permalink is html_link
+    del links[-1]
+    assert links.permalink is links[0]
+    del links[:-1]
+    assert links.permalink is None
+
+
 def test_category_str():
     assert text_type(Category(term='python')) == 'python'
     assert text_type(Category(term='python', label='Python')) == 'Python'

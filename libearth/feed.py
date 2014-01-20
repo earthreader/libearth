@@ -281,6 +281,28 @@ class LinkList(collections.MutableSequence):
             )
         return LinkList.list_type(l for l in self if l.mimetype == pattern)
 
+    @property
+    def permalink(self):
+        """(:class:`Link`) Find the permalink from the list.  The following
+        list shows precedence of lookup conditions:
+
+        1. :attr:`~Link.html`, and :attr:`~Link.relation` is ``'alternate'``
+        2. :attr:`~Link.html`
+        3. :attr:`~Link.relation` is ``'alternate'``
+        4. No permalink: return :const:`None`
+
+        .. versionadded:: 0.2.0
+
+        """
+        links = [(lnk, (lnk.html, lnk.relation == 'alternate')) for lnk in self]
+        filterred_links = [(l, cond) for l, cond in links if cond[0] or cond[1]]
+        try:
+            link, _ = max(filterred_links, key=lambda pair: pair[1])
+        except ValueError:
+            pass
+        else:
+            return link
+
 
 # FIXME: it probably would be common for all specialized element list types
 LinkList.list_type = type('LinkList.list_type', (list, LinkList), {})

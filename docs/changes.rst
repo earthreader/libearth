@@ -20,6 +20,7 @@ To be released.
   function in the module is moved to :mod:`libearth.parser.autodiscovery`
   module: :func:`~libearth.parser.autodiscovery.get_format()`.
 - Added :attr:`Link.html <libearth.feed.Link.html>` property.
+- Added :attr:`LinkList.permalink <libearth.feed.LinkList.permalink>` property.
 
 
 Version 0.1.2
