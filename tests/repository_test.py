@@ -1,3 +1,4 @@
+import itertools
 import os.path
 import tempfile
 import threading
@@ -208,3 +209,37 @@ def test_file_iterator(tmpdir):
     with raises(StopIteration):
         next(it)
     assert it.file_.closed
+
+
+def test_read_write_same_file(tmpdir):
+    repo = FileSystemRepository(str(tmpdir))
+    repo.write(['key'], itertools.repeat(b'first revision\n', 1024))
+    first_iterator = iter(repo.read(['key']))
+    second_iterator = iter(repo.read(['key']))
+    assert first_iterator is not second_iterator
+    first_stop = False
+    second_stop = False
+    first_list = []
+    second_list = []
+    while not (first_stop or second_stop):
+        if not first_stop:
+            try:
+                first_chunk = next(first_iterator)
+            except StopIteration:
+                first_stop = True
+            else:
+                if not first_list:
+                    repo.write(['key'], [b'second ', b'revision'])
+                    third_iterator = repo.read(['key'])
+                first_list.append(first_chunk)
+        if not second_stop:
+            try:
+                second_chunk = next(second_iterator)
+            except StopIteration:
+                second_stop = True
+            else:
+                second_list.append(second_chunk)
+    assert (b''.join(first_list) ==
+            b''.join(second_list) ==
+            b''.join(itertools.repeat(b'first revision\n', 1024)))
+    assert b''.join(third_iterator) == b'second revision'

@@ -44,10 +44,12 @@ import os.path
 import pipes
 import shutil
 import tempfile
+import threading
 try:
     from urllib import parse as urlparse
 except ImportError:
     import urlparse
+import weakref
 
 from .compat import IRON_PYTHON, string_type, xrange
 
@@ -335,6 +337,8 @@ class FileSystemRepository(Repository):
             raise NotADirectoryError(repr(path) + ' is not a directory')
         self.path = path
         self.atomic = atomic
+        self.lock = threading.RLock()
+        self.file_iterators = {}
 
     def to_url(self, scheme):
         super(FileSystemRepository, self).to_url(scheme)
@@ -345,7 +349,18 @@ class FileSystemRepository(Repository):
         path = os.path.join(self.path, *key)
         if not os.path.isfile(path):
             raise RepositoryKeyError(key)
-        return FileIterator(path, buffer_size=4096)
+        with self.lock:
+            iterator = FileIterator(path, buffer_size=4096)
+            try:
+                iterator_set = self.file_iterators[path]
+            except KeyError:
+                # weakref.WeakSet was introduced since Python 2.7,
+                # so workaround it on Python 2.6 by using WeakKeyDictionary
+                iterator_set = weakref.WeakKeyDictionary({iterator: 1})
+                self.file_iterators[path] = iterator_set
+            else:
+                iterator_set[iterator] = len(iterator_set) + 1
+            return iterator
 
     def write(self, key, iterable):
         super(FileSystemRepository, self).write(key, iterable)
@@ -364,6 +379,10 @@ class FileSystemRepository(Repository):
             elif not os.path.isdir(p):
                 raise RepositoryKeyError(key)
         filename = os.path.join(self.path, *key)
+        with self.lock:
+            already_opened_iterators = self.file_iterators.get(filename, {})
+            for iterator in already_opened_iterators.keys():
+                iterator.preload_all()
         if self.atomic:
             f = tempfile.NamedTemporaryFile('wb', delete=False)
         else:
@@ -417,7 +436,7 @@ class FileIterator(collections.Iterator):
         self.file_ = None
 
     def __iter__(self):
-        self.file_ = io.open(self.path, 'rb')
+        self.file_ = io.open(self.path, 'rb', buffering=0)
         return self
 
     def __next__(self):
@@ -425,6 +444,10 @@ class FileIterator(collections.Iterator):
         if f is None:
             f = self.__iter__().file_
         elif f.closed:
+            if hasattr(self, 'preloaded'):
+                rest = self.preloaded
+                del self.preloaded
+                return rest
             raise StopIteration
         try:
             chunk = f.read(self.buffer_size)
@@ -432,6 +455,7 @@ class FileIterator(collections.Iterator):
             self.file_.close()
             raise
         if chunk:
+            print(self.file_, '(', id(self.file_), '):', chunk[:4], '...')
             return chunk
         self.file_.close()
         raise StopIteration
@@ -448,6 +472,14 @@ class FileIterator(collections.Iterator):
     def read(self, *args):
         if self.file_ is not None:
             return self.file_.read(*args)
+
+    def preload_all(self):
+        f = self.file_
+        if f is None:
+            f = self.__iter__().file_
+        elif not f.closed:
+            self.preloaded = f.read()
+            f.close()
 
 
 try:
