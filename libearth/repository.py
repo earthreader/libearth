@@ -455,7 +455,6 @@ class FileIterator(collections.Iterator):
             self.file_.close()
             raise
         if chunk:
-            print(self.file_, '(', id(self.file_), '):', chunk[:4], '...')
             return chunk
         self.file_.close()
         raise StopIteration
