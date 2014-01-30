@@ -240,6 +240,7 @@ def test_file_iterator(tmpdir):
     assert it.file_.closed
 
 
+@mark.skipif('IRON_PYTHON')  # FIXME: make it to work on IronPython as well
 def test_read_write_same_file(tmpdir):
     repo = FileSystemRepository(str(tmpdir))
     repo.write(['key'], itertools.repeat(b'first revision\n', 1024))
