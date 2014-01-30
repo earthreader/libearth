@@ -638,18 +638,16 @@ def fx_entries():
 
 def test_merge_sorted(fx_stages, fx_feed, fx_entries):
     stage, _ = fx_stages
-
+    feed_id = get_hash(fx_feed.id)
     with stage:
-        stage.feeds[fx_feed.id] = fx_feed
-
+        stage.feeds[feed_id] = fx_feed
     with stage:
         for entry in fx_entries:
-            feed = stage.feeds[fx_feed.id]
+            feed = stage.feeds[feed_id]
             feed.entries = [entry]
-            stage.feeds[fx_feed.id] = feed
-
+            stage.feeds[feed_id] = feed
     with stage:
-        entries = stage.feeds[fx_feed.id].entries
+        entries = stage.feeds[feed_id].entries
         expected = sorted(entries, key=lambda x: x.updated_at, reverse=True)
         print([entry.title.value for entry in entries])
         print([entry.title.value for entry in expected])
