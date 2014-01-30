@@ -25,6 +25,8 @@ To be released.
   reading buffer and emits broken mixed bytes when there are simultaneous
   readings and writings to the same key.
 - Fixed broken functions related to repository urls on Windows.
+- Fixed :func:`libearth.compat.parallel.cpu_count()` function not to
+  raise :exc:`NotImplementedError` in some cases.
 
 
 Version 0.1.2

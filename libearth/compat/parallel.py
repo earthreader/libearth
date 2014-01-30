@@ -48,7 +48,13 @@ if IRON_PYTHON:
     def cpu_count():
         return Environment.ProcessorCount
 else:
-    from multiprocessing import cpu_count
+    import multiprocessing
+
+    def cpu_count():
+        try:
+            return multiprocessing.cpu_count()
+        except NotImplementedError:
+            return 1
 
 
 try:
