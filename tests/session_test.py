@@ -1,6 +1,9 @@
+from __future__ import print_function
+
 import collections
 import datetime
 import operator
+import sys
 import time
 
 from pytest import fixture, mark, raises
@@ -288,6 +291,12 @@ def test_session_pull_same_session():
     assert session.pull(doc) is doc
 
 
+def wait():
+    # Windows doesn't provide enough precision to datetime.now().
+    if sys.platform == 'win32':
+        time.sleep(0.5)
+
+
 def test_session_merge():
     #  s1  s2
     #  ------
@@ -318,6 +327,7 @@ def test_session_merge():
     a_c = TestMergeableContentDoc(content='a')
     s1.revise(a)  # (1)
     s1.revise(a_c)
+    wait()
     s2 = Session('s2')
     b = TestMergeableDoc(
         attr='b',
@@ -338,11 +348,14 @@ def test_session_merge():
     b_c = TestMergeableContentDoc(content='b')
     s2.revise(b)  # (2)
     s2.revise(b_c)
+    wait()
     c = s1.merge(b, a)  # (3)
     c_c = s1.merge(b_c, a_c)
+    wait()
     assert c.__revision__.session is s1
     assert c.__revision__.updated_at > a.__revision__.updated_at
     assert c.__base_revisions__ == RevisionSet([a.__revision__, b.__revision__])
+    print((c.attr, c.text, c_c.content))
     assert c.attr == c.text == c_c.content == 'b'
     assert list(c.multi_text) == ['a', 'b', 'c', 'd', 'e', 'f']
     assert ([entity.value for entity in c.unique_entities] ==
@@ -358,11 +371,13 @@ def test_session_merge():
     b.unique_entities.append(TestUniqueEntity(ident='blah', value='s2-blah'))
     s2.revise(b)  # (4)
     s2.revise(b_c)
+    wait()
     assert list(b.multi_text) == ['d', 'e', 'f', 'blah']
     assert ([entity.value for entity in b.unique_entities] ==
             ['s2-c', 's2-d', 's2-e', 's2-blah'])
     d = s2.merge(b, c)  # (5)
     d_c = s2.merge(b_c, c_c)
+    wait()
     assert d.__revision__.session is s2
     assert d.__revision__.updated_at >= c.__revision__.updated_at
     assert d.__base_revisions__ == RevisionSet([b.__revision__, c.__revision__])
@@ -374,6 +389,7 @@ def test_session_merge():
     assert d.nullable.value == 'nullable'
     e = s1.merge(c, d)  # (5)
     e_c = s1.merge(c_c, d_c)
+    wait()
     assert e.__revision__.session is s1
     assert e.__revision__.updated_at == d.__revision__.updated_at
     assert e.__base_revisions__ == d.__base_revisions__
