@@ -21,9 +21,10 @@ To be released.
   module: :func:`~libearth.parser.autodiscovery.get_format()`.
 - Added :attr:`Link.html <libearth.feed.Link.html>` property.
 - Added :attr:`LinkList.permalink <libearth.feed.LinkList.permalink>` property.
-- Fix a :class:`~libearth.repository.FileSystemRepository` bug that conflicts
+- Fixed a :class:`~libearth.repository.FileSystemRepository` bug that conflicts
   reading buffer and emits broken mixed bytes when there are simultaneous
   readings and writings to the same key.
+- Fixed broken functions related to repository urls on Windows.
 
 
 Version 0.1.2

@@ -1,5 +1,6 @@
 import itertools
 import os.path
+import sys
 import tempfile
 import threading
 try:
@@ -61,8 +62,9 @@ def test_not_implemented_error():
     assert r2.list(['key']) == frozenset()
 
 
+@mark.skipif('sys.platform == "win32"', reason='POSIX path test')
 @mark.parametrize('without_pkg_resources', [True, False])
-def test_from_url(without_pkg_resources, tmpdir, monkeypatch):
+def test_from_url__posix(without_pkg_resources, tmpdir, monkeypatch):
     if without_pkg_resources and not IRON_PYTHON:
         monkeypatch.delattr('pkg_resources.iter_entry_points')
     url = 'file://' + str(tmpdir)
@@ -73,7 +75,22 @@ def test_from_url(without_pkg_resources, tmpdir, monkeypatch):
         from_url('unregistered-scheme://')
 
 
-def test_file_from_to_url(tmpdir):
+@mark.skipif('sys.platform != "win32"', reason='Windows path test')
+@mark.parametrize('without_pkg_resources', [True, False])
+def test_from_url__windows(without_pkg_resources, tmpdir, monkeypatch):
+    if without_pkg_resources and not IRON_PYTHON:
+        monkeypatch.delattr('pkg_resources.iter_entry_points')
+    url_tail = '/'.join(str(tmpdir).split(tmpdir.sep))
+    url = 'file:///' + url_tail
+    fs = from_url(url)
+    assert isinstance(fs, FileSystemRepository)
+    assert fs.path == str(tmpdir)
+    with raises(LookupError):
+        from_url('unregistered-scheme://')
+
+
+@mark.skipif('sys.platform == "win32"', reason='POSIX path test')
+def test_file_from_to_url__posix(tmpdir):
     url = 'file://' + str(tmpdir)
     parsed = urlparse.urlparse(url)
     fs = FileSystemRepository.from_url(parsed)
@@ -81,6 +98,18 @@ def test_file_from_to_url(tmpdir):
     assert fs.path == str(tmpdir)
     assert fs.to_url('file') == url
     assert fs.to_url('fs') == 'fs://' + str(tmpdir)
+
+
+@mark.skipif('sys.platform != "win32"', reason='Windows path test')
+def test_file_from_to_url__windows(tmpdir):
+    url_tail = '/'.join(str(tmpdir).split(tmpdir.sep))
+    url = 'file:///' + url_tail
+    parsed = urlparse.urlparse(url)
+    fs = FileSystemRepository.from_url(parsed)
+    assert isinstance(fs, FileSystemRepository)
+    assert fs.path == str(tmpdir)
+    assert fs.to_url('file') == url
+    assert fs.to_url('fs') == 'fs:///' + url_tail
 
 
 def test_file_read(tmpdir):

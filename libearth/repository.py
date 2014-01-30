@@ -43,6 +43,7 @@ import os
 import os.path
 import pipes
 import shutil
+import sys
 import tempfile
 import threading
 try:
@@ -319,7 +320,14 @@ class FileSystemRepository(Repository):
         elif url.netloc or url.params or url.query or url.fragment:
             raise ValueError('file:// must not contain any host/port/user/'
                              'password/parameters/query/fragment')
-        return cls(url.path)
+        if sys.platform == 'win32':
+            if not url.path.startswith('/'):
+                raise ValueError('invalid file path: ' + repr(url.path))
+            parts = url.path.lstrip('/').split('/')
+            path = os.path.join(parts[0] + os.path.sep, *parts[1:])
+        else:
+            path = url.path
+        return cls(path)
 
     def __init__(self, path, mkdir=True, atomic=IRON_PYTHON):
         if not os.path.exists(path):
@@ -342,6 +350,10 @@ class FileSystemRepository(Repository):
 
     def to_url(self, scheme):
         super(FileSystemRepository, self).to_url(scheme)
+        if sys.platform == 'win32':
+            drive, path = os.path.splitdrive(self.path)
+            path = '/'.join(path.lstrip(os.path.sep).split(os.path.sep))
+            return '{0}:///{1}/{2}'.format(scheme, drive, path)
         return '{0}://{1}'.format(scheme, self.path)
 
     def read(self, key):
