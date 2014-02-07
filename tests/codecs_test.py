@@ -2,6 +2,7 @@ import datetime
 import locale
 import os
 import random
+import sys
 
 from pytest import mark, raises
 
@@ -66,6 +67,8 @@ def test_rfc3339_with_white_spaces():
 
 
 def available_alternative_locales():
+    if sys.platform == 'win32':
+        return frozenset()
     allowed_encs = '.UTF-8', '.US-ASCII', '.CP949', '.eucKR', '.eucJP'
     try:
         with os.popen('locale -a') as p:
