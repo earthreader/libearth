@@ -1,5 +1,7 @@
 import datetime
 import locale
+import os
+import random
 
 from pytest import mark, raises
 
@@ -63,6 +65,20 @@ def test_rfc3339_with_white_spaces():
     assert codec.decode(rfc_string) == rfc_datetime
 
 
+def available_alternative_locales():
+    allowed_encs = '.UTF-8', '.US-ASCII', '.CP949', '.eucKR', '.eucJP'
+    try:
+        with os.popen('locale -a') as p:
+            return frozenset(
+                l
+                for l in (locale.normalize(line.strip()) for line in p)
+                if not l.startswith('en_')
+                if l.endswith(allowed_encs)
+            )
+    except (OSError, IOError):
+        return frozenset()
+
+
 @mark.parametrize(('string', 'expected'), {
     'Sat, 07 Sep 2013 01:20:43 +0900': datetime.datetime(
         2013, 9, 7, 1, 20, 43,
@@ -78,13 +94,20 @@ def test_rfc822(string, expected):
     assert codec.decode(string) == expected
     assert codec.encode(expected) == string
     # Locale might affect to the way it parses datetime
-    default_locale = locale.setlocale(locale.LC_ALL)
-    locale.setlocale(locale.LC_ALL, 'ko_KR.UTF-8')
+    default_locale = locale.getlocale(locale.LC_TIME)
+    alt_locales = available_alternative_locales()
+    if len(alt_locales) > 5:
+        alt_locales = random.sample(alt_locales, 5)
     try:
-        assert codec.decode(string) == expected
-        assert codec.encode(expected) == string
+        for alt_locale in alt_locales:
+            try:
+                locale.setlocale(locale.LC_TIME, alt_locale)
+            except locale.Error:
+                pass
+            assert codec.decode(string) == expected
+            assert codec.encode(expected) == string
     finally:
-        locale.setlocale(locale.LC_ALL, default_locale)
+        locale.setlocale(locale.LC_TIME, default_locale)
 
 
 def test_rfc822_minus_tz():
