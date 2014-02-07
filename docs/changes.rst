@@ -27,6 +27,8 @@ To be released.
 - Fixed broken functions related to repository urls on Windows.
 - Fixed :func:`libearth.compat.parallel.cpu_count()` function not to
   raise :exc:`NotImplementedError` in some cases.
+- Fixed :class:`~libearth.codecs.Rfc822` to properly work also on
+  non-English locales e.g. ``ko_KR``.
 
 
 Version 0.1.2

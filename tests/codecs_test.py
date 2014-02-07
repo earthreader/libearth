@@ -1,4 +1,5 @@
 import datetime
+import locale
 
 from pytest import mark, raises
 
@@ -62,20 +63,28 @@ def test_rfc3339_with_white_spaces():
     assert codec.decode(rfc_string) == rfc_datetime
 
 
-def test_rfc822():
+@mark.parametrize(('string', 'expected'), {
+    'Sat, 07 Sep 2013 01:20:43 +0900': datetime.datetime(
+        2013, 9, 7, 1, 20, 43,
+        tzinfo=FixedOffset(9 * 60)
+    ),
+    'Fri, 13 Dec 2013 11:12:50 +0000': datetime.datetime(
+        2013, 12, 13, 11, 12, 50,
+        tzinfo=utc
+    )
+}.items())
+def test_rfc822(string, expected):
     codec = Rfc822()
-
-    kst_string = 'Sat, 07 Sep 2013 01:20:43 +0900'
-    invalid_kst_string = 'Sat, 07 Sep 2013 01:20:43 +0900w'
-
-    kst_datetime = datetime.datetime(2013, 9, 7, 1, 20, 43,
-                                     tzinfo=FixedOffset(9 * 60))
-
-    assert codec.decode(kst_string) == kst_datetime
-    assert codec.encode(kst_datetime) == kst_string
-    with raises(DecodeError):
-        decoded = codec.decode(invalid_kst_string)
-        print(decoded)
+    assert codec.decode(string) == expected
+    assert codec.encode(expected) == string
+    # Locale might affect to the way it parses datetime
+    default_locale = locale.setlocale(locale.LC_ALL)
+    locale.setlocale(locale.LC_ALL, 'ko_KR.UTF-8')
+    try:
+        assert codec.decode(string) == expected
+        assert codec.encode(expected) == string
+    finally:
+        locale.setlocale(locale.LC_ALL, default_locale)
 
 
 def test_rfc822_minus_tz():
@@ -107,16 +116,16 @@ def test_rfc822_namedtz():
 
 def test_rfc822_raise():
     codec = Rfc822()
-
+    invalid_kst_string = 'Sat, 07 Sep 2013 01:20:43 +0900w'
+    with raises(DecodeError):
+        decoded = codec.decode(invalid_kst_string)
+        print(decoded)
     datetime_not_contains_tzinfo = datetime.datetime.now()
     not_valid_rfc822_string = 'Sat, 07 Sep 2013 01:20:43'
-
     with raises(EncodeError):
         codec.encode("it is not datetime.datetime object")
-
     with raises(EncodeError):
         codec.encode(datetime_not_contains_tzinfo)
-
     with raises(DecodeError):
         codec.decode(not_valid_rfc822_string)
 
