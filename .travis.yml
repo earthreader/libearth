@@ -17,8 +17,8 @@ matrix:
   - python: pypy
     env: PYTHON_VM=cpython
 install:
-- echo ko_KR.UTF-8 UTF-8 > /etc/locale.gen
-- echo ja_JP.UTF-8 UTF-8 > /etc/locale.gen
+- echo ko_KR.UTF-8 UTF-8 | sudo tee -a /etc/locale.gen
+- echo ja_JP.UTF-8 UTF-8 | sudo tee -a /etc/locale.gen
 - sudo dpkg-reconfigure -f noninteractive locales
 - if [[ "$PYTHON_VM" == "cpython" ]]; then
     pip install pytest mock pytest-capturelog pep8;
