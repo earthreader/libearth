@@ -509,6 +509,21 @@ def test_merge_mark_crawled(fx_stages, fx_feed):
         assert stage.feeds['test'].entries[1].read
 
 
+def test_duplicated_categories(fx_stages, fx_feed):
+    stage, _ = fx_stages
+    feed = fx_feed
+    cate = Category(term='cake')
+
+    feed.categories.append(cate)
+
+    with stage:
+        stage.feeds['test'] = feed
+        stage.feeds['test'] = feed
+        merged_feed = stage.feeds['test']
+
+    assert len(merged_feed.categories) == len(feed.categories)
+
+
 @fixture
 def fx_test_feeds():
     authors = [Person(name='vio')]

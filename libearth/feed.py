@@ -334,6 +334,14 @@ class Category(Element):
     #: :rfc:`4287#section-4.2.2.3` (section 4.2.2.3).
     label = Attribute('label')
 
+    def __entity_id__(self):
+        return self.term
+
+    def __merge_entities__(self, other):
+        if not self.label:
+            self.label = other.label
+        return self
+
     def __unicode__(self):
         return self.label or self.term
 
