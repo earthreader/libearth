@@ -142,7 +142,7 @@ def rss_get_item_data(entries):
             elif data.tag == 'category':
                 entry_data.categories = [Category(term=data.text)]
             elif data.tag == 'comments':
-                #entry_data['comments'] = data.text
+                # entry_data['comments'] = data.text
                 pass  # FIXME
             elif data.tag == 'enclosure':
                 link = Link(mimetype=data.get('type'), uri=data.get('url'))
