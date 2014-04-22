@@ -4,7 +4,7 @@ Libearth Changelog
 Version 0.2.0
 -------------
 
-To be released.
+Released April 22, 2014.
 
 - Session files in :file:`.sessions/` directory become to be touched
   only once at a transaction.  [:issue:`43`]
