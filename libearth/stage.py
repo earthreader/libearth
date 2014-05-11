@@ -5,7 +5,7 @@ Stage is a similar concept to Git's one.  It's a unit of updates,
 so every change to the repository should be done through a stage.
 
 It also does more than Git's stage: :class:`Route`.  Routing system
-hide how document should be stored in the repository, and provides
+hides how document should be stored in the repository, and provides
 the natural object-mapping interface instead.
 
 Stage also provides transactions.  All operations on staged documents should
