@@ -39,6 +39,9 @@ You can install it using :program:`pip`:
 
 See PyPI_ as well.
 
+.. image:: http://img.shields.io/pypi/v/libearth.svg
+   :target: https://pypi.python.org/pypi/libearth
+
 .. _PyPI: https://pypi.python.org/pypi/libearth
 
 
@@ -81,11 +84,11 @@ Pull requests are always welcome!
 We discuss about libearth's development on IRC.  Come ``#earthreader`` channel
 on Ozinger_ network.  (We will make one on freenode as well soon!)
 
-.. image:: https://travis-ci.org/earthreader/libearth.png?branch=master
+.. image:: https://travis-ci.org/earthreader/libearth.svg
    :alt: Build Status
    :target: https://travis-ci.org/earthreader/libearth
 
-.. image:: https://coveralls.io/repos/earthreader/libearth/badge.png?branch=master
+.. image:: https://img.shields.io/coveralls/earthreader/libearth.svg
    :alt: Coverage Status
    :target: https://coveralls.io/r/earthreader/libearth?branch=master
 
