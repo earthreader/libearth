@@ -1,3 +1,4 @@
+import datetime
 try:
     import httplib
 except ImportError:
@@ -14,6 +15,7 @@ except ImportError:
 from pytest import raises
 
 from libearth.crawler import crawl, CrawlError
+from libearth.tz import utc
 
 
 atom_xml = """
@@ -25,6 +27,7 @@ atom_xml = """
     <link rel="alternate" type="text/html" href="http://vio.atomtest.com/" />
     <link rel="self" type="application/atom+xml"
         href="http://vio.atomtest.com/feed/atom" />
+    <link rel="icon" href="http://vio.atomtest.com/favicon.ico" />
     <author>
         <name>vio</name>
         <email>vio.bo94@gmail.com</email>
@@ -175,16 +178,24 @@ def test_crawler():
              'http://rsstest.com/rss.xml']
     generator = crawl(feeds, 4)
     for result in generator:
-        feed_data = result[1]
+        feed_data = result.feed
         if feed_data.title.value == 'Atom Test':
             entries = feed_data.entries
             assert entries[0].title.value == 'xml base test'
             assert entries[1].title.value == 'Title One'
+            assert result.hints is None
+            assert result.icon_url == 'http://vio.atomtest.com/favicon.ico'
         elif feed_data.title.value == 'Vio Blog':
             entries = feed_data.entries
             assert entries[0].title.value == 'test one'
             source = feed_data.entries[0].source
             assert source.title.value == 'Source Test'
+            assert result.icon_url is None
+            assert result.hints == {
+                'ttl': '10',
+                'lastBuildDate': datetime.datetime(2002, 9, 7, 0, 0, 1,
+                                                   tzinfo=utc)
+            }
 
 
 def test_sort_entries():
