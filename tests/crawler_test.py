@@ -192,7 +192,11 @@ def test_sort_entries():
     urllib2.install_opener(my_opener)
     feeds = ['http://reversedentries.com/feed/atom']
     crawler = iter(crawl(feeds, 4))
-    url, feed, hints = next(crawler)
+    result = next(crawler)
+    url, feed, hints = result
+    assert url == result.url
+    assert feed is result.feed
+    assert hints == result.hints
     assert feed.entries[0].updated_at > feed.entries[1].updated_at
 
 

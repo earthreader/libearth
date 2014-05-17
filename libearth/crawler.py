@@ -4,6 +4,7 @@
 Crawl feeds.
 
 """
+import collections
 import logging
 
 
@@ -17,7 +18,7 @@ from .feed import Link
 from .parser.autodiscovery import get_format
 
 
-__all__ = 'CrawlError', 'crawl', 'get_feed'
+__all__ = 'CrawlError', 'CrawlResult', 'crawl', 'get_feed'
 
 
 def crawl(feeds, pool_size):
@@ -25,8 +26,13 @@ def crawl(feeds, pool_size):
 
     :param feeds: feeds
     :type feeds: :class: `collections.Sequence`
-    :returns: set of pairs (`~libearth.feed.Feed`, crawler hint)
+    :returns: a set of :class:`CrawlResult` objects
     :rtype: :class:`collections.Iterable`
+
+    .. versionchanged:: 0.3.0
+
+       It became to return a set of :class:`CrawlResult`\ s instead of
+       :class:`tuple`\ s.
 
     """
     return parallel_map(pool_size, get_feed, feeds)
@@ -48,10 +54,51 @@ def get_feed(feed_url):
                                    mimetype=f.info()['content-type']))
         feed.entries = sorted(feed.entries, key=lambda entry: entry.updated_at,
                               reverse=True)
-        return feed_url, feed, crawler_hints
+        return CrawlResult(feed_url, feed, crawler_hints)
     except Exception as e:
         logging.getLogger(__name__ + '.get_feed').exception(e)
         raise CrawlError('{0} failed: {1}'.format(feed_url, e))
+
+
+class CrawlResult(collections.Sequence):
+    """The result of each crawl of a feed.
+
+    It mimics triple of (:attr:`url`, :attr:`feed`, :attr:`hints`) for
+    backward compatibility to below 0.3.0, so you can still take these
+    values using tuple unpacking, though it's not recommended way to
+    get these values anymore.
+
+    .. versionadded:: 0.3.0
+
+    """
+
+    #: (:class:`str`) The crawled :attr:`feed` url.
+    url = None
+
+    #: (:class:`~libearth.feed.Feed`) The crawled feed.
+    feed = None
+
+    #: (:class:`collections.Mapping`) The extra hints for the crawler
+    #: e.g. ``skipHours``, ``skipMinutes``, ``skipDays``.
+    #: It might be :const:`None`.
+    hints = None
+
+    def __init__(self, url, feed, hints):
+        self.url = url
+        self.feed = feed
+        self.hints = hints
+
+    def __len__(self):
+        return 3
+
+    def __getitem__(self, index):
+        if index == 0 or index == -3:
+            return self.url
+        elif index == 1 or index == -2:
+            return self.feed
+        elif index == 2 or index == -1:
+            return self.hints
+        raise IndexError('index out of range')
 
 
 class CrawlError(IOError):

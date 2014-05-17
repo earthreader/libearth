@@ -6,6 +6,8 @@ Version 0.3.0
 
 To be released.
 
+- :func:`~libearth.crawler.crawl()` now return a set of
+  :class:`~libearth.crawler.CrawlResult` objects instead of :class:`tuple`\ s.
 - Added :attr:`LinkList.favicon <libearth.feed.LinkList.favicon>` property.
   [:issue:`49`]
 
