@@ -1,4 +1,4 @@
-.. image:: https://raw.github.com/earthreader/libearth/master/artwork/libearth.png
+.. image:: http://libearth.earthreader.org/en/0.2.0/_static/libearth.svg?
    :width: 132
    :height: 139
 
