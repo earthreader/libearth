@@ -6,6 +6,9 @@ Version 0.3.0
 
 To be released.
 
+- Added :attr:`LinkList.favicon <libearth.feed.LinkList.favicon>` property.
+  [:issue:`49`]
+
 
 Version 0.2.0
 -------------

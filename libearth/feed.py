@@ -303,6 +303,18 @@ class LinkList(collections.MutableSequence):
         else:
             return link
 
+    @property
+    def favicon(self):
+        """(:class:`Link`) Find the link to a favicon, also known as
+        a shortcut or bookmark icon, if it exists.
+
+        .. versionadded:: 0.3.0
+
+        """
+        for link in self:
+            if 'icon' in link.relation.split():
+                return link
+
 
 # FIXME: it probably would be common for all specialized element list types
 LinkList.list_type = type('LinkList.list_type', (list, LinkList), {})

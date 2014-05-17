@@ -145,7 +145,9 @@ def fx_feed_links(fx_feed):
         Link(relation='alternate', mimetype='application/xml+atom',
              uri='http://example.com/index.atom'),
         Link(relation='alternate', mimetype='application/xml+rss',
-             uri='http://example.com/index.atom')
+             uri='http://example.com/index.atom'),
+        Link(relation='icon', mimetype='image/png',
+             uri='http://example.com/favicon.png')
     ])
     return fx_feed
 
@@ -179,6 +181,14 @@ def test_link_list_permalink(fx_feed_links):
     assert links.permalink is links[0]
     del links[:-1]
     assert links.permalink is None
+
+
+def test_link_list_favicon(fx_feed_links):
+    links = fx_feed_links.links
+    assert links.favicon is links[-1]
+    links[-1] = Link(relation='shortcut icon',
+                     uri='http://example.com/favicon.ico')
+    assert links.favicon is links[-1]
 
 
 def test_category_str():
