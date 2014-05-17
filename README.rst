@@ -27,6 +27,9 @@ Links
 Package Index (PyPI)
    https://pypi.python.org/pypi/libearth
 
+   .. image:: http://img.shields.io/pypi/v/libearth.svg
+      :target: https://pypi.python.org/pypi/libearth
+
 Docs (ReadTheDocs)
    http://libearth.earthreader.org/
 
@@ -45,13 +48,13 @@ List archive
 Continuous integration (Travis)
    https://travis-ci.org/earthreader/libearth
 
-   .. image:: https://travis-ci.org/earthreader/libearth.png?branch=master
+   .. image:: https://travis-ci.org/earthreader/libearth.svg
       :alt: Build Status
       :target: https://travis-ci.org/earthreader/libearth
 
 Test coverage (Coveralls)
    https://coveralls.io/r/earthreader/libearth
 
-   .. image:: https://coveralls.io/repos/earthreader/libearth/badge.png?branch=master
+   .. image:: https://img.shields.io/coveralls/earthreader/libearth.svg
       :alt: Coverage Status
       :target: https://coveralls.io/r/earthreader/libearth?branch=master
