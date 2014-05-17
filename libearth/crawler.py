@@ -17,7 +17,7 @@ from .feed import Link
 from .parser.autodiscovery import get_format
 
 
-__all__ = 'crawl', 'get_feed'
+__all__ = 'CrawlError', 'crawl', 'get_feed'
 
 
 def crawl(feeds, pool_size):
