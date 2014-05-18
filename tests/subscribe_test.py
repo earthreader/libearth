@@ -353,13 +353,22 @@ def test_subscription_set_subscribe(subs):
              relation='alternate',
              mimetype='text/html')
     ])
-    rv = subs.subscribe(feed)
+    rv = subs.subscribe(feed, icon_uri='http://example.com/favicon.ico')
     sub = next(iter(subs))
     assert rv is sub
     assert sub.feed_id == '0691e2f0c3ea1d7fa9da48e14a46ac8077815ad3'
+    assert sub.icon_uri == 'http://example.com/favicon.ico'
     assert sub.label == 'Feed title'
     assert sub.feed_uri == 'http://example.com/index.xml'
     assert sub.alternate_uri == 'http://example.com/'
+    subs.remove(sub)
+    assert not subs
+    feed.links.append(
+        Link(uri='http://example.com/favicon.ico', relation='shortcut icon')
+    )
+    rv = subs.subscribe(feed)
+    assert rv is next(iter(subs))
+    assert rv == sub
 
 
 def test_stage_subscription_list(fx_repo, fx_session):

@@ -10,7 +10,7 @@ import distutils.version
 import hashlib
 
 from .codecs import Boolean, Integer, Rfc822
-from .compat import text_type
+from .compat import string_type, text_type
 from .feed import Feed, Person
 from .schema import Attribute, Child, Codec, Element, Text
 from .session import MergeableDocumentElement
@@ -192,19 +192,34 @@ class SubscriptionSet(collections.MutableSet):
             except ValueError:
                 break
 
-    def subscribe(self, feed):
+    def subscribe(self, feed, icon_uri=None):
         """Add a subscription from :class:`~libearth.feed.Feed` instance.
         Prefer this method over :meth:`add()` method.
 
         :param feed: feed to subscribe
         :type feed: :class:`~libearth.feed.Feed`
+        :param icon_uri: optional favicon url of the ``feed``
+        :type icon_uri: :class:`str`
+        :returns: the created subscription object
+        :rtype: :class:`Subscription`
+
+        .. versionadded:: 0.3.0
+           Optional ``icon_url`` parameter was added.
 
         """
         if not isinstance(feed, Feed):
             raise TypeError('feed must be an instance of {0.__module__}.'
                             '{0.__name__}, not {1!r}'.format(Feed, feed))
+        elif icon_uri is None:
+            favicon = feed.links.favicon
+            if favicon is not None:
+                icon_uri = favicon.uri
+        elif not isinstance(icon_uri, string_type):
+            raise TypeError('icon_uri must be a string, not ' +
+                            repr(icon_uri))
         sub = Subscription(
             feed_id=hashlib.sha1(feed.id.encode('utf-8')).hexdigest(),
+            icon_uri=icon_uri,
             label=text_type(feed.title),
             _title=text_type(feed.title),
             feed_uri=next(l.uri for l in feed.links if l.relation == 'self'),
@@ -326,6 +341,11 @@ class Subscription(Outline):
     """
 
     type = Attribute('type', default=lambda _: 'rss')
+
+    #: (:class:`str`) Optional favicon url.
+    #:
+    #: .. versionadded:: 0.3.0
+    icon_uri = Attribute('icon', xmlns=METADATA_XMLNS, default=lambda _: None)
 
     def __repr__(self):
         return '<{0.__module__}.{0.__name__} {1} {2!r} ({3!r})>'.format(

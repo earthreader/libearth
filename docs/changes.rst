@@ -16,6 +16,10 @@ To be released.
   <libearth.parser.autodiscovery.AutoDiscovery.find>` method (that returns
   a pair of feed links and favicon links) was introduced.
   [:issue:`49`]
+- :attr:`Subscription.icon_uri <libearth.subscribe.Subscription.icon_uri>`
+  attribute was introduced.  [:issue:`49`]
+- Added an optional ``icon_uri`` parameter to :meth:`SubscriptionSet.subscribe()
+  <libearth.subscribe.SubscriptionSet.subscribe>` method.  [:issue:`49`]
 
 
 Version 0.2.0
