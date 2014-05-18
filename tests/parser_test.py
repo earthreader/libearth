@@ -18,8 +18,9 @@ import mock
 from libearth.compat import UNICODE_BY_DEFAULT, text_type
 from libearth.feed import Feed
 from libearth.parser.atom import parse_atom
-from libearth.parser.autodiscovery import (FeedUrlNotFoundError, autodiscovery,
-                                           get_format)
+from libearth.parser.autodiscovery import (AutoDiscovery, FeedLink,
+                                           FeedUrlNotFoundError,
+                                           autodiscovery, get_format)
 from libearth.parser.rss2 import parse_rss
 from libearth.schema import read, write
 from libearth.tz import utc
@@ -39,9 +40,15 @@ atom_blog = '''
 
 
 def test_autodiscovery_atom():
-    feedlink = autodiscovery(atom_blog, None)[0]
-    assert feedlink.type == 'application/atom+xml'
-    assert feedlink.url == 'http://vio.atomtest.com/feed/atom/'
+    expected = [
+        FeedLink(type='application/atom+xml',
+                 url='http://vio.atomtest.com/feed/atom/')
+    ]
+    feedlinks = autodiscovery(atom_blog, None)
+    assert feedlinks == expected
+    feed_links, icon_links = AutoDiscovery().find(atom_blog)
+    assert feed_links == expected
+    assert icon_links == []
 
 
 rss_blog = '''
@@ -58,9 +65,15 @@ rss_blog = '''
 
 
 def test_autodiscovery_rss2():
-    feedlink = autodiscovery(rss_blog, None)[0]
-    assert feedlink.type == 'application/rss+xml'
-    assert feedlink.url == 'http://vio.rsstest.com/feed/rss/'
+    expected = [
+        FeedLink(type='application/rss+xml',
+                 url='http://vio.rsstest.com/feed/rss/')
+    ]
+    feedlinks = autodiscovery(rss_blog, None)
+    assert feedlinks == expected
+    feed_links, icon_links = AutoDiscovery().find(rss_blog)
+    assert feed_links == expected
+    assert icon_links == []
 
 
 html_with_no_feed_url = b'''
@@ -76,6 +89,8 @@ html_with_no_feed_url = b'''
 def test_autodiscovery_with_no_feed_url():
     with raises(FeedUrlNotFoundError):
         autodiscovery(html_with_no_feed_url, None)
+    feed_links, icon_links = AutoDiscovery().find(html_with_no_feed_url)
+    assert feed_links == icon_links == []
 
 
 binary_rss_blog = b'''
@@ -92,9 +107,15 @@ binary_rss_blog = b'''
 
 
 def test_autodiscovery_with_binary():
-    feedlink = autodiscovery(binary_rss_blog, None)[0]
-    assert feedlink.type == 'application/rss+xml'
-    assert feedlink.url == 'http://vio.rsstest.com/feed/rss/'
+    expected = [
+        FeedLink(type='application/rss+xml',
+                 url='http://vio.rsstest.com/feed/rss/')
+    ]
+    feedlinks = autodiscovery(binary_rss_blog, None)
+    assert feedlinks == expected
+    feed_links, icon_links = AutoDiscovery().find(binary_rss_blog)
+    assert feed_links == expected
+    assert icon_links == []
 
 
 blog_with_two_feeds = '''
@@ -104,6 +125,8 @@ blog_with_two_feeds = '''
             href="http://vio.rsstest.com/feed/rss/" />
         <link rel="alternate" type="application/atom+xml"
             href="http://vio.atomtest.com/feed/atom/" />
+        <link rel="shortcut icon" href="http://vio.atomtest.com/favicon.ico"/>
+        <link rel="icon" href="http://vio.atomtest.com/icon.png"/>
     </head>
     <body>
         Test
@@ -113,11 +136,20 @@ blog_with_two_feeds = '''
 
 
 def test_autodiscovery_with_two_feeds():
-    feedlinks = autodiscovery(blog_with_two_feeds, None)
-    assert feedlinks[0].type == 'application/atom+xml'
-    assert feedlinks[0].url == 'http://vio.atomtest.com/feed/atom/'
-    assert feedlinks[1].type == 'application/rss+xml'
-    assert feedlinks[1].url == 'http://vio.rsstest.com/feed/rss/'
+    expected = [
+        FeedLink(type='application/atom+xml',
+                 url='http://vio.atomtest.com/feed/atom/'),
+        FeedLink(type='application/rss+xml',
+                 url='http://vio.rsstest.com/feed/rss/')
+    ]
+    feed_links = autodiscovery(blog_with_two_feeds, None)
+    assert feed_links == expected
+    feed_links, icon_links = AutoDiscovery().find(blog_with_two_feeds)
+    assert feed_links == expected
+    assert icon_links == [
+        'http://vio.atomtest.com/favicon.ico',
+        'http://vio.atomtest.com/icon.png'
+    ]
 
 
 relative_feed_url = '''

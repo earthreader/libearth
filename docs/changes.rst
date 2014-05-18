@@ -10,6 +10,12 @@ To be released.
   :class:`~libearth.crawler.CrawlResult` objects instead of :class:`tuple`\ s.
 - Added :attr:`LinkList.favicon <libearth.feed.LinkList.favicon>` property.
   [:issue:`49`]
+- :meth:`AutoDiscovery.find_feed_url()
+  <libearth.parser.autodiscovery.AutoDiscovery.find_feed_url>` method (that
+  returned feed links) was gone.  Instead :meth:`AutoDiscovery.find()
+  <libearth.parser.autodiscovery.AutoDiscovery.find>` method (that returns
+  a pair of feed links and favicon links) was introduced.
+  [:issue:`49`]
 
 
 Version 0.2.0

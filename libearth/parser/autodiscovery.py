@@ -26,11 +26,18 @@ __all__ = ('ATOM_TYPE', 'RSS_TYPE', 'TYPE_TABLE', 'AutoDiscovery', 'FeedLink',
            'FeedUrlNotFoundError', 'autodiscovery', 'get_format')
 
 
-#: (:class:`str`) The MIME type of RSS 2.0 format.
+#: (:class:`str`) The MIME type of RSS 2.0 format
+#: (:mimetype:`application/rss+xml).
 RSS_TYPE = 'application/rss+xml'
 
-#: (:class:`str`) The MIME type of Atom format.
+#: (:class:`str`) The MIME type of Atom format
+#: (:mimetype:`application/atom+xml`).
 ATOM_TYPE = 'application/atom+xml'
+
+#: (:class:`collections.Set`) The set of supported feed MIME types.
+#:
+#: .. versionadded:: 0.3.0
+FEED_TYPES = frozenset([RSS_TYPE, ATOM_TYPE])
 
 #: (:class:`collections.Mapping`) The mapping table of feed types
 TYPE_TABLE = {parse_atom: ATOM_TYPE, parse_rss: RSS_TYPE}
@@ -63,7 +70,7 @@ def autodiscovery(document, url):
     document_type = get_format(document)
     if document_type is None:
         parser = AutoDiscovery()
-        feed_links = parser.find_feed_url(document)
+        feed_links, _ = parser.find(document)
         if not feed_links:
             raise FeedUrlNotFoundError('Cannot find feed url')
         for link in feed_links:
@@ -73,26 +80,40 @@ def autodiscovery(document, url):
                     FeedLink(link.type, absolute_url)
         return feed_links
     else:
-            return [FeedLink(TYPE_TABLE[document_type], url)]
+        return [FeedLink(TYPE_TABLE[document_type], url)]
 
 
 class AutoDiscovery(HTMLParser.HTMLParser):
-    """Parse the given HTML and try finding the actual feed urls from it."""
+    """Parse the given HTML and try finding the actual feed urls from it.
 
-    FEED_PATTERN = r'''rel\s?=\s?('|")?alternate['"\s>]'''
-    FEED_URL_PATTERN = r'''href\s?=\s?(?:'|")?([^'"\s>]+)'''
-    FEED_TYPE_PATTERN = r'''type\s?=\s?(?:'|")?([^'"\s>]+)'''
+    .. versionchanged:: 0.3.0
+       It became to find icon links as well, and :meth:`find_feed_url()`
+       method (that returned only feed links) was gone, instead :meth:`find()`
+       (that return a pair of feed links and icon links) was introduced.
+
+    """
+
+    LINK_PATTERN = re.compile(r'''rel\s?=\s?(?:'|")?([^'">]+)''')
+    LINK_HREF_PATTERN = re.compile(r'''href\s?=\s?(?:'|")?([^'"\s>]+)''')
+    LINK_TYPE_PATTERN = re.compile(r'''type\s?=\s?(?:'|")?([^'"\s>]+)''')
 
     def __init__(self):
+        HTMLParser.HTMLParser.__init__(self)
         self.feed_links = []
+        self.icon_links = []
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
-        if tag == 'link' and 'rel' in attrs and attrs['rel'] == 'alternate' \
-                and 'type' in attrs and attrs['type'] in RSS_TYPE+ATOM_TYPE:
+        if not (tag == 'link' and 'rel' in attrs and 'href' in attrs):
+            return
+        if attrs['rel'] == 'alternate' and 'type' in attrs and \
+           attrs['type'] in FEED_TYPES:
             self.feed_links.append(FeedLink(attrs['type'], attrs['href']))
+        elif 'icon' in attrs['rel'].split():
+            self.icon_links.append(attrs['href'])
 
-    def find_feed_url(self, document):
+    def find(self, document):
+        document = text(document)
         match = re.match('.+</head>', document)
         if match:
             head = match.group(0)
@@ -103,16 +124,27 @@ class AutoDiscovery(HTMLParser.HTMLParser):
             try:
                 self.feed(chunk)
             except Exception:
-                self.find_feed_url_with_regex(chunk)
+                self.find_link_with_regex(chunk)
         self.feed_links = sorted(self.feed_links, key=lambda link: link.type)
-        return self.feed_links
+        return self.feed_links, self.icon_links
 
-    def find_feed_url_with_regex(self, chunk):
-        if (re.search(self.FEED_PATTERN, chunk) and
-           ((RSS_TYPE in chunk) or (ATOM_TYPE in chunk))):
-            feed_url = re.search(self.FEED_URL_PATTERN, chunk).group(1)
-            feed_type = re.search(self.FEED_TYPE_PATTERN, chunk).group(1)
-            self.feed_links.append(FeedLink(feed_type, feed_url))
+    def find_link_with_regex(self, chunk):
+        match = self.LINK_PATTERN.search(chunk)
+        if not match:
+            return
+        href_match = self.LINK_HREF_PATTERN.search(chunk)
+        if not href_match:
+            return
+        rels = match.group(1).split()
+        href = href_match.group(1)
+        if 'alternate' in rels:
+            type_match = self.LINK_TYPE_PATTERN.search(chunk)
+            if type_match:
+                type_ = type_match.group(1)
+                if type_ in FEED_TYPES:
+                    self.feed_links.append(FeedLink(type_, href))
+        if 'icon' in rels:
+            self.icon_links.append(href)
 
 
 class FeedUrlNotFoundError(Exception):
