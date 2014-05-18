@@ -10,10 +10,12 @@ try:
 except ImportError:
     from urllib import request as urllib2
 
-from pytest import raises
+from pytest import mark, raises
 
 from libearth.compat import text_type
-from libearth.crawler import crawl, CrawlError
+from libearth.crawler import crawl, CrawlError, CrawlResult
+from libearth.feed import Feed, Link, Text
+from libearth.subscribe import Category, SubscriptionList
 from libearth.tz import utc
 
 
@@ -268,3 +270,33 @@ def test_crawl_error():
     generator = crawl(feeds, 2)
     with raises(CrawlError):
         next(iter(generator))
+
+
+@mark.parametrize('subs', [
+    SubscriptionList(),
+    Category()
+])
+def test_add_as_subscription(subs):
+    feed = Feed(
+        id='urn:earthreader:test:test_subscription_set_subscribe',
+        title=Text(value='Feed title'),
+        links=[
+            Link(
+                relation='self',
+                mimetype='application/atom+xml',
+                uri='http://example.com/atom.xml'
+            )
+        ]
+    )
+    result = CrawlResult(
+        'http://example.com/atom.xml',
+        feed,
+        hints={},
+        icon_url='http://example.com/favicon.ico'
+    )
+    sub = result.add_as_subscription(subs)
+    assert len(subs) == 1
+    assert next(iter(subs)) is sub
+    assert sub.feed_uri == result.url
+    assert sub.label == feed.title.value
+    assert sub.icon_uri == result.icon_url

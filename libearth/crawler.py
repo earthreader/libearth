@@ -20,6 +20,7 @@ except ImportError:
 from .compat.parallel import parallel_map
 from .feed import Link
 from .parser.autodiscovery import AutoDiscovery, get_format
+from .subscribe import SubscriptionSet
 
 
 __all__ = 'CrawlError', 'CrawlResult', 'crawl', 'get_feed'
@@ -121,6 +122,23 @@ class CrawlResult(collections.Sequence):
         self.feed = feed
         self.hints = hints
         self.icon_url = icon_url
+
+    def add_as_subscription(self, subscription_set):
+        """Add it as a subscription to the given ``subscription_set``.
+
+        :param subscription_set: a subscription list or category to add
+                                 a new subscription
+        :type subscription_set: :class:`~libearth.subscribe.SubscriptionSet`
+        :returns: the created subscription object
+        :rtype: :class:`~libearth.subscribe.Subscription`
+
+        """
+        if not isinstance(subscription_set, SubscriptionSet):
+            raise TypeError(
+                'expected an instance of {0.__module__}.{0.__name__}, '
+                'not {1!r}'.format(SubscriptionSet, subscription_set)
+            )
+        return subscription_set.subscribe(self.feed, icon_uri=self.icon_url)
 
     def __len__(self):
         return 3
