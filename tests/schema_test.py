@@ -348,7 +348,18 @@ class AnotherElementList(collections.Sequence):
     pass
 
 
-def test_element_list_register_specialized_type(fx_test_doc):
+@fixture
+def fx_sandboxed_specialized_types(request):
+    initial_state = ElementList.specialized_types
+    ElementList.specialized_types = {}
+
+    @request.addfinalizer
+    def rollback_to_initial_state():
+        ElementList.specialized_types = initial_state
+
+
+def test_element_list_register_specialized_type(fx_sandboxed_specialized_types,
+                                                fx_test_doc):
     ElementList.register_specialized_type(TextElement, SpecializedElementList)
     doc, _ = fx_test_doc
     assert isinstance(doc.multi_attr, SpecializedElementList)
@@ -360,17 +371,15 @@ def test_element_list_register_specialized_type(fx_test_doc):
     # Does nothing if the given specialized element list type is the same to
     # the previously registered element list type
     ElementList.register_specialized_type(TextElement, SpecializedElementList)
-    ElementList.specialized_types.clear()  # FIXME: implementation details leak
 
 
-def test_element_list_for(fx_test_doc):
+def test_element_list_for(fx_sandboxed_specialized_types, fx_test_doc):
     @element_list_for(TextElement)
     class Decorated(SpecializedElementList):
         pass
     doc, _ = fx_test_doc
     assert isinstance(doc.multi_attr, Decorated)
     assert doc.multi_attr.test_extended_method() == len(doc.multi_attr)
-    ElementList.specialized_types.clear()  # FIXME: implementation details leak
 
 
 def test_document_element_tag():
