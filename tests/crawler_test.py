@@ -94,7 +94,7 @@ rss_xml = """
 <rss version="2.0">
 <channel>
     <title>Vio Blog</title>
-    <link>http://vioblog.com</link>
+    <link>http://rsstest.com/</link>
     <description>earthreader</description>
     <copyright>Copyright2013, Vio</copyright>
     <managingEditor>vio.bo94@gmail.com</managingEditor>
@@ -119,6 +119,19 @@ rss_xml = """
 </channel>
 </rss>
 """
+
+
+rss_website_html = '''\
+<!DOCTYPE>
+<html>
+<head>
+  <title>RSS Test</title>
+  <link rel="shotcut icon" href="images/favicon.ico">
+</head>
+<body>
+</body>
+</html>
+'''
 
 
 rss_source_xml = """
@@ -149,6 +162,7 @@ mock_urls = {
     'http://reversedentries.com/feed/atom': (200, 'application/atom+xml',
                                              atom_reversed_entries),
     'http://rsstest.com/rss.xml': (200, 'application/rss+xml', rss_xml),
+    'http://rsstest.com/': (200, 'text/html', rss_website_html),
     'http://sourcetest.com/rss.xml': (200, 'application/rss+xml',
                                       rss_source_xml),
     'http://brokenrss.com/rss': (200, 'application/rss+xml', broken_rss)
@@ -190,7 +204,7 @@ def test_crawler():
             assert entries[0].title.value == 'test one'
             source = feed_data.entries[0].source
             assert source.title.value == 'Source Test'
-            assert result.icon_url is None
+            assert result.icon_url == 'http://rsstest.com/images/favicon.ico'
             assert result.hints == {
                 'ttl': '10',
                 'lastBuildDate': datetime.datetime(2002, 9, 7, 0, 0, 1,

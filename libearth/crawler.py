@@ -12,10 +12,14 @@ try:
     import urllib.request as urllib2
 except ImportError:
     import urllib2
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    import urlparse
 
 from .compat.parallel import parallel_map
 from .feed import Link
-from .parser.autodiscovery import get_format
+from .parser.autodiscovery import AutoDiscovery, get_format
 
 
 __all__ = 'CrawlError', 'CrawlResult', 'crawl', 'get_feed'
@@ -57,9 +61,22 @@ def get_feed(feed_url):
                               reverse=True)
         favicon = feed.links.favicon
         if favicon is None:
-            # FIXME: try 1) finding link[rel=icon] in the permalink html
-            #            2) requesting HEAD /favicon.ico
-            pass
+            permalink = feed.links.permalink
+            if permalink:
+                try:
+                    f = urllib2.urlopen(permalink.uri)
+                except IOError:
+                    pass
+                else:
+                    html = f.read()
+                    f.close()
+                    _, icon_urls = AutoDiscovery().find(html)
+                    if icon_urls:
+                        favicon = urlparse.urljoin(permalink.uri,
+                                                   icon_urls[0])
+            if favicon is None:
+                # FIXME: try requesting HEAD /favicon.ico
+                pass
         else:
             favicon = favicon.uri
         return CrawlResult(feed_url, feed, crawler_hints, favicon)
