@@ -11,6 +11,7 @@ MANIFEST
 *.pyc
 .DS_Store
 .idea
+.ipy-env
 py
 _pytest
 pytest.py
