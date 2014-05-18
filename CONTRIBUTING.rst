@@ -33,7 +33,9 @@ Tests
 
 - All code patches should contain one or more unit tests of
   the feature to add or regression tests of the bug to fix.
-- Run the whole test suite on every Python VM using ``tox``.
+- Run the whole test suite on every Python VM using ``tox``
+  (except for IronPython).
+- For IronPython use ``ipy-test.sh`` script.
 - All commits will be tested by `Travis CI`__.
 
 __ https://travis-ci.org/earthreader/libearth
