@@ -3,17 +3,16 @@ try:
     import httplib
 except ImportError:
     from http import client as httplib
+import io
+import os.path
 try:
     import urllib2
 except ImportError:
     from urllib import request as urllib2
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 from pytest import raises
 
+from libearth.compat import text_type
 from libearth.crawler import crawl, CrawlError
 from libearth.tz import utc
 
@@ -148,6 +147,25 @@ rss_source_xml = """
 </rss>
 """
 
+favicon_test_atom_xml = '''
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title type="text">Favicon Test</title>
+    <id>http://favicontest.com/atom.xml</id>
+    <updated>2013-08-19T07:49:20+07:00</updated>
+    <link type="text/html" rel="alternate" href="http://favicontest.com/" />
+</feed>
+'''
+
+favicon_test_website_xml = '''
+<!DOCTYPE html>
+<html>
+<head><title>Favicon Test</title></head>
+<body></body>
+</html>
+'''
+
+with open(os.path.join(os.path.dirname(__file__), 'favicon.ico'), 'rb') as f:
+    favicon_test_favicon_ico = f.read()
 
 broken_rss = """
 <rss version="2.0">
@@ -165,6 +183,11 @@ mock_urls = {
     'http://rsstest.com/': (200, 'text/html', rss_website_html),
     'http://sourcetest.com/rss.xml': (200, 'application/rss+xml',
                                       rss_source_xml),
+    'http://favicontest.com/atom.xml': (200, 'application/atom+xml',
+                                        favicon_test_atom_xml),
+    'http://favicontest.com/': (200, 'text/html', favicon_test_website_xml),
+    'http://favicontest.com/favicon.ico': (200, 'image/vnd.microsoft.icon',
+                                           favicon_test_favicon_ico),
     'http://brokenrss.com/rss': (200, 'application/rss+xml', broken_rss)
 }
 
@@ -177,9 +200,13 @@ class TestHTTPHandler(urllib2.HTTPHandler):
             status_code, mimetype, content = mock_urls[url]
         except KeyError:
             return urllib2.HTTPHandler.http_open(self, req)
-        resp = urllib2.addinfourl(StringIO(content),
-                                  {'content-type': mimetype},
-                                  url)
+        resp = urllib2.addinfourl(
+            io.StringIO(content)
+            if isinstance(content, text_type)
+            else io.BytesIO(content),
+            {'content-type': mimetype},
+            url
+        )
         resp.code = status_code
         resp.msg = httplib.responses[status_code]
         return resp
@@ -189,7 +216,8 @@ def test_crawler():
     my_opener = urllib2.build_opener(TestHTTPHandler)
     urllib2.install_opener(my_opener)
     feeds = ['http://vio.atomtest.com/feed/atom',
-             'http://rsstest.com/rss.xml']
+             'http://rsstest.com/rss.xml',
+             'http://favicontest.com/atom.xml']
     generator = crawl(feeds, 4)
     for result in generator:
         feed_data = result.feed
@@ -210,6 +238,8 @@ def test_crawler():
                 'lastBuildDate': datetime.datetime(2002, 9, 7, 0, 0, 1,
                                                    tzinfo=utc)
             }
+        elif feed_data.title.value == 'Favicon Test':
+            assert result.icon_url == 'http://favicontest.com/favicon.ico'
 
 
 def test_sort_entries():

@@ -6,7 +6,7 @@ Crawl feeds.
 """
 import collections
 import logging
-
+import sys
 
 try:
     import urllib.request as urllib2
@@ -74,9 +74,13 @@ def get_feed(feed_url):
                     if icon_urls:
                         favicon = urlparse.urljoin(permalink.uri,
                                                    icon_urls[0])
-            if favicon is None:
-                # FIXME: try requesting HEAD /favicon.ico
-                pass
+                if favicon is None:
+                    favicon = urlparse.urljoin(permalink.uri, '/favicon.ico')
+                    req = Request(favicon, method='HEAD')
+                    f = urllib2.urlopen(req)
+                    if f.getcode() != 200:
+                        favicon = None
+                    f.close()
         else:
             favicon = favicon.uri
         return CrawlResult(feed_url, feed, crawler_hints, favicon)
@@ -133,3 +137,19 @@ class CrawlResult(collections.Sequence):
 
 class CrawlError(IOError):
     """Error which rises when crawling given url failed."""
+
+
+if sys.version_info >= (3, 3):
+    # Since Python 3.3 urllib.request.Request can take a method argument
+    Request = urllib2.Request
+else:
+    class Request(urllib2.Request):
+        """Request which can take a ``method`` argument."""
+
+        def __init__(self, *args, **kwargs):
+            method = kwargs.pop('method', None)
+            urllib2.Request.__init__(self, *args, **kwargs)
+            self._method = method
+
+        def get_method(self):
+            return self._method or urllib2.Request.get_method(self)
