@@ -108,7 +108,7 @@ class CrawlResult(collections.Sequence):
     #: It might be :const:`None`.
     hints = None
 
-    #: (:clas:`str`) The favicon url of the :attr:`feed` if exists.
+    #: (:class:`str`) The favicon url of the :attr:`feed` if exists.
     #: It might be :const:`None`.
     icon_url = None
 
