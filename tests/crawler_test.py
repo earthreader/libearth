@@ -12,8 +12,8 @@ except ImportError:
 
 from pytest import mark, raises
 
-from libearth.compat import text_type
-from libearth.crawler import crawl, CrawlError, CrawlResult
+from libearth.compat import IRON_PYTHON, text_type
+from libearth.crawler import CrawlError, CrawlResult, crawl, get_feed
 from libearth.feed import Feed, Link, Text
 from libearth.subscribe import Category, SubscriptionList
 from libearth.tz import utc
@@ -202,13 +202,14 @@ class TestHTTPHandler(urllib2.HTTPHandler):
             status_code, mimetype, content = mock_urls[url]
         except KeyError:
             return urllib2.HTTPHandler.http_open(self, req)
-        resp = urllib2.addinfourl(
-            io.StringIO(content)
-            if isinstance(content, text_type)
-            else io.BytesIO(content),
-            {'content-type': mimetype},
-            url
-        )
+        if IRON_PYTHON:
+            from StringIO import StringIO
+            buffer_ = StringIO(content)
+        elif isinstance(content, text_type):
+            buffer_ = io.StringIO(content)
+        else:
+            buffer_ = io.BytesIO(content)
+        resp = urllib2.addinfourl(buffer_, {'content-type': mimetype}, url)
         resp.code = status_code
         resp.msg = httplib.responses[status_code]
         return resp
@@ -255,6 +256,17 @@ def test_sort_entries():
     assert feed is result.feed
     assert hints == result.hints
     assert feed.entries[0].updated_at > feed.entries[1].updated_at
+
+
+def test_get_feed():
+    my_opener = urllib2.build_opener(TestHTTPHandler)
+    urllib2.install_opener(my_opener)
+    result = get_feed('http://vio.atomtest.com/feed/atom')
+    feed = result.feed
+    assert feed.title.value == 'Atom Test'
+    assert len(feed.entries) == 2
+    assert result.hints is None
+    assert result.icon_url is not None
 
 
 def test_crawl_error():

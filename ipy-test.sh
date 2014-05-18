@@ -57,5 +57,6 @@ mono .ipy-env/$IRONPYTHON_DIR/ipy.exe \
      .ipy-env/pytest/pytest.py -v \
                                -s \
                                --assert=plain \
+                               $@ \
                                tests
 exit $?
