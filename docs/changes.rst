@@ -8,6 +8,8 @@ To be released.
 
 - :func:`~libearth.crawler.crawl()` now return a set of
   :class:`~libearth.crawler.CrawlResult` objects instead of :class:`tuple`\ s.
+- ``feeds`` parameter of :func:`~libearth.crawler.crawl()` function was
+  renamed to ``feed_urls``.
 - Added :attr:`LinkList.favicon <libearth.feed.LinkList.favicon>` property.
   [:issue:`49`]
 - :meth:`AutoDiscovery.find_feed_url()

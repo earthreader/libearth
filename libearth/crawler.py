@@ -26,11 +26,13 @@ from .subscribe import SubscriptionSet
 __all__ = 'CrawlError', 'CrawlResult', 'crawl', 'get_feed'
 
 
-def crawl(feeds, pool_size):
+def crawl(feed_urls, pool_size):
     """Crawl feeds in feed list using thread.
 
-    :param feeds: feeds
-    :type feeds: :class: `collections.Sequence`
+    :param feed_urls: feed urls to crawl
+    :type feed_urls: :class: `collections.Sequence`
+    :param pool_size: the number of concurrent workers
+    :type pool_size: :class:`numbers.Integral`
     :returns: a set of :class:`CrawlResult` objects
     :rtype: :class:`collections.Iterable`
 
@@ -39,8 +41,12 @@ def crawl(feeds, pool_size):
        It became to return a set of :class:`CrawlResult`\ s instead of
        :class:`tuple`\ s.
 
+    .. versionchanged:: 0.3.0
+
+       The parameter ``feeds`` was renamed to ``feed_urls``.
+
     """
-    return parallel_map(pool_size, get_feed, feeds)
+    return parallel_map(pool_size, get_feed, feed_urls)
 
 
 def get_feed(feed_url):
