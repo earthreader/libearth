@@ -92,7 +92,9 @@ def get_feed(feed_url):
             favicon = favicon.uri
         return CrawlResult(feed_url, feed, crawler_hints, favicon)
     except Exception as e:
-        logging.getLogger(__name__ + '.get_feed').exception(e)
+        logging.getLogger(__name__ + '.get_feed').exception(
+            '%s: %s', feed_url, e
+        )
         raise CrawlError('{0} failed: {1}'.format(feed_url, e))
 
 
