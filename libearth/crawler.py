@@ -51,11 +51,16 @@ def crawl(feed_urls, pool_size):
 
 def get_feed(feed_url):
     # TODO: should be documented
+    logger = logging.getLogger(__name__ + '.get_feed')
     try:
         f = urllib2.urlopen(feed_url)
         feed_xml = f.read()
         f.close()
         parser = get_format(feed_xml)
+        if parser is None:
+            logger.warn('failed to detect the format of %s', feed_url)
+            logger.debug('the response body of %s:\n%s', feed_url, feed_xml)
+            raise CrawlError('failed to detect the format of ' + feed_url)
         feed, crawler_hints = parser(feed_xml, feed_url)
         self_uri = None
         for link in feed.links:
@@ -92,7 +97,7 @@ def get_feed(feed_url):
             favicon = favicon.uri
         return CrawlResult(feed_url, feed, crawler_hints, favicon)
     except Exception as e:
-        logging.getLogger(__name__ + '.get_feed').exception(
+        logger.exception(
             '%s: %s', feed_url, e
         )
         raise CrawlError('{0} failed: {1}'.format(feed_url, e))
