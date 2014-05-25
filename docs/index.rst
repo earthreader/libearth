@@ -62,6 +62,7 @@ Additional notes
 
    design/goal
    design/concepts
+   contribute
    changes
 
 
