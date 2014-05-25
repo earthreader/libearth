@@ -6,6 +6,7 @@ import sys
 
 from pytest import mark
 
+from libearth.compat import IRON_PYTHON
 from libearth.compat.etree import fromstringlist
 from libearth.parser.autodiscovery import get_format
 from libearth.schema import write
@@ -44,6 +45,8 @@ def test_parse(input_, expected):
         write(parsed_feed, canonical_order=True, hints=False)
     )
     with open(os.path.join(test_suite_dir, expected)) as f:
+        if IRON_PYTHON:
+            f = f.read().decode('utf-8'),
         expected_tree = fromstringlist(f)
     compare_tree(expected_tree, parsed_tree)
 
@@ -68,7 +71,7 @@ def compare_tree(expected, parsed, path=''):
             )
         )
     assert expected.text == parsed.text, (
-        '{0}text()\n  expected: {1!r}\n  parsed:   {2!r}'.format(
+        '{0}/text()\n  expected: {1!r}\n  parsed:   {2!r}'.format(
             path, expected.text, parsed.text
         )
     )
