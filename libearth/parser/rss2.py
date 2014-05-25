@@ -184,9 +184,9 @@ def rss_get_item_data(entries):
 _rfc3339 = Rfc3339()
 _rfc822 = Rfc822()
 _datetime_formats = [
-    '%m/%d/%Y %H:%M:%S GMT', # msdn
-    '%m/%d/%y %H:%M:%S GMT', # msdn
-    '%a, %d %b %Y %H:%M:%S GMT 00:00:00 GMT' # msdn
+    '%m/%d/%Y %H:%M:%S GMT',  # msdn
+    '%m/%d/%y %H:%M:%S GMT',  # msdn
+    '%a, %d %b %Y %H:%M:%S GMT 00:00:00 GMT'  # msdn
 ]
 
 
