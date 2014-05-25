@@ -4,6 +4,7 @@
 Parsing RSS 2.0 feed.
 
 """
+import datetime
 import email.utils
 import logging
 import re
@@ -18,7 +19,7 @@ from ..compat.etree import fromstring
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Text)
 from ..schema import DecodeError
-from ..tz import now
+from ..tz import now, utc
 
 
 GUID_PATTERN = re.compile('^(\{{0,1}([0-9a-fA-F]){8}-([0-9a-fA-F]){4}-([0-9'
@@ -182,13 +183,30 @@ def rss_get_item_data(entries):
 
 _rfc3339 = Rfc3339()
 _rfc822 = Rfc822()
+_datetime_formats = [
+    '%m/%d/%Y %H:%M:%S GMT', # msdn
+    '%m/%d/%y %H:%M:%S GMT', # msdn
+    '%a, %d %b %Y %H:%M:%S GMT 00:00:00 GMT' # msdn
+]
 
 
 def parse_datetime(string):
+    # https://github.com/earthreader/libearth/issues/30
     try:
         return _rfc822.decode(string)
     except DecodeError:
+        pass
+    try:
         return _rfc3339.decode(string)
+    except DecodeError:
+        pass
+    for fmt in _datetime_formats:
+        try:
+            dt = datetime.datetime.strptime(string, fmt)
+            return dt.replace(tzinfo=utc)
+        except ValueError:
+            continue
+    raise ValueError('failed to parse datetime: ' + repr(string))
 
 
 def parse_person(string, as_list=False):
