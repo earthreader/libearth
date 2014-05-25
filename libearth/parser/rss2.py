@@ -4,6 +4,7 @@
 Parsing RSS 2.0 feed.
 
 """
+import email.utils
 import logging
 import re
 
@@ -12,10 +13,11 @@ try:
 except ImportError:
     import urllib.request as urllib2
 
-from ..codecs import Rfc822
+from ..codecs import Rfc3339, Rfc822
 from ..compat.etree import fromstring
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Text)
+from ..schema import DecodeError
 from ..tz import now
 
 
@@ -94,17 +96,16 @@ def rss_get_channel_data(root, feed_url):
         elif data.tag == 'copyright':
             feed_data.rights = Text(value=data.text)
         elif data.tag in ('managingEditor', 'webMaster'):
-            contributor = Person(name=data.text, email=data.text)
-            contributors.append(contributor)
+            contributors.extend(parse_person(data.text, True))
             feed_data.contributors = contributors
         elif data.tag == 'pubDate':
-            feed_data.updated_at = Rfc822().decode(data.text)
+            feed_data.updated_at = parse_datetime(data.text)
         elif data.tag == 'category':
             feed_data.categories = [Category(term=data.text)]
         elif data.tag == 'generator':
             feed_data.generator = Generator(value=data.text)
         elif data.tag == 'lastBuildDate':
-            crawler_hints['lastBuildDate'] = Rfc822().decode(data.text)
+            crawler_hints['lastBuildDate'] = parse_datetime(data.text)
         elif data.tag == 'ttl':
             crawler_hints['ttl'] = data.text
         elif data.tag == 'skipHours':
@@ -138,7 +139,7 @@ def rss_get_item_data(entries):
             elif data.tag == CONTENT_XMLNS + 'encoded':
                 entry_data.content = Content(type='html', value=data.text)
             elif data.tag == 'author':
-                entry_data.authors = [Person(name=data.text, email=data.text)]
+                entry_data.authors = parse_person(data.text, True)
             elif data.tag == 'category':
                 entry_data.categories = [Category(term=data.text)]
             elif data.tag == 'comments':
@@ -155,7 +156,7 @@ def rss_get_item_data(entries):
                 elif GUID_PATTERN.match(data.text):
                     entry_data.id = 'urn:uuid:' + data.text
             elif data.tag == 'pubDate':
-                entry_data.published_at = Rfc822().decode(data.text)
+                entry_data.published_at = parse_datetime(data.text)
                 # TODO 'pubDate' is optional in RSS 2, but 'updated' in Atom
                 #       is required element, so we have to fill some value to
                 #       entry.updated_at.
@@ -177,3 +178,28 @@ def rss_get_item_data(entries):
                 if entry_data.links else ''
         entries_data.append(entry_data)
     return entries_data
+
+
+_rfc3339 = Rfc3339()
+_rfc822 = Rfc822()
+
+
+def parse_datetime(string):
+    try:
+        return _rfc822.decode(string)
+    except DecodeError:
+        return _rfc3339.decode(string)
+
+
+def parse_person(string, as_list=False):
+    name, email_addr = email.utils.parseaddr(string)
+    if '@' not in email_addr:
+        if not name:
+            name = email_addr
+        email_addr = None
+    if not name:
+        name = email_addr
+    if not name:
+        return [] if as_list else None
+    person = Person(name=name, email=email_addr or None)
+    return [person] if as_list else person
