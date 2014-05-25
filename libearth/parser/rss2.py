@@ -15,6 +15,7 @@ except ImportError:
     import urllib.request as urllib2
 
 from ..codecs import Rfc3339, Rfc822
+from ..compat import IRON_PYTHON
 from ..compat.etree import fromstring
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Text)
@@ -186,7 +187,7 @@ _rfc822 = Rfc822()
 _datetime_formats = [
     '%m/%d/%Y %H:%M:%S GMT',  # msdn
     '%m/%d/%y %H:%M:%S GMT',  # msdn
-    '%a, %d %b %Y %H:%M:%S GMT 00:00:00 GMT'  # msdn
+    '%a, %d %b %Y %H:%M:%S GMT 00:00:00 GMT',  # msdn
 ]
 
 
@@ -202,6 +203,10 @@ def parse_datetime(string):
         pass
     for fmt in _datetime_formats:
         try:
+            if IRON_PYTHON:
+                # IronPython strptime() seems to ignore whitespace
+                string = string.replace(' ', '|')
+                fmt = fmt.replace(' ', '|')
             dt = datetime.datetime.strptime(string, fmt)
             return dt.replace(tzinfo=utc)
         except ValueError:
