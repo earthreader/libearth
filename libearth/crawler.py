@@ -28,9 +28,8 @@ __all__ = 'CrawlError', 'CrawlResult', 'crawl', 'get_feed'
 
 
 def open_url(url):
-    opener = urllib2.build_opener()
-    opener.addheaders = [('User-agent', '{0}/{1}'.format(__package__, VERSION))]
-    return opener.open(url)
+    request = urllib2.Request(url)
+    return urllib2.urlopen(request)
 
 
 def crawl(feed_urls, pool_size):
