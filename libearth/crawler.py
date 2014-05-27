@@ -28,7 +28,11 @@ __all__ = 'CrawlError', 'CrawlResult', 'crawl', 'get_feed'
 
 
 def open_url(url):
-    request = urllib2.Request(url)
+    if isinstance(url, Request):
+        request = url
+    else:
+        request = urllib2.Request(url)
+    request.add_header('User-agent', '{0}/{1}'.format(__package__, VERSION))
     return urllib2.urlopen(request)
 
 
