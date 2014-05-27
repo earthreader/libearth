@@ -27,9 +27,10 @@ from .version import VERSION
 __all__ = 'CrawlError', 'CrawlResult', 'crawl', 'get_feed'
 
 
-opener = urllib2.build_opener()
-opener.addheaders = [('User-agent', '{0}/{1}'.format(__package__, VERSION))]
-urllib2.install_opener(opener)
+def open_url(url):
+    opener = urllib2.build_opener()
+    opener.addheaders = [('User-agent', '{0}/{1}'.format(__package__, VERSION))]
+    return opener.open(url)
 
 
 def crawl(feed_urls, pool_size):
@@ -59,7 +60,7 @@ def get_feed(feed_url):
     # TODO: should be documented
     logger = logging.getLogger(__name__ + '.get_feed')
     try:
-        f = urllib2.urlopen(feed_url)
+        f = open_url(feed_url)
         feed_xml = f.read()
         f.close()
         parser = get_format(feed_xml)
@@ -82,7 +83,7 @@ def get_feed(feed_url):
             permalink = feed.links.permalink
             if permalink:
                 try:
-                    f = urllib2.urlopen(permalink.uri)
+                    f = open_url(permalink.uri)
                 except IOError:
                     pass
                 else:
@@ -95,7 +96,7 @@ def get_feed(feed_url):
                 if favicon is None:
                     favicon = urlparse.urljoin(permalink.uri, '/favicon.ico')
                     req = Request(favicon, method='HEAD')
-                    f = urllib2.urlopen(req)
+                    f = open_url(req)
                     if f.getcode() != 200:
                         favicon = None
                     f.close()
