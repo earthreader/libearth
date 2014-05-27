@@ -21,9 +21,15 @@ from .compat.parallel import parallel_map
 from .feed import Link
 from .parser.autodiscovery import AutoDiscovery, get_format
 from .subscribe import SubscriptionSet
+from .version import VERSION
 
 
 __all__ = 'CrawlError', 'CrawlResult', 'crawl', 'get_feed'
+
+
+opener = urllib2.build_opener()
+opener.addheaders = [('User-agent', '{0}/{1}'.format(__package__, VERSION))]
+urllib2.install_opener(opener)
 
 
 def crawl(feed_urls, pool_size):
