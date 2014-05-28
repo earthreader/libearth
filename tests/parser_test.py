@@ -22,6 +22,7 @@ from libearth.parser.autodiscovery import (AutoDiscovery, FeedLink,
                                            FeedUrlNotFoundError,
                                            autodiscovery, get_format)
 from libearth.parser.rss2 import parse_rss
+from libearth.parser.util import normalize_xml_encoding
 from libearth.schema import read, write
 from libearth.tz import utc
 
@@ -650,3 +651,20 @@ def test_rss_without_title():
     assert not feed.entries
     assert (text_type(feed.title) == text_type(feed.subtitle) ==
             'only description')
+
+
+def test_normalize_xml_encoding():
+    assert normalize_xml_encoding(b'''
+        <?xml version="1.0" encoding="euc-kr" ?>
+        <doc title="\xc0\xce\xc4\xda\xb5\xf9 \xc5\xd7\xbd\xba\xc6\xae" />
+    ''').strip() == (
+        b'<doc title="\xec\x9d\xb8\xec\xbd\x94\xeb\x94\xa9 '
+        b'\xed\x85\x8c\xec\x8a\xa4\xed\x8a\xb8" />'
+    )
+    assert normalize_xml_encoding(b'''
+        <?xml encoding='euc-kr' ?>
+        <doc title="\xc0\xce\xc4\xda\xb5\xf9 \xc5\xd7\xbd\xba\xc6\xae" />
+    ''').strip() == (
+        b'<doc title="\xec\x9d\xb8\xec\xbd\x94\xeb\x94\xa9 '
+        b'\xed\x85\x8c\xec\x8a\xa4\xed\x8a\xb8" />'
+    )

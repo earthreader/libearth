@@ -22,6 +22,11 @@ To be released.
   attribute was introduced.  [:issue:`49`]
 - Added an optional ``icon_uri`` parameter to :meth:`SubscriptionSet.subscribe()
   <libearth.subscribe.SubscriptionSet.subscribe>` method.  [:issue:`49`]
+- Added :func:`~libearth.parser.util.normalize_xml_encoding()`
+  function to workaround :mod:`xml.etree.ElementTree` module's
+  `encoding detection bug`__.  [:issue:`41`]
+
+__ http://bugs.python.org/issue13612
 
 
 Version 0.2.0

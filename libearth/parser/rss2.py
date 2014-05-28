@@ -21,6 +21,7 @@ from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Text)
 from ..schema import DecodeError
 from ..tz import now, utc
+from .util import normalize_xml_encoding
 
 
 GUID_PATTERN = re.compile('^(\{{0,1}([0-9a-fA-F]){8}-([0-9a-fA-F]){4}-([0-9'
@@ -48,7 +49,7 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
     :rtype: :class:`tuple`
 
     """
-    root = fromstring(xml)
+    root = fromstring(normalize_xml_encoding(xml))
     channel = root.find('channel')
     items = channel.findall('item')
     feed_data, crawler_hints = rss_get_channel_data(channel, feed_url)

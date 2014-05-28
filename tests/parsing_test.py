@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import logging
 import os
 import os.path
 import sys
@@ -112,6 +113,7 @@ if __name__ == '__main__':
     confirm = input('Do you want to create scaffold .out.xml files? ')
     if not confirm.strip().lower() in ('y', 'yes'):
         raise SystemExit()
+    logging.basicConfig()
     formats = {}
     for filename in missing_inputs:
         print(filename)

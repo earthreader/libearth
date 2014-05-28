@@ -20,6 +20,7 @@ from ..compat import text
 from ..compat.etree import fromstring
 from .atom import parse_atom
 from .rss2 import parse_rss
+from .util import normalize_xml_encoding
 
 
 __all__ = ('ATOM_TYPE', 'RSS_TYPE', 'TYPE_TABLE', 'AutoDiscovery', 'FeedLink',
@@ -168,6 +169,7 @@ def get_format(document):
        :mod:`libearth.parser.autodiscovery`.
 
     """
+    document = normalize_xml_encoding(document)
     try:
         root = fromstring(document)
     except Exception as e:
