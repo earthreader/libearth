@@ -25,6 +25,7 @@ To be released.
 - Added :func:`~libearth.parser.util.normalize_xml_encoding()`
   function to workaround :mod:`xml.etree.ElementTree` module's
   `encoding detection bug`__.  [:issue:`41`]
+- Added :func:`~libearth.tz.guess_tzinfo_by_locale()` function.  [:issue:`41`]
 
 __ http://bugs.python.org/issue13612
 

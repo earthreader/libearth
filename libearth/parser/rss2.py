@@ -12,15 +12,19 @@ import re
 try:
     import urllib2
 except ImportError:
-    import urllib.request as urllib2
+    from urllib import request as urllib2
+try:
+    import urlparse
+except ImportError:
+    from urllib import parse as urlparse
 
 from ..codecs import Rfc3339, Rfc822
 from ..compat import IRON_PYTHON
-from ..compat.etree import fromstring
+from ..compat.etree import fromstring, tostring
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Text)
 from ..schema import DecodeError
-from ..tz import now, utc
+from ..tz import FixedOffset, guess_tzinfo_by_locale, now, utc
 from .util import normalize_xml_encoding
 
 
@@ -52,9 +56,14 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
     root = fromstring(normalize_xml_encoding(xml))
     channel = root.find('channel')
     items = channel.findall('item')
-    feed_data, crawler_hints = rss_get_channel_data(channel, feed_url)
+    default_tzinfo = guess_default_tzinfo(root, feed_url)
+    feed_data, crawler_hints = rss_get_channel_data(
+        channel,
+        feed_url,
+        default_tzinfo
+    )
     if parse_entry:
-        feed_data.entries = rss_get_item_data(items)
+        feed_data.entries = rss_get_item_data(items, default_tzinfo)
     check_valid_as_atom(feed_data)
     return feed_data, crawler_hints
 
@@ -80,7 +89,7 @@ def check_valid_as_atom(feed_data):
             entry.updated_at = feed_data.updated_at
 
 
-def rss_get_channel_data(root, feed_url):
+def rss_get_channel_data(root, feed_url, default_tzinfo):
     _log = logging.getLogger(__name__ + '.rss_get_channel_data')
     feed_data = Feed(id=feed_url)
     feed_data.links.append(Link(relation='self', uri=feed_url))
@@ -102,13 +111,14 @@ def rss_get_channel_data(root, feed_url):
             contributors.extend(parse_person(data.text, True))
             feed_data.contributors = contributors
         elif data.tag == 'pubDate':
-            feed_data.updated_at = parse_datetime(data.text)
+            feed_data.updated_at = parse_datetime(data.text, default_tzinfo)
         elif data.tag == 'category':
             feed_data.categories = [Category(term=data.text)]
         elif data.tag == 'generator':
             feed_data.generator = Generator(value=data.text)
         elif data.tag == 'lastBuildDate':
-            crawler_hints['lastBuildDate'] = parse_datetime(data.text)
+            crawler_hints['lastBuildDate'] = parse_datetime(data.text,
+                                                            default_tzinfo)
         elif data.tag == 'ttl':
             crawler_hints['ttl'] = data.text
         elif data.tag == 'skipHours':
@@ -117,12 +127,12 @@ def rss_get_channel_data(root, feed_url):
             crawler_hints['skipMinutes'] = data.text
         elif data.tag == 'skipDays':
             crawler_hints['skipDays'] = data.text
-        else:
+        elif data.tag != 'item':
             _log.warn('Unknown tag: %s', data)
     return feed_data, crawler_hints
 
 
-def rss_get_item_data(entries):
+def rss_get_item_data(entries, default_tzinfo):
     _log = logging.getLogger(__name__ + '.rss_get_item_data')
     entries_data = []
     for entry in entries:
@@ -159,7 +169,8 @@ def rss_get_item_data(entries):
                 elif GUID_PATTERN.match(data.text):
                     entry_data.id = 'urn:uuid:' + data.text
             elif data.tag == 'pubDate':
-                entry_data.published_at = parse_datetime(data.text)
+                entry_data.published_at = parse_datetime(data.text,
+                                                         default_tzinfo)
                 # TODO 'pubDate' is optional in RSS 2, but 'updated' in Atom
                 #       is required element, so we have to fill some value to
                 #       entry.updated_at.
@@ -186,13 +197,14 @@ def rss_get_item_data(entries):
 _rfc3339 = Rfc3339()
 _rfc822 = Rfc822()
 _datetime_formats = [
-    '%m/%d/%Y %H:%M:%S GMT',  # msdn
-    '%m/%d/%y %H:%M:%S GMT',  # msdn
-    '%a, %d %b %Y %H:%M:%S GMT 00:00:00 GMT',  # msdn
+    ('%m/%d/%Y %H:%M:%S GMT', utc),  # msdn
+    ('%m/%d/%y %H:%M:%S GMT', utc),  # msdn
+    ('%a, %d %b %Y %H:%M:%S GMT 00:00:00 GMT', utc),  # msdn
+    ('%Y.%m.%d %H:%M:%S', None),  # imbcnews
 ]
 
 
-def parse_datetime(string):
+def parse_datetime(string, default_tzinfo):
     # https://github.com/earthreader/libearth/issues/30
     try:
         return _rfc822.decode(string)
@@ -202,14 +214,14 @@ def parse_datetime(string):
         return _rfc3339.decode(string)
     except DecodeError:
         pass
-    for fmt in _datetime_formats:
+    for fmt, tzinfo in _datetime_formats:
         try:
             if IRON_PYTHON:
                 # IronPython strptime() seems to ignore whitespace
                 string = string.replace(' ', '|')
                 fmt = fmt.replace(' ', '|')
             dt = datetime.datetime.strptime(string, fmt)
-            return dt.replace(tzinfo=utc)
+            return dt.replace(tzinfo=tzinfo or default_tzinfo)
         except ValueError:
             continue
     raise ValueError('failed to parse datetime: ' + repr(string))
@@ -227,3 +239,20 @@ def parse_person(string, as_list=False):
         return [] if as_list else None
     person = Person(name=name, email=email_addr or None)
     return [person] if as_list else person
+
+
+def guess_default_tzinfo(root, url):
+    """Guess what time zone is implied in the feed by seeing the TLD of
+    the ``url`` and its ``<language>`` tag.
+
+    """
+    lang = root.find('channel/language')
+    if lang is None or not lang.text:
+        return utc
+    lang = lang.text.strip()
+    if len(lang) == 5 and lang[2] == '-':
+        lang = lang[:2]
+    parsed = urlparse.urlparse(url)
+    domain = parsed.hostname.rsplit('.', 1)
+    country = domain[1] if len(domain) > 1 and len(domain[1]) == 2 else None
+    return guess_tzinfo_by_locale(lang, country) or utc

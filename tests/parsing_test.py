@@ -31,7 +31,7 @@ for in_file in test_files:
 
 @mark.parametrize(('input_', 'expected'), test_pairs.items())
 def test_parse(input_, expected):
-    with open(os.path.join(test_suite_dir, input_)) as f:
+    with open(os.path.join(test_suite_dir, input_), 'rb') as f:
         xml = f.read()
     parse = get_format(xml)
     assert callable(parse)
