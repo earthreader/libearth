@@ -98,8 +98,8 @@ def now():
 
 
 LANGUAGE_COUNTRY_TZINFO_TABLE = {
-    'ko': {'kr': FixedOffset(9 * 60, name='Asia/Seoul')},
-    'ja': {'jp': FixedOffset(9 * 60, name='Asia/Tokyo')}
+    'ko': {'kr': FixedOffset(9 * 60, 'Asia/Seoul')},
+    'ja': {'jp': FixedOffset(9 * 60, 'Asia/Tokyo')}
 }
 
 
