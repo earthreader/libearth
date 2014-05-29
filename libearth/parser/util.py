@@ -7,7 +7,7 @@
 import logging
 import re
 
-from ..compat import binary_type, text_type
+from ..compat import IRON_PYTHON, binary_type, text_type
 
 __all__ = 'XML_ENCODING_PATTERN ', 'normalize_xml_encoding'
 
@@ -48,4 +48,6 @@ def normalize_xml_encoding(document):
                 logger = logging.getLogger(__name__ +
                                            '.normalize_xml_encoding')
                 logger.warning(e, exc_info=True)
+            if IRON_PYTHON:
+                document = bytes(document)
     return document
