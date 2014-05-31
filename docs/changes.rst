@@ -6,6 +6,12 @@ Version 0.3.0
 
 To be released.
 
+- Root :class:`~libearth.session.MergeableDocumentElement`\ s'
+  :meth:`~libearth.session.MergeableDocumentElement.__merge_entities__()`
+  methods are not ignored anymore.  Respnosibilty to merge two documents is
+  now moved from :meth:`Session.merge() <libearth.session.Session.merge>`
+  method to :meth:`MergeableDocumentElement.__merge_entities__()
+  <libearth.session.MergeableDocumentElement.__merge_entities__>` method.
 - :func:`~libearth.crawler.crawl()` now return a set of
   :class:`~libearth.crawler.CrawlResult` objects instead of :class:`tuple`\ s.
 - ``feeds`` parameter of :func:`~libearth.crawler.crawl()` function was

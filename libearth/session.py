@@ -184,53 +184,10 @@ class Session(object):
                 return self.pull(a)
             elif b.__base_revisions__.contains(a.__revision__):
                 return self.pull(b)
-        entity_id = lambda e: (e.__entity_id__()
-                               if isinstance(e, Element)
-                               else e)
         # The latest one should be `b`.
         if not force and a.__revision__.updated_at > b.__revision__.updated_at:
             a, b = b, a
-        merged = element_type()
-        for attr_name, desc in inspect_child_tags(element_type).values():
-            if desc.multiple:
-                a_list = getattr(a, attr_name, [])
-                identifiers = dict((entity_id(entity), entity)
-                                   for entity in a_list)
-                merged_attr = list(a_list)
-                for element in getattr(b, attr_name, []):
-                    eid = entity_id(element)
-                    try:
-                        entity = identifiers[eid]
-                    except KeyError:
-                        merged_element = element
-                    else:
-                        merged_attr.remove(entity)
-                        if isinstance(element, Element):
-                            merged_element = element.__merge_entities__(entity)
-                        else:
-                            merged_element = element
-                    identifiers[eid] = merged_element
-                    merged_attr.append(merged_element)
-            else:
-                older_attr = getattr(a, attr_name, None)
-                newer_attr = getattr(b, attr_name, None)
-                if older_attr is None:
-                    merged_attr = newer_attr
-                elif newer_attr is None:
-                    merged_attr = older_attr
-                elif isinstance(newer_attr, Element):
-                    merged_attr = newer_attr.__merge_entities__(older_attr)
-                else:
-                    merged_attr = newer_attr
-            setattr(merged, attr_name, merged_attr)
-        for attr_name, _ in inspect_attributes(element_type).values():
-            setattr(merged, attr_name,
-                    getattr(b, attr_name, getattr(a, attr_name, None)))
-        content = inspect_content_tag(element_type)
-        if content is not None:
-            name = content[0]
-            setattr(merged, name,
-                    getattr(b, name, getattr(a, name, None)))
+        merged = a.__merge_entities__(b)
         self.revise(merged)
         merged_revisions = a.__base_revisions__.merge(
             b.__base_revisions__,
@@ -469,6 +426,54 @@ class MergeableDocumentElement(DocumentElement):
     __base_revisions__ = Attribute('bases', RevisionSetCodec,
                                    xmlns=SESSION_XMLNS,
                                    default=lambda _: RevisionSet())
+
+    def __merge_entities__(self, other):
+        entity_id = lambda e: (e.__entity_id__()
+                               if isinstance(e, Element)
+                               else e)
+        element_type = type(self)
+        merged = element_type()
+        for attr_name, desc in inspect_child_tags(element_type).values():
+            if desc.multiple:
+                a_list = getattr(self, attr_name, [])
+                identifiers = dict((entity_id(entity), entity)
+                                   for entity in a_list)
+                merged_attr = list(a_list)
+                for element in getattr(other, attr_name, []):
+                    eid = entity_id(element)
+                    try:
+                        entity = identifiers[eid]
+                    except KeyError:
+                        merged_element = element
+                    else:
+                        merged_attr.remove(entity)
+                        if isinstance(element, Element):
+                            merged_element = element.__merge_entities__(entity)
+                        else:
+                            merged_element = element
+                    identifiers[eid] = merged_element
+                    merged_attr.append(merged_element)
+            else:
+                older_attr = getattr(self, attr_name, None)
+                newer_attr = getattr(other, attr_name, None)
+                if older_attr is None:
+                    merged_attr = newer_attr
+                elif newer_attr is None:
+                    merged_attr = older_attr
+                elif isinstance(newer_attr, Element):
+                    merged_attr = newer_attr.__merge_entities__(older_attr)
+                else:
+                    merged_attr = newer_attr
+            setattr(merged, attr_name, merged_attr)
+        for attr_name, _ in inspect_attributes(element_type).values():
+            setattr(merged, attr_name,
+                    getattr(other, attr_name, getattr(self, attr_name, None)))
+        content = inspect_content_tag(element_type)
+        if content is not None:
+            name = content[0]
+            setattr(merged, name,
+                    getattr(other, name, getattr(self, name, None)))
+        return merged
 
 
 class RevisionParserHandler(xml.sax.handler.ContentHandler):

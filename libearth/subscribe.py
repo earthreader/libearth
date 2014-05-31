@@ -458,10 +458,6 @@ class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
         head.owner_email = owner.email
         head.owner_uri = owner.uri
 
-    def __merge_entities__(self, other):
-        self.body.update(other.body)
-        return self
-
     def __repr__(self):
         head = self.head
         if head is None:
