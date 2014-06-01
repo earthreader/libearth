@@ -92,36 +92,22 @@ class SubscriptionSet(collections.MutableSet):
                 if outline.feed_uri in subscriptions:
                     continue
                 subscriptions.add(outline.feed_uri)
-                if isinstance(outline, Subscription):
-                    yield outline
-                    continue
-                outline = Subscription(
-                    feed_id=(outline.feed_id or
-                             hashlib.sha1(outline.feed_uri.encode('utf-8'))
-                                    .hexdigest()),
-                    label=outline.label,
-                    _title=outline.label,
-                    feed_uri=outline.feed_uri,
-                    alternate_uri=outline.alternate_uri,
-                    created_at=outline.created_at
-                )
-                self.children[i] = outline
+                if not isinstance(outline, Subscription):
+                    if not outline.feed_id:
+                        outline.feed_id = hashlib.sha1(
+                            outline.feed_uri.encode('utf-8')
+                        ).hexdigest()
+                    outline.__class__ = Subscription
+                    outline._title = outline.label
                 yield outline
             elif outline.label in categories:
                 continue
             else:
                 categories.add(outline.label)
-                if isinstance(outline, Category):
-                    yield outline
-                else:
-                    outline = Category(
-                        label=outline.label,
-                        _title=outline.label,
-                        children=outline.children,
-                        created_at=outline.created_at
-                    )
-                    self.children[i] = outline
-                    yield outline
+                if not isinstance(outline, Category):
+                    outline.__class__ = Category
+                    outline._title = outline.label
+                yield outline
 
     def contains(self, outline, recursively=False):
         """Determine whether the set contains the given ``outline``.
