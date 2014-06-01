@@ -66,7 +66,7 @@ else:
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo',
-              'sphinx.ext.extlinks']
+              'sphinx.ext.inheritance_diagram', 'sphinx.ext.extlinks']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = PathList(['_templates'])
@@ -299,6 +299,10 @@ extlinks = {
                '')
 }
 
+
+inheritance_graph_attrs = {'bgcolor': 'transparent'}
+# graphviz_output_format = 'svg'
+# http://stackoverflow.com/q/21176618/383405
 
 
 # IronPython runtime mock

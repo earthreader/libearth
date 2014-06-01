@@ -28,7 +28,7 @@ __all__ = ('ATOM_TYPE', 'RSS_TYPE', 'TYPE_TABLE', 'AutoDiscovery', 'FeedLink',
 
 
 #: (:class:`str`) The MIME type of RSS 2.0 format
-#: (:mimetype:`application/rss+xml).
+#: (:mimetype:`application/rss+xml`).
 RSS_TYPE = 'application/rss+xml'
 
 #: (:class:`str`) The MIME type of Atom format

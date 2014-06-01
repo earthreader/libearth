@@ -1,8 +1,10 @@
 """:mod:`libearth.subscribe` --- Subscription list
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Maintain the subscription list using OPML format, which is de facto standard
+Maintain the subscription list using OPML_ format, which is de facto standard
 for the purpose.
+
+.. _OPML: http://dev.opml.org/spec2.html
 
 """
 import collections
