@@ -82,18 +82,26 @@ def available_alternative_locales():
         return frozenset()
 
 
-@mark.parametrize(('string', 'expected'), {
-    'Sat, 07 Sep 2013 01:20:43 +0900': datetime.datetime(
+@mark.parametrize(('ms', 'string', 'expected'), [
+    (False, 'Sat, 07 Sep 2013 01:20:43 +0900', datetime.datetime(
         2013, 9, 7, 1, 20, 43,
         tzinfo=FixedOffset(9 * 60)
-    ),
-    'Fri, 13 Dec 2013 11:12:50 +0000': datetime.datetime(
+    )),
+    (False, 'Fri, 13 Dec 2013 11:12:50 +0000', datetime.datetime(
         2013, 12, 13, 11, 12, 50,
         tzinfo=utc
-    )
-}.items())
-def test_rfc822(string, expected):
-    codec = Rfc822()
+    )),
+    (True, 'Sat, 07 Sep 2013 01:20:43.021483 +0900', datetime.datetime(
+        2013, 9, 7, 1, 20, 43, 21483,
+        tzinfo=FixedOffset(9 * 60)
+    )),
+    (True, 'Fri, 13 Dec 2013 11:12:50.912667 +0000', datetime.datetime(
+        2013, 12, 13, 11, 12, 50, 912667,
+        tzinfo=utc
+    ))
+])
+def test_rfc822(ms, string, expected):
+    codec = Rfc822(microseconds=ms)
     assert codec.decode(string) == expected
     assert codec.encode(expected) == string
     # Locale might affect to the way it parses datetime

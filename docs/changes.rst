@@ -32,6 +32,7 @@ To be released.
   function to workaround :mod:`xml.etree.ElementTree` module's
   `encoding detection bug`__.  [:issue:`41`]
 - Added :func:`~libearth.tz.guess_tzinfo_by_locale()` function.  [:issue:`41`]
+- Added ``microseconds`` option to :class:`~libearth.codecs.Rfc822` codec.
 
 __ http://bugs.python.org/issue13612
 

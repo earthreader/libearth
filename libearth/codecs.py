@@ -158,6 +158,14 @@ class Rfc822(Codec):
     """Codec to encode/decode :class:`datetime.datetime` values to/from
     :rfc:`822` format.
 
+    :param microseconds: whether to preserve and parse microseconds as well.
+                         :const:`False` by default since it's not standard
+                         compliant
+    :type microseconds: :class:`bool`
+
+    .. versionadded:: 0.3.0
+       Added ``microseconds`` option.
+
     """
 
     WEEKDAYS = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
@@ -207,7 +215,8 @@ class Rfc822(Codec):
         (?P<day> \d\d? ) \s+
         (?P<month> ''' + '|'.join(MONTHS) + r''' ) \s+
         (?P<year> \d{4} ) \s+
-        (?P<hour> \d\d ) : (?P<minute> \d\d ) : (?P<second> \d\d ) \s+
+        (?P<hour> \d\d ) : (?P<minute> \d\d ) : (?P<second> \d\d )
+        (?: \. (?P<ms> \d{6} ) )? \s+
         (?P<tz> (?P<tz_offset> (?P<tz_offset_sign> [\+\-] )
                                (?P<tz_offset_hour> [0-9]{2} ) :?
                                (?P<tz_offset_minute> [0-9]{2} ) )
@@ -215,6 +224,16 @@ class Rfc822(Codec):
         )
         \s* $
     ''', re.IGNORECASE | re.VERBOSE)
+
+    def __init__(self, microseconds=False):
+        super(Rfc822, self).__init__()
+        self.microseconds = bool(microseconds)
+        if microseconds:
+            fmt = ('{w}, {t:%d} {m} {t:%Y %H:%M:%S}.{t:%f} '
+                   '{tz_h:+03d}{tz_m:02d}')
+        else:
+            fmt = '{w}, {t:%d} {m} {t:%Y %H:%M:%S} {tz_h:+03d}{tz_m:02d}'
+        self._format = fmt.format
 
     def encode(self, value):
         if not isinstance(value, datetime.datetime):
@@ -231,7 +250,7 @@ class Rfc822(Codec):
             )
         offset = value.tzinfo.utcoffset(value)
         minutes = offset.seconds // 60
-        res = '{w}, {t:%d} {m} {t:%Y %H:%M:%S} {tz_h:+03d}{tz_m:02d}'.format(
+        res = self._format(
             t=value,
             w=self.WEEKDAYS[value.weekday()],
             m=self.MONTHS[value.month - 1],
@@ -257,6 +276,10 @@ class Rfc822(Codec):
         hour = int(m.group('hour'))
         minute = int(m.group('minute'))
         second = int(m.group('second'))
+        if self.microseconds:
+            ms = int((m.group('ms') or '').lstrip('0') or '0')
+        else:
+            ms = 0
         if m.group('tz_offset'):
             tz = FixedOffset(
                 int(m.group('tz_offset_hour')) * 60 +
@@ -267,7 +290,7 @@ class Rfc822(Codec):
             tz = self.TIMEZONES[m.group('tz_named')]
         return datetime.datetime(
             year, month, day,
-            hour, minute, second,
+            hour, minute, second, ms,
             tzinfo=tz
         )
 
