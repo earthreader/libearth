@@ -11,7 +11,7 @@ import numbers
 import platform
 import re
 
-from .compat import string_type
+from .compat import IRON_PYTHON, string_type
 from .schema import Codec, DecodeError, EncodeError
 from .tz import FixedOffset, utc
 
@@ -229,8 +229,13 @@ class Rfc822(Codec):
         super(Rfc822, self).__init__()
         self.microseconds = bool(microseconds)
         if microseconds:
-            fmt = ('{w}, {t:%d} {m} {t:%Y %H:%M:%S}.{t:%f} '
-                   '{tz_h:+03d}{tz_m:02d}')
+            if IRON_PYTHON:
+                # IronPython strftime() seems to ignore %f
+                fmt = ('{w}, {t:%d} {m} {t:%Y %H:%M:%S}.{t.microsecond:06} '
+                       '{tz_h:+03d}{tz_m:02d}')
+            else:
+                fmt = ('{w}, {t:%d} {m} {t:%Y %H:%M:%S}.{t:%f} '
+                       '{tz_h:+03d}{tz_m:02d}')
         else:
             fmt = '{w}, {t:%d} {m} {t:%Y %H:%M:%S} {tz_h:+03d}{tz_m:02d}'
         self._format = fmt.format
