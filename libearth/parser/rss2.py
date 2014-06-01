@@ -96,6 +96,8 @@ def rss_get_channel_data(root, feed_url, default_tzinfo):
     crawler_hints = {}
     contributors = []
     for data in root:
+        if not data.text:
+            _log.warn('Empty tag: %s', data)
         if data.tag == 'title':
             feed_data.title = Text(value=data.text or '')
         elif data.tag == 'link':

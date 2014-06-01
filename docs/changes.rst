@@ -45,6 +45,15 @@ To be released.
 __ http://bugs.python.org/issue13612
 
 
+Version 0.2.1
+-------------
+
+To be released.
+
+- Fixed :mod:`~libearth.parser.rss2` parsing error when any empty element
+  occurs.
+
+
 Version 0.2.0
 -------------
 

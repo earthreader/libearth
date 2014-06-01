@@ -153,7 +153,7 @@ def atom_get_entry_data(entries, feed_url):
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'published':
                 entry_data.published_at = atom_get_published_tag(data)
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'rights':
-                entry_data['rigths'] = atom_get_rights_tag(data)
+                entry_data.rigthts = atom_get_rights_tag(data)
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'source':
                 entry_data.source = atom_get_source_tag(data, xml_base)
             elif data.tag == '{' + XMLNS_ATOM + '}' + 'summary':
