@@ -1,5 +1,6 @@
 import collections
 import io
+import logging
 import threading
 
 from pytest import fixture, raises
@@ -98,18 +99,23 @@ class MemoryRepository(Repository):
 
     def read(self, key):
         super(MemoryRepository, self).read(key)
+        logger = logging.getLogger(__name__ + '.MemoeryRepository.read')
         data = self.data
         for k in key:
             try:
                 data = data[k]
-            except KeyError:
+            except KeyError as e:
+                logger.debug(e, exc_info=1)
                 raise RepositoryKeyError(key)
         if isinstance(data, collections.Mapping):
+            logger.debug('RepositoryKeyError(%r)', key)
             raise RepositoryKeyError(key)
+        logger.debug('%r: %r', key, data)
         return data,
 
     def write(self, key, iterable):
         super(MemoryRepository, self).write(key, iterable)
+        logger = logging.getLogger(__name__ + '.MemoeryRepository.write')
         data = self.data
         for k in key[:-1]:
             data = data.setdefault(k, {})
@@ -117,28 +123,36 @@ class MemoryRepository(Repository):
         for chunk in iterable:
             assert isinstance(chunk, binary_type), 'chunk = ' + repr(chunk)
             buffer_.write(chunk)
+        logger.debug('%r: %r', key, buffer_.getvalue())
         data[key[-1]] = buffer_.getvalue()
 
     def exists(self, key):
         super(MemoryRepository, self).exists(key)
+        logger = logging.getLogger(__name__ + '.MemoeryRepository.exists')
         data = self.data
         for k in key:
             try:
                 data = data[k]
             except KeyError:
+                logger.debug('%r does not exist', key, exc_info=1)
                 return False
+        logger.debug('%r exists', key, exc_info=1)
         return True
 
     def list(self, key):
         super(MemoryRepository, self).list(key)
+        logger = logging.getLogger(__name__ + '.MemoeryRepository.list')
         data = self.data
         for k in key:
             try:
                 data = data[k]
-            except KeyError:
+            except KeyError as e:
+                logger.debug(e, exc_info=1)
                 raise RepositoryKeyError(key)
         if isinstance(data, collections.Mapping):
+            logger.debug('list(%r): %r', key, sorted(frozenset(data)))
             return frozenset(data)
+        logger.debug('RepositoryKeyError(%r)', key)
         raise RepositoryKeyError(key)
 
 

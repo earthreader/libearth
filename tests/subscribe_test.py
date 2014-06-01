@@ -2,11 +2,12 @@ from datetime import datetime
 from pytest import fixture, mark
 
 from libearth.feed import Feed, Link, Person, Text
+from libearth.session import Session
 from libearth.stage import Stage
 from libearth.subscribe import Body, Category, Subscription, SubscriptionList
 from libearth.schema import read
 from libearth.tz import utc
-from .stage_test import fx_repo, fx_session
+from .stage_test import MemoryRepository, fx_repo, fx_session
 
 
 @fixture
@@ -361,13 +362,16 @@ def test_subscription_set_subscribe(subs):
     assert sub.label == 'Feed title'
     assert sub.feed_uri == 'http://example.com/index.xml'
     assert sub.alternate_uri == 'http://example.com/'
+    assert not sub.deleted_at
     subs.remove(sub)
+    assert sub.deleted_at
     assert not subs
     feed.links.append(
         Link(uri='http://example.com/favicon.ico', relation='shortcut icon')
     )
     rv = subs.subscribe(feed)
-    assert rv is next(iter(subs))
+    first = next(iter(subs))
+    assert rv is first
     assert rv == sub
 
 
@@ -405,3 +409,77 @@ def test_subscription_set_contains(fx_recursive_subscription_list,
     assert game_c in tree
     assert tree.contains(game_c)
     assert tree.contains(game_c, recursively=True)
+
+
+@fixture
+def fx_stages():
+    repo = MemoryRepository()
+    session = Session('SESSID')
+    stage = Stage(session, repo)
+    other_session = Session('SESSID2')
+    other_stage = Stage(other_session, repo)
+    return stage, other_stage
+
+
+def test_remove_subscription(fx_stages, fx_subscription):
+    a, b = fx_stages
+    with a:
+        s = SubscriptionList()
+        s.add(fx_subscription)
+        a.subscriptions = s
+    with a:
+        assert fx_subscription in a.subscriptions
+    with b:
+        assert fx_subscription in b.subscriptions
+    added = Subscription(
+        label='Added',
+        feed_uri='http://example.com/atom.xml',
+        alternate_uri='http://example.com/'
+    )
+    with a:
+        a_s = a.subscriptions
+        a_s.remove(fx_subscription)
+        a.subscriptions = a_s
+        with b:
+            b_s = b.subscriptions
+            b_s.add(added)
+            b.subscriptions = b_s
+    with a:
+        assert added in a.subscriptions
+        assert fx_subscription not in a.subscriptions
+    with b:
+        assert added in b.subscriptions
+        assert fx_subscription not in b.subscriptions
+
+
+def test_remove_category(fx_stages, fx_subscription):
+    a, b = fx_stages
+    with a:
+        s = SubscriptionList()
+        c = Category(label='To be deleted')
+        c.add(fx_subscription)
+        s.add(c)
+        a.subscriptions = s
+    with a:
+        assert c in a.subscriptions
+        assert fx_subscription in a.subscriptions.recursive_subscriptions
+    with b:
+        assert c in b.subscriptions
+        assert fx_subscription in b.subscriptions.recursive_subscriptions
+    added = Category(label='Added')
+    with a:
+        a_s = a.subscriptions
+        a_s.remove(c)
+        a.subscriptions = a_s
+        with b:
+            b_s = b.subscriptions
+            b_s.add(added)
+            b.subscriptions = b_s
+    with a:
+        assert added in a.subscriptions
+        assert c not in a.subscriptions
+        assert fx_subscription not in a.subscriptions.recursive_subscriptions
+    with b:
+        assert added in b.subscriptions
+        assert c not in b.subscriptions
+        assert fx_subscription not in b.subscriptions.recursive_subscriptions

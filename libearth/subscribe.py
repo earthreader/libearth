@@ -8,6 +8,7 @@ for the purpose.
 
 """
 import collections
+import datetime
 import distutils.version
 import hashlib
 
@@ -81,14 +82,18 @@ class SubscriptionSet(collections.MutableSet):
         )
 
     def __len__(self):
-        return len(self.children)
+        if not self.children:
+            return 0
+        return sum(not child.deleted for child in self.children)
 
     def __iter__(self):
         categories = set()
         subscriptions = set()
-        for i, outline in enumerate(self.children):
-            if outline.type == 'rss' or outline.feed_uri or \
-               isinstance(outline, Subscription):
+        for outline in self.children:
+            if outline.deleted:
+                continue
+            elif (outline.type == 'rss' or outline.feed_uri or
+                  isinstance(outline, Subscription)):
                 if outline.feed_uri in subscriptions:
                     continue
                 subscriptions.add(outline.feed_uri)
@@ -131,8 +136,12 @@ class SubscriptionSet(collections.MutableSet):
         if not isinstance(outline, Outline):
             raise TypeError('expected an instance of {0.__module__}.'
                             '{0.__name__}, not {1!r}'.format(Outline, outline))
-        if outline in self.children:
-            return True
+        for child in self.children:
+            if outline == child:
+                if recursively:
+                    return not child.deleted
+                elif not child.deleted:
+                    return True
         if recursively:
             for subcategory in self:
                 if isinstance(subcategory, SubscriptionSet) and \
@@ -157,6 +166,7 @@ class SubscriptionSet(collections.MutableSet):
                         isinstance(outline, Subscription)):
                     continue
                 if outline.feed_uri == value.feed_uri:
+                    outline.created_at = now()
                     return
         else:
             value.type = 'category'
@@ -165,6 +175,7 @@ class SubscriptionSet(collections.MutableSet):
                         isinstance(outline, Category)):
                     continue
                 if outline.label == value.label:
+                    outline.created_at = now()
                     return
         value.created_at = now()
         self.children.append(value)
@@ -173,12 +184,15 @@ class SubscriptionSet(collections.MutableSet):
         if not isinstance(outline, Outline):
             raise TypeError('expected {0.__module__}.{0.__name__}, not '
                             '{1!r}'.format(Outline, outline))
-        children = self.children
-        while True:
-            try:
-                children.remove(outline)
-            except ValueError:
-                break
+        deleted_at = now()
+        if deleted_at <= outline.created_at:
+            deleted_at = (outline.created_at +
+                          datetime.timedelta(microseconds=1))  # FIXME
+        for child in self.children:
+            if child == outline:
+                child.deleted_at = deleted_at
+                del outline.children[:]
+                assert child.deleted
 
     def subscribe(self, feed, icon_uri=None):
         """Add a subscription from :class:`~libearth.feed.Feed` instance.
@@ -218,7 +232,10 @@ class SubscriptionSet(collections.MutableSet):
             ),
             created_at=now()
         )
-        self.add(sub)
+        for child in self.children:
+            if child == sub:
+                self.children.remove(child)
+        self.children.append(sub)
         return sub
 
     @property
@@ -251,6 +268,32 @@ class SubscriptionSet(collections.MutableSet):
                 subscriptions.update(child.recursive_subscriptions)
         return subscriptions
 
+    def __merge_entities__(self, other):
+        for outline in other.children:
+            for child in self.children:
+                if child == outline:
+                    if type(child) is Outline:
+                        child.__class__ = (Subscription
+                                           if child.type == 'rss'
+                                           else Category)
+                        outline._title = outline.label
+                    child.created_at = max(child.created_at,
+                                           outline.created_at)
+                    if not child.deleted_at:
+                        child.deleted_at = outline.deleted_at
+                    elif outline.deleted_at:
+                        child.deleted_at = max(child.deleted_at,
+                                               outline.deleted_at)
+                    if child.children:
+                        if child.deleted:
+                            del child.children[:]
+                        else:
+                            child.__merge_entities__(outline)
+                    break
+            else:
+                self.add(outline)
+        return self
+
 
 class Outline(Element):
     """Represent ``outline`` element of OPML document."""
@@ -262,7 +305,20 @@ class Outline(Element):
     type = Attribute('type')
 
     #: (:class:`datetime.datetime`) The created time.
-    created_at = Attribute('created', Rfc822)
+    created_at = Attribute('created', Rfc822(microseconds=True))
+
+    #: (:class:`datetime.datetime`) The archived time, if deleted ever.
+    #: It could be :const:`None` as well if it's never deleted.
+    #: Note that it doesn't have enough information about whether
+    #: it's actually deleted or not.  For that you have to use
+    #: :attr:`deleted` property instead.
+    #:
+    #: .. versionadded:: 0.3.0
+    deleted_at = Attribute(
+        'deleted',
+        Rfc822(microseconds=True),
+        xmlns=METADATA_XMLNS
+    )
 
     feed_uri = Attribute('xmlUrl')
     alternate_uri = Attribute('htmlUrl')
@@ -272,6 +328,15 @@ class Outline(Element):
     _title = Attribute('title')
     _category = Attribute('category', CommaSeparatedList)
     _breakpoint = Attribute('isBreakpoint', Boolean)
+
+    @property
+    def deleted(self):
+        """(:class:`bool`) Whether it is deleted (archived) or not.
+
+        .. versionadded:: 0.3.0
+
+        """
+        return bool(self.deleted_at and self.deleted_at > self.created_at)
 
     def __eq__(self, other):
         if isinstance(other, Outline):
@@ -287,6 +352,12 @@ class Outline(Element):
         if self.type == 'rss':
             return hash(self.feed_uri)
         return hash(self.label)
+
+    def __repr__(self):
+        return '<{0.__module__}.{0.__name__} type={1} label={2}{3}>'.format(
+            type(self), repr(self.type), repr(self.label),
+            ' [deleted]' if self.deleted else ''
+        )
 
 
 class Category(Outline, SubscriptionSet):
@@ -304,8 +375,8 @@ class Category(Outline, SubscriptionSet):
     type = Attribute('type', default=lambda _: 'category')
 
     def __repr__(self):
-        return '<{0.__module__}.{0.__name__} {1!r}>'.format(
-            type(self), self.label
+        return '<{0.__module__}.{0.__name__} {1!r}{2}>'.format(
+            type(self), self.label, ' [deleted]' if self.deleted else ''
         )
 
 
@@ -336,8 +407,9 @@ class Subscription(Outline):
     icon_uri = Attribute('icon', xmlns=METADATA_XMLNS, default=lambda _: None)
 
     def __repr__(self):
-        return '<{0.__module__}.{0.__name__} {1} {2!r} ({3!r})>'.format(
-            type(self), self.feed_id, self.label, self.feed_uri
+        return '<{0.__module__}.{0.__name__} {1} {2!r} ({3!r}){4}>'.format(
+            type(self), self.feed_id, self.label, self.feed_uri,
+            ' [deleted]' if self.deleted else ''
         )
 
 
@@ -445,6 +517,12 @@ class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
         head.owner_name = owner.name
         head.owner_email = owner.email
         head.owner_uri = owner.uri
+
+    def __merge_entities__(self, other):
+        subs = SubscriptionSet.__merge_entities__(self, other)
+        doc = MergeableDocumentElement.__merge_entities__(self, other)
+        doc.body = subs.body
+        return doc
 
     def __repr__(self):
         head = self.head

@@ -33,6 +33,14 @@ To be released.
   `encoding detection bug`__.  [:issue:`41`]
 - Added :func:`~libearth.tz.guess_tzinfo_by_locale()` function.  [:issue:`41`]
 - Added ``microseconds`` option to :class:`~libearth.codecs.Rfc822` codec.
+- Fixed incorrect merge of subscription/category deletion.
+
+  - Subscriptions are now archived rather than deleted.
+  - :class:`~libearth.subscribe.Outline` (which is a common superclass of
+    :class:`~libearth.subscribe.Subscription` and
+    :class:`~libearth.subscribe.Category`) now has
+    :attr:`~libearth.subscribe.Outline.deleted_at` attribute and
+    :attr:`~libearth.subscribe.Outline.deleted` property.
 
 __ http://bugs.python.org/issue13612
 
