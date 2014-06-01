@@ -1,8 +1,6 @@
 #!/bin/bash
 IRONPYTHON_DOWNLOAD_URL="https://github.com/IronLanguages/main/releases/download/ipy-2.7.4/IronPython-2.7.4.zip"
 IRONPYTHON_DIR="IronPython-2.7.4"
-MOCK_URL="https://pypi.python.org/packages/source/m/mock/mock-1.0.1.tar.gz"
-MOCK_DIR="mock-1.0.1"
 
 if [[ ! $(which mono) ]]; then
   echo "Mono seems not installed.  You can download it from the Mono website:"
@@ -44,12 +42,9 @@ if [[ -d pytest ]]; then
 else
   hg clone https://bitbucket.org/dahlia/pytest-ironpython pytest
 fi
-if [[ ! -d $MOCK_DIR ]]; then
-  curl $MOCK_URL | tar xvfz -;
-fi
 popd
 
-IRONPYTHONPATH=.ipy-env/py/:.ipy-env/pytest/:.ipy-env/$MOCK_DIR/ \
+IRONPYTHONPATH=.ipy-env/py/:.ipy-env/pytest/ \
 mono .ipy-env/$IRONPYTHON_DIR/ipy.exe \
      -X:ExceptionDetail \
      -X:ShowClrExceptions \

@@ -13,7 +13,6 @@ except ImportError:
     import urllib.request as urllib2
 
 from pytest import raises, mark
-import mock
 
 from libearth.compat import UNICODE_BY_DEFAULT, text_type
 from libearth.feed import Feed
@@ -504,23 +503,6 @@ def test_rss_parser():
     assert source.subtitle.type == feed.entries[0].source.subtitle.type
     assert source.subtitle.value == feed.entries[0].source.subtitle.value
     assert not source.entries
-
-
-def test_log_warnings_during_rss_parsing():
-    my_opener = urllib2.build_opener(TestHTTPHandler)
-    urllib2.install_opener(my_opener)
-    with mock.patch('logging.getLogger') as mock_func:
-        crawled_feed, data_for_crawl = parse_rss(
-            rss_xml,
-            'http://sourcetest.com/rss.xml'
-        )
-    mock_func.assert_any_call('libearth.parser.rss2.rss_get_channel_data')
-    mock_func.assert_any_call('libearth.parser.rss2.rss_get_item_data')
-    mock_logger = mock_func.return_value
-    for call in mock_logger.method_calls:
-        name, args, _ = call
-        assert name == 'warn'
-        assert args[0] == 'Unknown tag: %s'
 
 
 category_with_no_term = '''

@@ -40,7 +40,7 @@ setup(
         file = libearth.repository:FileSystemRepository
     ''',
     install_requires=install_requires,
-    tests_require=['pytest >= 2.4.0', 'mock >= 1.0.1'],
+    tests_require=['pytest >= 2.4.0'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
