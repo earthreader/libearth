@@ -61,7 +61,9 @@ script:
     python -mlibearth.version;
     py.test -v --durations=20 tests || exit $?;
   fi
+# IronPython interpreter frequently get broken, so try once more to make sure our tests actually fail
 - if [[ "$PYTHON_VM" == "ironpython" ]]; then
+    mono IronPython-2.7.4/ipy.exe -X:ExceptionDetail -X:ShowClrExceptions -X:Frames pytest.py -v -s --assert=plain tests ||
     mono IronPython-2.7.4/ipy.exe -X:ExceptionDetail -X:ShowClrExceptions -X:Frames pytest.py -v -s --assert=plain tests || exit $?;
   fi
 after_success:
