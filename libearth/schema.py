@@ -1804,7 +1804,8 @@ def validate(element, recurse=True, raise_error=True):
                         '{2!r} lacks it'.format(element_type, name, element)
                     )
                 return False
-            if recurse and child_element is not None:
+            if recurse and child_element is not None and \
+               isinstance(desc, Child):
                 if validate(child_element,
                             recurse=True,
                             raise_error=raise_error):
