@@ -52,6 +52,8 @@ To be released.
 
 - Fixed :mod:`~libearth.parser.rss2` parsing error when any empty element
   occurs.
+- Fixed a bug that :func:`~libearth.schema.validate()` function errored
+  when any subelement has :class:`~libearth.schema.Text` descriptor.
 
 
 Version 0.2.0

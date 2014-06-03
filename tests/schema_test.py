@@ -819,11 +819,12 @@ class VTElement(Element):
     attr = Attribute('b')
     req_child = Child('c', TextElement, required=True)
     child = Child('d', TextElement)
+    req_text = Text('e', required=True)
+    text = Text('f')
 
     def __repr__(self):
-        return 'VTElement(req_attr={0!r}, req_child={1!r})'.format(
-            self.req_attr, self.req_child
-        )
+        fmt = 'VTElement(req_attr={0!r}, req_child={1!r}, req_text={2!r})'
+        return fmt.format(self.req_attr, self.req_child, self.req_text)
 
 
 class VTDoc(DocumentElement):
@@ -834,50 +835,63 @@ class VTDoc(DocumentElement):
     req_child = Child('c', VTElement, required=True)
     child = Child('d', VTElement)
     multi = Child('e', VTElement, multiple=True)
+    req_text = Text('f', required=True)
+    text = Text('g')
 
     def __repr__(self):
-        return 'VTDoc(req_attr={0!r}, req_child={1!r})'.format(
-            self.req_attr, self.req_child
-        )
+        fmt = 'VTDoc(req_attr={0!r}, req_child={1!r}, req_text={2!r})'
+        return fmt.format(self.req_attr, self.req_child, self.req_text)
 
 
 @mark.parametrize(('element', 'recur_valid', 'valid'), [
     (VTDoc(), False, False),
     (VTDoc(req_attr='a'), False, False),
     (VTDoc(req_child=VTElement()), False, False),
+    (VTDoc(req_text='f'), False, False),
     (VTDoc(req_child=VTElement(req_attr='a')), False, False),
     (VTDoc(req_child=VTElement(req_child=TextElement(value='a'))),
      False, False),
     (VTDoc(req_child=VTElement(req_attr='a',
                                req_child=TextElement(value='a'))),
      False, False),
-    (VTDoc(req_attr='a', req_child=VTElement()), False, True),
-    (VTDoc(req_attr='a', req_child=VTElement(), multi=[]), False, True),
+    (VTDoc(req_child=VTElement(req_attr='a',
+                               req_child=TextElement(value='a'),
+                               req_text='e')),
+     False, False),
+    (VTDoc(req_attr='a', req_child=VTElement(), req_text='f'), False, True),
+    (VTDoc(req_attr='a', req_child=VTElement(), multi=[], req_text='f'),
+     False, True),
     (VTDoc(req_attr='a', req_child=VTElement(), multi=[
         VTElement()
-    ]), False, True),
+    ], req_text='f'), False, True),
     (VTDoc(req_attr='a', req_child=VTElement(), multi=[
         VTElement(req_attr='a', req_child=TextElement(value='a'))
-    ]), False, True),
-    (VTDoc(req_attr='a', req_child=VTElement(req_attr='a')), False, True),
+    ], req_text='f'), False, True),
+    (VTDoc(req_attr='a', req_child=VTElement(req_attr='a'), req_text='f'),
+     False, True),
     (VTDoc(req_attr='a', req_child=VTElement(req_attr='a'),
-           multi=[]), False, True),
+           multi=[], req_text='f'), False, True),
     (VTDoc(req_attr='a',
            req_child=VTElement(req_child=TextElement(value='a')),
-           multi=[]), False, True),
+           multi=[], req_text='f'), False, True),
     (VTDoc(req_attr='a',
            req_child=VTElement(req_attr='a',
-                               req_child=TextElement(value='a')),
-           multi=[]), True, True),
+                               req_child=TextElement(value='a'),
+                               req_text='e'),
+           multi=[], req_text='f'), True, True),
     (VTDoc(req_attr='a',
            req_child=VTElement(req_attr='a',
-                               req_child=TextElement(value='a')),
-           multi=[VTElement()]), False, True),
+                               req_child=TextElement(value='a'),
+                               req_text='e'),
+           multi=[VTElement()], req_text='f'), False, True),
     (VTDoc(req_attr='a',
            req_child=VTElement(req_attr='a',
-                               req_child=TextElement(value='a')),
+                               req_child=TextElement(value='a'),
+                               req_text='e'),
            multi=[VTElement(req_attr='a',
-                            req_child=TextElement(value='a'))]), True, True)
+                            req_child=TextElement(value='a'),
+                            req_text='e')],
+           req_text='f'), True, True)
 ])
 def test_validate_recurse(element, recur_valid, valid):
     assert validate(element, recurse=True, raise_error=False) is recur_valid
