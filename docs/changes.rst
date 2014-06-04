@@ -16,6 +16,9 @@ To be released.
   :class:`~libearth.crawler.CrawlResult` objects instead of :class:`tuple`\ s.
 - ``feeds`` parameter of :func:`~libearth.crawler.crawl()` function was
   renamed to ``feed_urls``.
+- Added ``feed_uri`` parameter and corresponding :attr:`feed_uri
+  <libearth.crawler.CrawlError.feed_uri>` attribute to
+  :class:`~libearth.crawler.CrawlError` exception.
 - Added :attr:`LinkList.favicon <libearth.feed.LinkList.favicon>` property.
   [:issue:`49`]
 - :meth:`AutoDiscovery.find_feed_url()

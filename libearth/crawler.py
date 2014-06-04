@@ -70,7 +70,8 @@ def get_feed(feed_url):
         if parser is None:
             logger.warn('failed to detect the format of %s', feed_url)
             logger.debug('the response body of %s:\n%s', feed_url, feed_xml)
-            raise CrawlError('failed to detect the format of ' + feed_url)
+            raise CrawlError(feed_url,
+                             'failed to detect the format of ' + feed_url)
         feed, crawler_hints = parser(feed_xml, feed_url)
         self_uri = None
         for link in feed.links:
@@ -110,7 +111,7 @@ def get_feed(feed_url):
         logger.exception(
             '%s: %s', feed_url, e
         )
-        raise CrawlError('{0} failed: {1}'.format(feed_url, e))
+        raise CrawlError(feed_url, '{0} failed: {1}'.format(feed_url, e))
 
 
 class CrawlResult(collections.Sequence):
@@ -177,7 +178,20 @@ class CrawlResult(collections.Sequence):
 
 
 class CrawlError(IOError):
-    """Error which rises when crawling given url failed."""
+    """Error which rises when crawling given url failed.
+
+    .. versionadded:: 0.3.0
+       Added ``feed_uri`` parameter and corresponding :attr:`feed_uri`
+       attribute.
+
+    """
+
+    #: (:class:`str`) The errored feed uri.
+    feed_uri = None
+
+    def __init__(self, feed_uri, *args, **kwargs):
+        super(CrawlError, self).__init__(*args, **kwargs)
+        self.feed_uri = feed_uri
 
 
 if sys.version_info >= (3, 3):

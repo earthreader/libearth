@@ -276,12 +276,20 @@ def test_crawl_error():
     feeds = ['http://brokenrss.com/rss']
     generator = crawl(feeds, 2)
     with raises(CrawlError):
-        next(iter(generator))
+        try:
+            next(iter(generator))
+        except CrawlError as e:
+            assert e.feed_uri == feeds[0]
+            raise
     # unreachable url
     feeds = ['http://not-exists.com/rss']
     generator = crawl(feeds, 2)
     with raises(CrawlError):
-        next(iter(generator))
+        try:
+            next(iter(generator))
+        except CrawlError as e:
+            assert e.feed_uri == feeds[0]
+            raise
 
 
 @mark.parametrize('subs', [
