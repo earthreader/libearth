@@ -73,9 +73,15 @@ def compare_tree(expected, parsed, path=''):
                 path, name, value
             )
         )
-    assert expected.text == parsed.text, (
+    expected_text = expected.text
+    parsed_text = parsed.text
+    if IRON_PYTHON:
+        # IronPython XML parser ignores starting and trailing whitespaces.
+        expected_text = expected_text and expected_text.strip()
+        parsed_text = parsed_text and parsed_text.strip()
+    assert expected_text == parsed_text, (
         '{0}/text()\n  expected: {1!r}\n  parsed:   {2!r}'.format(
-            path, expected.text, parsed.text
+            path, expected_text, parsed_text
         )
     )
     expected_children = expected.getchildren()
