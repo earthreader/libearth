@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:s="http://earthreader.org/session/" s:bases="">
+  <id>http://lee-seungjae.github.io/rss.xml</id>
+  <title type="text">lee-seungjae.github.com</title>
+  <link rel="self" href="http://lee-seungjae.github.io/rss.xml"/>
+  <link type="text/html" rel="alternate" href="http://lee-seungjae.github.com/"/>
+  <updated>2011-07-26T00:00:00+09:00</updated>
+  <subtitle type="text"></subtitle>
+  <entry>
+    <id>http://lee-seungjae.github.com/TellMeTheContext.html</id>
+    <title type="text">뭘 하고 싶은가? 맥락을 말해보라.</title>
+    <link type="text/html" rel="alternate" href="http://lee-seungjae.github.com/TellMeTheContext.html"/>
+    <updated>2011-07-26T00:00:00+09:00</updated>
+    <published>2011-07-26T00:00:00+09:00</published>
+    <content type="html">
+		소프트웨어를 개발하는 도중에 맞닥뜨린 문제 때문에 도움을 요청받았을 때, 그 문제에 대한 해답을 바로 제시하기보다는...
+		</content>
+  </entry>
+</feed>

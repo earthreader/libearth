@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<rss version='0.92'>
+<channel>
+	<docs></docs>
+	<title>lee-seungjae.github.com</title>
+	<link>http://lee-seungjae.github.com/</link>
+	<description></description>
+	<item>
+		<title>뭘 하고 싶은가? 맥락을 말해보라.</title>
+		<pubDate>26 Jul 2011 00:00:00 +0900</pubDate>
+		<description>
+		<![CDATA[소프트웨어를 개발하는 도중에 맞닥뜨린 문제 때문에 도움을 요청받았을 때, 그 문제에 대한 해답을 바로 제시하기보다는...]]>
+		</description>
+		<link>http://lee-seungjae.github.com/TellMeTheContext.html</link>
+	</item>
+</channel>
+</rss>

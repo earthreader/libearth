@@ -174,6 +174,7 @@ def get_format(document):
         root = fromstring(document)
     except Exception as e:
         logger = logging.getLogger(__name__ + '.get_format')
+        logger.debug('document = %r', document)
         logger.warning(e, exc_info=True)
         return None
     if root.tag == '{http://www.w3.org/2005/Atom}feed':

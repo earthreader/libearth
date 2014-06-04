@@ -204,6 +204,7 @@ _datetime_formats = [
     ('%m/%d/%y %H:%M:%S GMT', utc),  # msdn
     ('%a, %d %b %Y %H:%M:%S GMT 00:00:00 GMT', utc),  # msdn
     ('%Y.%m.%d %H:%M:%S', None),  # imbcnews
+    ('%d %b %Y %H:%M:%S %z', None),  # lee-seungjae
 ]
 
 
@@ -223,7 +224,14 @@ def parse_datetime(string, default_tzinfo):
                 # IronPython strptime() seems to ignore whitespace
                 string = string.replace(' ', '|')
                 fmt = fmt.replace(' ', '|')
-            dt = datetime.datetime.strptime(string, fmt)
+            if fmt.endswith('%z'):
+                dt = datetime.datetime.strptime(string[:-5], fmt[:-2])
+                tz_sign = -1 if string[-5:-4] == '-' else 1
+                tz_hour = int(string[-4:-2])
+                tz_min = int(string[-2:])
+                tzinfo = FixedOffset(tz_sign * (tz_hour * 60 + tz_min))
+            else:
+                dt = datetime.datetime.strptime(string, fmt)
             return dt.replace(tzinfo=tzinfo or default_tzinfo)
         except ValueError:
             continue
