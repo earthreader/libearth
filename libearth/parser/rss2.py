@@ -145,7 +145,6 @@ def rss_get_item_data(entries, default_tzinfo):
     entries_data = []
     for entry in entries:
         entry_data = Entry()
-        links = []
         for data in entry:
             if data.tag == 'title':
                 entry_data.title = Text(value=data.text)
@@ -153,8 +152,10 @@ def rss_get_item_data(entries, default_tzinfo):
                 link = Link(uri=data.text,
                             relation='alternate',
                             mimetype='text/html')
-                links.append(link)
-                entry_data.links = links
+                entry_data.links.append(link)
+            elif data.tag == 'comments':
+                link = Link(uri=data.text, relation='discussion')
+                entry_data.links.append(link)
             elif data.tag == 'description' and not entry_data.content:
                 entry_data.content = Content(type='html', value=data.text)
             elif data.tag == CONTENT_XMLNS + 'encoded':
@@ -168,8 +169,7 @@ def rss_get_item_data(entries, default_tzinfo):
                 pass  # FIXME
             elif data.tag == 'enclosure':
                 link = Link(mimetype=data.get('type'), uri=data.get('url'))
-                links.append(link)
-                entry_data.links = links
+                entry_data.links.append(link)
             elif data.tag == 'guid':
                 isPermalink = data.get('isPermalink')
                 if data.text.startswith('http://') and isPermalink != 'False':
