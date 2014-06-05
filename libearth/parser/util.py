@@ -50,4 +50,4 @@ def normalize_xml_encoding(document):
                 logger.warning(e, exc_info=True)
             if IRON_PYTHON:
                 document = bytes(document)
-    return document
+    return document.replace(b'\x1c', b'')
