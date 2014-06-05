@@ -117,7 +117,13 @@ def rss_get_channel_data(root, feed_url, default_tzinfo):
         elif data.tag == 'category':
             feed_data.categories.append(parse_category(data))
         elif data.tag == 'generator':
-            feed_data.generator = Generator(value=data.text)
+            generator = None
+            try:
+                if urlparse.urlparse(data.text).scheme in ('http', 'https'):
+                    generator = Generator(uri=data.text)
+            except ValueError:
+                pass
+            feed_data.generator = generator or Generator(value=data.text)
         elif data.tag == 'lastBuildDate':
             crawler_hints['lastBuildDate'] = parse_datetime(data.text,
                                                             default_tzinfo)
