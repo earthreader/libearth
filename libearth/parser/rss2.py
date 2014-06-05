@@ -115,7 +115,7 @@ def rss_get_channel_data(root, feed_url, default_tzinfo):
         elif data.tag == 'pubDate':
             feed_data.updated_at = parse_datetime(data.text, default_tzinfo)
         elif data.tag == 'category':
-            feed_data.categories = [Category(term=data.text)]
+            feed_data.categories.append(parse_category(data))
         elif data.tag == 'generator':
             feed_data.generator = Generator(value=data.text)
         elif data.tag == 'lastBuildDate':
@@ -156,7 +156,7 @@ def rss_get_item_data(entries, default_tzinfo):
             elif data.tag == 'author':
                 entry_data.authors = parse_person(data.text, True)
             elif data.tag == 'category':
-                entry_data.categories = [Category(term=data.text)]
+                entry_data.categories.append(parse_category(data))
             elif data.tag == 'comments':
                 # entry_data['comments'] = data.text
                 pass  # FIXME
@@ -250,6 +250,13 @@ def parse_person(string, as_list=False):
         return [] if as_list else None
     person = Person(name=name, email=email_addr or None)
     return [person] if as_list else person
+
+
+def parse_category(element):
+    return Category(
+        term=element.text,
+        scheme_uri=element.attrib.get('domain')
+    )
 
 
 def guess_default_tzinfo(root, url):
