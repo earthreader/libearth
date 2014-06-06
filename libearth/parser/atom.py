@@ -201,14 +201,17 @@ def atom_get_contributor_tag(data, xml_base):
 
 
 def atom_get_link_tag(data, xml_base):
-    link = Link()
     xml_base = atom_get_xml_base(data, xml_base)
-    link.uri = urlparse.urljoin(xml_base, data.get('href'))
-    link.relation = data.get('rel')
-    link.mimetype = data.get('type')
-    link.language = data.get('hreflang')
-    link.title = data.get('title')
-    link.byte_size = data.get('length')
+    link = Link(
+        uri=urlparse.urljoin(xml_base, data.get('href')),
+        mimetype=data.get('type'),
+        language=data.get('hreflang'),
+        title=data.get('title'),
+        byte_size=data.get('length')
+    )
+    rel = data.get('rel')
+    if rel:
+        link.relation = rel
     return link
 
 

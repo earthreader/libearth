@@ -21,6 +21,11 @@ To be released.
   :class:`~libearth.crawler.CrawlError` exception.
 - Added :attr:`LinkList.favicon <libearth.feed.LinkList.favicon>` property.
   [:issue:`49`]
+- :attr:`Link.relation <libearth.feed.Link.relation>` attribute which had
+  been optional now becomes required
+- Fixed an :mod:`~libearth.parser.atom` parser bug that hadn't interpret
+  omission of :attr:`link[rel] <libearth.feed.Link.relation>` attribute
+  as ``'alternate'``.
 - :meth:`AutoDiscovery.find_feed_url()
   <libearth.parser.autodiscovery.AutoDiscovery.find_feed_url>` method (that
   returned feed links) was gone.  Instead :meth:`AutoDiscovery.find()

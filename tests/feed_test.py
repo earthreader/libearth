@@ -144,7 +144,7 @@ def fx_feed_links(fx_feed):
              uri='http://example.com/index.js'),
         Link(relation='alternate', mimetype='application/xml+atom',
              uri='http://example.com/index.atom'),
-        Link(relation='alternate', mimetype='application/xml+rss',
+        Link(mimetype='application/xml+rss',
              uri='http://example.com/index.atom'),
         Link(relation='icon', mimetype='image/png',
              uri='http://example.com/favicon.png')

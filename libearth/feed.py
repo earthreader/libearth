@@ -179,7 +179,7 @@ class Link(Element):
     #:
     #:    __ http://microformats.org/wiki/existing-rel-values
     #:    .. _POSH: http://microformats.org/wiki/POSH
-    relation = Attribute('rel', default=lambda _: 'alternate')
+    relation = Attribute('rel', required=True, default=lambda _: 'alternate')
 
     #: (:class:`str`) The optional hint for the MIME media type of the linked
     #: content.  It corresponds to ``type`` attribute of
