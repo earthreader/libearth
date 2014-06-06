@@ -126,7 +126,7 @@ class Rfc3339(Codec):
         match = self.PATTERN.match(text)
         if not match:
             raise DecodeError(repr(text) +
-                              ' is not valid RFC3339 date time string')
+                              ' is not valid RFC 3339 date time string')
         if match.group('tz_offset'):
             tz_hour = int(match.group('tz_offset_hour'))
             tz_minute = int(match.group('tz_offset_minute'))

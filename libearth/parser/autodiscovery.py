@@ -177,7 +177,8 @@ def get_format(document):
         logger.debug('document = %r', document)
         logger.warning(e, exc_info=True)
         return None
-    if root.tag == '{http://www.w3.org/2005/Atom}feed':
+    if root.tag in ('{http://www.w3.org/2005/Atom}feed',
+                    '{http://purl.org/atom/ns#}feed'):
         return parse_atom
     elif root.tag == 'rss':
         return parse_rss

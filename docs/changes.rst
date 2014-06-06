@@ -23,9 +23,6 @@ To be released.
   [:issue:`49`]
 - :attr:`Link.relation <libearth.feed.Link.relation>` attribute which had
   been optional now becomes required
-- Fixed an :mod:`~libearth.parser.atom` parser bug that hadn't interpret
-  omission of :attr:`link[rel] <libearth.feed.Link.relation>` attribute
-  as ``'alternate'``.
 - :meth:`AutoDiscovery.find_feed_url()
   <libearth.parser.autodiscovery.AutoDiscovery.find_feed_url>` method (that
   returned feed links) was gone.  Instead :meth:`AutoDiscovery.find()
@@ -65,6 +62,23 @@ To be released.
   - Some RSS 2 feeds put a URI into ``<generator>``, so the parser now
     treat it as :attr:`~libearth.feed.Generator.uri` rather than
     :attr:`~libearth.feed.Generator.value` for such situation.
+
+- Fixed several :mod:`~libearth.parser.atom` parser bugs.
+
+  - Now it accepts obsolete PURL Atom namespace.
+  - Since some broken Atom feeds (e.g. Naver Blog) provide date time as
+    :rfc:`822` format which is incorrect according to :rfc:`4287#section-3.3`
+    (section 3.3), the parser becomes to accept :rfc:`822` format as well.
+  - Some broken Atom feeds (e.g. Naver Blog) use ``<modified>`` which is
+    not standard instead of ``<updated>`` which is standard, so the parser
+    now treats ``<modified>`` equivalent to ``<updated>``.
+  - ``<content>`` and ``<summary>`` can has :mimetype:`text/plain` and
+    :mimetype:`text/html` in addition to ``text`` and ``html``.
+  - ``<author>``/``<contributor>`` becomes ignored if it hasn't any of
+    ``<name>``, ``<uri>``, or ``<email>``.
+  - Fixed a parser bug that hadn't interpret omission of
+    :attr:`link[rel] <libearth.feed.Link.relation>` attribute
+    as ``'alternate'``.
 
 - Fixed the parser to work well even if there's any file separator characters
   (FS, ``'\x1c'``).
