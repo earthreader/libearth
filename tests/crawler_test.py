@@ -166,6 +166,23 @@ favicon_test_website_xml = '''
 </html>
 '''
 
+no_favicon_test_atom_xml = '''
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title type="text">No Favicon Test</title>
+    <id>http://nofavicontest.com/atom.xml</id>
+    <updated>2013-08-19T07:49:20+07:00</updated>
+    <link type="text/html" rel="alternate" href="http://nofavicontest.com/" />
+</feed>
+'''
+
+no_favicon_test_website_xml = '''
+<!DOCTYPE html>
+<html>
+<head><title>No Favicon Test</title></head>
+<body></body>
+</html>
+'''
+
 with open(os.path.join(os.path.dirname(__file__), 'favicon.ico'), 'rb') as f:
     favicon_test_favicon_ico = f.read()
 
@@ -190,6 +207,11 @@ mock_urls = {
     'http://favicontest.com/': (200, 'text/html', favicon_test_website_xml),
     'http://favicontest.com/favicon.ico': (200, 'image/vnd.microsoft.icon',
                                            favicon_test_favicon_ico),
+    'http://nofavicontest.com/atom.xml': (200, 'application/atom+xml',
+                                          no_favicon_test_atom_xml),
+    'http://nofavicontest.com/': (200, 'text/html',
+                                  no_favicon_test_website_xml),
+    'http://nofavicontest.com/favicon.ico': (404, 'text/plain', ''),
     'http://brokenrss.com/rss': (200, 'application/rss+xml', broken_rss)
 }
 
@@ -220,7 +242,8 @@ def test_crawler():
     urllib2.install_opener(my_opener)
     feeds = ['http://vio.atomtest.com/feed/atom',
              'http://rsstest.com/rss.xml',
-             'http://favicontest.com/atom.xml']
+             'http://favicontest.com/atom.xml',
+             'http://nofavicontest.com/atom.xml']
     generator = crawl(feeds, 4)
     for result in generator:
         feed_data = result.feed
@@ -243,6 +266,8 @@ def test_crawler():
             }
         elif feed_data.title.value == 'Favicon Test':
             assert result.icon_url == 'http://favicontest.com/favicon.ico'
+        elif feed_data.title.value == 'No Favicon Test':
+            assert result.icon_url is None
 
 
 def test_sort_entries():

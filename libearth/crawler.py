@@ -100,10 +100,14 @@ def get_feed(feed_url):
                 if favicon is None:
                     favicon = urlparse.urljoin(permalink.uri, '/favicon.ico')
                     req = Request(favicon, method='HEAD')
-                    f = open_url(req)
-                    if f.getcode() != 200:
+                    try:
+                        f = open_url(req)
+                    except (IOError, OSError):
                         favicon = None
-                    f.close()
+                    else:
+                        if f.getcode() != 200:
+                            favicon = None
+                        f.close()
         else:
             favicon = favicon.uri
         return CrawlResult(feed_url, feed, crawler_hints, favicon)
