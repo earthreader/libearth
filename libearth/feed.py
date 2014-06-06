@@ -168,6 +168,17 @@ class Link(Element):
 
     #: (:class:`str`) The relation type of the link.  It corresponds to
     #: ``rel`` attribute of :rfc:`4287#section-4.2.7.2` (section 4.2.7.2).
+    #:
+    #: .. seealso::
+    #:
+    #:    `Existing rel values`__ --- Microformats Wiki
+    #:        This page contains tables of known HTML ``rel`` values from
+    #:        specifications, formats, proposals, brainstorms, and non-trivial
+    #:        POSH_ usage in the wild.  In addition, dropped and rejected
+    #:        values are listed at the end for comprehensiveness.
+    #:
+    #:    __ http://microformats.org/wiki/existing-rel-values
+    #:    .. _POSH: http://microformats.org/wiki/POSH
     relation = Attribute('rel', default=lambda _: 'alternate')
 
     #: (:class:`str`) The optional hint for the MIME media type of the linked
