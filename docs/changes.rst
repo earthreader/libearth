@@ -45,6 +45,25 @@ To be released.
     :attr:`~libearth.subscribe.Outline.deleted_at` attribute and
     :attr:`~libearth.subscribe.Outline.deleted` property.
 
+- Fixed several :mod:`~libearth.parser.rss2` parser bugs.
+
+  - Now the parser accepts several malformed ``<pubDate>`` and
+    ``<lastBuildDate>`` elements.
+  - It become to guess the time zone according to its ``<language>`` and
+    the ccTLD (if applicable) when the date time doesn't give any explicit
+    time zone (which is also malformed).  [:issue:`41`]
+  - It had ignored ``<category>`` elements other than the last one, now it
+    become to accept as many as there are.
+  - It had ignored ``<comments>`` links at all, now these become to be
+    parsed to :class:`~libearth.feed.Link` objects with
+    ``relation='discussion'``.
+  - Some RSS 2 feeds put a URI into ``<generator>``, so the parser now
+    treat it as :attr:`~libearth.feed.Generator.uri` rather than
+    :attr:`~libearth.feed.Generator.value` for such situation.
+
+- Fixed the parser to work well even if there's any file separator characters
+  (FS, ``'\x1c'``).
+
 __ http://bugs.python.org/issue13612
 
 
