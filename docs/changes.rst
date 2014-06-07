@@ -62,6 +62,9 @@ To be released.
   - Some RSS 2 feeds put a URI into ``<generator>``, so the parser now
     treat it as :attr:`~libearth.feed.Generator.uri` rather than
     :attr:`~libearth.feed.Generator.value` for such situation.
+  - ``<enclosure>`` links had been parsed as :class:`~libearth.feed.Link`
+    object *without* :attr:`~libearth.feed.Link.relation` attribute,
+    but it becomes to properly set the attribute to ``'enclosure'``.
 
 - Fixed several :mod:`~libearth.parser.atom` parser bugs.
 

@@ -148,7 +148,11 @@ def rss_get_item_data(entries, default_tzinfo):
         entry_data = Entry()
         for data in entry:
             if data.tag == 'enclosure':
-                link = Link(mimetype=data.get('type'), uri=data.get('url'))
+                link = Link(
+                    relation='enclosure',
+                    mimetype=data.get('type'),
+                    uri=data.get('url')
+                )
                 entry_data.links.append(link)
             elif data.tag == 'source':
                 from .autodiscovery import get_format
