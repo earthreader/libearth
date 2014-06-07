@@ -96,17 +96,18 @@ def rss_get_channel_data(root, feed_url, default_tzinfo):
     crawler_hints = {}
     contributors = []
     for data in root:
-        if not data.text:
-            _log.warn('Empty tag: %s', data)
         if data.tag == 'title':
             feed_data.title = Text(value=data.text or '')
+        elif data.tag == 'description':
+            feed_data.subtitle = Text(type='text', value=data.text)
+        elif not data.text:
+            _log.warn('Empty tag: %s', data)
+            continue
         elif data.tag == 'link':
             link = Link(uri=data.text,
                         relation='alternate',
                         mimetype='text/html')
             feed_data.links.append(link)
-        elif data.tag == 'description':
-            feed_data.subtitle = Text(type='text', value=data.text)
         elif data.tag == 'copyright':
             feed_data.rights = Text(value=data.text)
         elif data.tag in ('managingEditor', 'webMaster'):
@@ -146,7 +147,22 @@ def rss_get_item_data(entries, default_tzinfo):
     for entry in entries:
         entry_data = Entry()
         for data in entry:
-            if data.tag == 'title':
+            if data.tag == 'enclosure':
+                link = Link(mimetype=data.get('type'), uri=data.get('url'))
+                entry_data.links.append(link)
+            elif data.tag == 'source':
+                from .autodiscovery import get_format
+                url = data.get('url')
+                request = urllib2.Request(url)
+                f = urllib2.urlopen(request)
+                xml = f.read()
+                parser = get_format(xml)
+                source, _ = parser(xml, url, parse_entry=False)
+                entry_data.source = source
+            elif not data.text:
+                _log.warn('Empty tag: %s', data)
+                continue
+            elif data.tag == 'title':
                 entry_data.title = Text(value=data.text)
             elif data.tag == 'link':
                 link = Link(uri=data.text,
@@ -164,9 +180,6 @@ def rss_get_item_data(entries, default_tzinfo):
                 entry_data.authors = parse_person(data.text, True)
             elif data.tag == 'category':
                 entry_data.categories.append(parse_category(data))
-            elif data.tag == 'enclosure':
-                link = Link(mimetype=data.get('type'), uri=data.get('url'))
-                entry_data.links.append(link)
             elif data.tag == 'guid':
                 isPermalink = data.get('isPermalink')
                 if data.text.startswith('http://') and isPermalink != 'False':
@@ -179,15 +192,6 @@ def rss_get_item_data(entries, default_tzinfo):
                 # TODO 'pubDate' is optional in RSS 2, but 'updated' in Atom
                 #       is required element, so we have to fill some value to
                 #       entry.updated_at.
-            elif data.tag == 'source':
-                from .autodiscovery import get_format
-                url = data.get('url')
-                request = urllib2.Request(url)
-                f = urllib2.urlopen(request)
-                xml = f.read()
-                parser = get_format(xml)
-                source, _ = parser(xml, url, parse_entry=False)
-                entry_data.source = source
             else:
                 _log.warn('Unknown tag: %s', data)
         if entry_data.updated_at is None:
