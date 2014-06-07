@@ -65,6 +65,8 @@ To be released.
   - ``<enclosure>`` links had been parsed as :class:`~libearth.feed.Link`
     object *without* :attr:`~libearth.feed.Link.relation` attribute,
     but it becomes to properly set the attribute to ``'enclosure'``.
+  - Mixed ``<link>`` elements with Atom namespace also becomes to be
+    parsed well.
 
 - Fixed several :mod:`~libearth.parser.atom` parser bugs.
 

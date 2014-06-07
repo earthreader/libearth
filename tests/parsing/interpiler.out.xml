@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:s="http://earthreader.org/session/" s:bases="">
   <id>http://interpiler.com/feed/</id>
   <title type="text">Interpreting Compiler</title>
-  <link rel="self" href="http://interpiler.com/feed/"/>
+  <link type="application/rss+xml" rel="self" href="http://interpiler.com/feed/"/>
   <link type="text/html" rel="alternate" href="http://interpiler.com"/>
   <updated>2014-05-14T11:19:28Z</updated>
   <subtitle type="text">easy reading, hard writing</subtitle>

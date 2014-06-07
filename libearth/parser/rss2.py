@@ -20,11 +20,12 @@ except ImportError:
 
 from ..codecs import Rfc3339, Rfc822
 from ..compat import IRON_PYTHON
-from ..compat.etree import fromstring, tostring
+from ..compat.etree import fromstring
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Text)
 from ..schema import DecodeError
 from ..tz import FixedOffset, guess_tzinfo_by_locale, now, utc
+from .atom import ATOM_XMLNS_SET
 from .util import normalize_xml_encoding
 
 
@@ -92,7 +93,6 @@ def check_valid_as_atom(feed_data):
 def rss_get_channel_data(root, feed_url, default_tzinfo):
     _log = logging.getLogger(__name__ + '.rss_get_channel_data')
     feed_data = Feed(id=feed_url)
-    feed_data.links.append(Link(relation='self', uri=feed_url))
     crawler_hints = {}
     contributors = []
     for data in root:
@@ -100,6 +100,13 @@ def rss_get_channel_data(root, feed_url, default_tzinfo):
             feed_data.title = Text(value=data.text or '')
         elif data.tag == 'description':
             feed_data.subtitle = Text(type='text', value=data.text)
+        elif (any(data.tag == '{' + ns + '}link' for ns in ATOM_XMLNS_SET) and
+              data.get('href')):
+            # FIXME: duplicate with rss_get_item_data()
+            link = Link(uri=data.get('href'),
+                        relation=data.get('rel', 'alternate'),
+                        mimetype=data.get('type'))
+            feed_data.links.append(link)
         elif not data.text:
             _log.warn('Empty tag: %s', data)
             continue
@@ -138,6 +145,8 @@ def rss_get_channel_data(root, feed_url, default_tzinfo):
             crawler_hints['skipDays'] = data.text
         elif data.tag != 'item':
             _log.warn('Unknown tag: %s', data)
+    if all(l.relation != 'self' for l in feed_data.links):
+        feed_data.links.insert(0, Link(relation='self', uri=feed_url))
     return feed_data, crawler_hints
 
 
@@ -163,6 +172,13 @@ def rss_get_item_data(entries, default_tzinfo):
                 parser = get_format(xml)
                 source, _ = parser(xml, url, parse_entry=False)
                 entry_data.source = source
+            elif any(data.tag == '{' + ns + '}link'
+                     for ns in ATOM_XMLNS_SET) and data.get('href'):
+                # FIXME: duplicate with rss_get_channel_data()
+                link = Link(uri=data.get('href'),
+                            relation=data.get('rel', 'alternate'),
+                            mimetype=data.get('type'))
+                entry_data.links.append(link)
             elif not data.text:
                 _log.warn('Empty tag: %s', data)
                 continue
