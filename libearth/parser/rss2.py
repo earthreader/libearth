@@ -164,9 +164,6 @@ def rss_get_item_data(entries, default_tzinfo):
                 entry_data.authors = parse_person(data.text, True)
             elif data.tag == 'category':
                 entry_data.categories.append(parse_category(data))
-            elif data.tag == 'comments':
-                # entry_data['comments'] = data.text
-                pass  # FIXME
             elif data.tag == 'enclosure':
                 link = Link(mimetype=data.get('type'), uri=data.get('url'))
                 entry_data.links.append(link)
