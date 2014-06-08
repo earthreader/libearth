@@ -6,6 +6,7 @@ Crawl feeds.
 """
 import collections
 import logging
+import re
 import sys
 
 try:
@@ -91,8 +92,15 @@ def get_feed(feed_url):
                 except IOError:
                     pass
                 else:
+                    content_type = f.headers['content-type']
                     html = f.read()
                     f.close()
+                    if isinstance(html, bytes) and \
+                       not isinstance(html, str):
+                        match = re.search(r';\s*charset\s*=\s*([^;\s]+)',
+                                          content_type)
+                        enc = match.group(1) if match else 'utf-8'
+                        html = html.decode(enc, 'replace')
                     _, icon_urls = AutoDiscovery().find(html)
                     if icon_urls:
                         favicon = urlparse.urljoin(permalink.uri,

@@ -19,7 +19,7 @@ from libearth.subscribe import Category, SubscriptionList
 from libearth.tz import utc
 
 
-atom_xml = """
+atom_xml = b"""
 <feed xmlns="http://www.w3.org/2005/Atom">
     <title type="text">Atom Test</title>
     <subtitle type="text">Earth Reader</subtitle>
@@ -67,7 +67,7 @@ atom_xml = """
 """
 
 
-atom_reversed_entries = """
+atom_reversed_entries = b"""
 <feed xmlns="http://www.w3.org/2005/Atom">
     <title type="text">Feed One</title>
     <id>http://feedone.com/feed/atom/</id>
@@ -91,7 +91,7 @@ atom_reversed_entries = """
 """
 
 
-rss_xml = """
+rss_xml = b"""
 <rss version="2.0">
 <channel>
     <title>Vio Blog</title>
@@ -122,12 +122,13 @@ rss_xml = """
 """
 
 
-rss_website_html = '''\
+rss_website_html = b'''\
 <!DOCTYPE>
 <html>
 <head>
   <title>RSS Test</title>
   <link rel="shotcut icon" href="images/favicon.ico">
+  <!-- EUC-KR: \xc7\xd1\xb1\xdb -->
 </head>
 <body>
 </body>
@@ -135,7 +136,7 @@ rss_website_html = '''\
 '''
 
 
-rss_source_xml = """
+rss_source_xml = b"""
 <rss version="2.0">
     <channel>
         <title>Source Test</title>
@@ -149,7 +150,7 @@ rss_source_xml = """
 </rss>
 """
 
-favicon_test_atom_xml = '''
+favicon_test_atom_xml = b'''
 <feed xmlns="http://www.w3.org/2005/Atom">
     <title type="text">Favicon Test</title>
     <id>http://favicontest.com/atom.xml</id>
@@ -158,7 +159,7 @@ favicon_test_atom_xml = '''
 </feed>
 '''
 
-favicon_test_website_xml = '''
+favicon_test_website_xml = b'''
 <!DOCTYPE html>
 <html>
 <head><title>Favicon Test</title></head>
@@ -166,7 +167,7 @@ favicon_test_website_xml = '''
 </html>
 '''
 
-no_favicon_test_atom_xml = '''
+no_favicon_test_atom_xml = b'''
 <feed xmlns="http://www.w3.org/2005/Atom">
     <title type="text">No Favicon Test</title>
     <id>http://nofavicontest.com/atom.xml</id>
@@ -175,7 +176,7 @@ no_favicon_test_atom_xml = '''
 </feed>
 '''
 
-no_favicon_test_website_xml = '''
+no_favicon_test_website_xml = b'''
 <!DOCTYPE html>
 <html>
 <head><title>No Favicon Test</title></head>
@@ -186,7 +187,7 @@ no_favicon_test_website_xml = '''
 with open(os.path.join(os.path.dirname(__file__), 'favicon.ico'), 'rb') as f:
     favicon_test_favicon_ico = f.read()
 
-broken_rss = """
+broken_rss = b"""
 <rss version="2.0">
     <channel>
         <title>Broken rss
@@ -199,7 +200,8 @@ mock_urls = {
     'http://reversedentries.com/feed/atom': (200, 'application/atom+xml',
                                              atom_reversed_entries),
     'http://rsstest.com/rss.xml': (200, 'application/rss+xml', rss_xml),
-    'http://rsstest.com/': (200, 'text/html', rss_website_html),
+    'http://rsstest.com/': (200, 'text/html; charset=euc-kr',
+                            rss_website_html),
     'http://sourcetest.com/rss.xml': (200, 'application/rss+xml',
                                       rss_source_xml),
     'http://favicontest.com/atom.xml': (200, 'application/atom+xml',
