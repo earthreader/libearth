@@ -1,4 +1,5 @@
 import datetime
+import functools
 try:
     import httplib
 except ImportError:
@@ -10,7 +11,7 @@ try:
 except ImportError:
     from urllib import request as urllib2
 
-from pytest import mark, raises
+from pytest import fixture, mark, raises
 
 from libearth.compat import IRON_PYTHON, text_type
 from libearth.crawler import CrawlError, CrawlResult, crawl, get_feed
@@ -239,9 +240,17 @@ class TestHTTPHandler(urllib2.HTTPHandler):
         return resp
 
 
-def test_crawler():
-    my_opener = urllib2.build_opener(TestHTTPHandler)
-    urllib2.install_opener(my_opener)
+@fixture
+def fx_opener(request):
+    request.addfinalizer(
+        functools.partial(setattr, urllib2, '_opener', urllib2._opener)
+    )
+    opener = urllib2.build_opener(TestHTTPHandler)
+    urllib2.install_opener(opener)
+    return opener
+
+
+def test_crawler(fx_opener):
     feeds = ['http://vio.atomtest.com/feed/atom',
              'http://rsstest.com/rss.xml',
              'http://favicontest.com/atom.xml',
@@ -272,9 +281,7 @@ def test_crawler():
             assert result.icon_url is None
 
 
-def test_sort_entries():
-    my_opener = urllib2.build_opener(TestHTTPHandler)
-    urllib2.install_opener(my_opener)
+def test_sort_entries(fx_opener):
     feeds = ['http://reversedentries.com/feed/atom']
     crawler = iter(crawl(feeds, 4))
     result = next(crawler)
@@ -285,9 +292,7 @@ def test_sort_entries():
     assert feed.entries[0].updated_at > feed.entries[1].updated_at
 
 
-def test_get_feed():
-    my_opener = urllib2.build_opener(TestHTTPHandler)
-    urllib2.install_opener(my_opener)
+def test_get_feed(fx_opener):
     result = get_feed('http://vio.atomtest.com/feed/atom')
     feed = result.feed
     assert feed.title.value == 'Atom Test'
@@ -296,10 +301,8 @@ def test_get_feed():
     assert result.icon_url is not None
 
 
-def test_crawl_error():
+def test_crawl_error(fx_opener):
     # broken feed
-    my_opener = urllib2.build_opener(TestHTTPHandler)
-    urllib2.install_opener(my_opener)
     feeds = ['http://brokenrss.com/rss']
     generator = crawl(feeds, 2)
     with raises(CrawlError):
