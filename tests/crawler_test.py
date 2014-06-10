@@ -6,6 +6,7 @@ except ImportError:
     from http import client as httplib
 import io
 import os.path
+import time
 try:
     import urllib2
 except ImportError:
@@ -299,6 +300,14 @@ def test_get_feed(fx_opener):
     assert len(feed.entries) == 2
     assert result.hints is None
     assert result.icon_url is not None
+
+
+def test_get_feed_timeout(fx_opener):
+    start = time.time()
+    with raises(CrawlError):
+        get_feed('http://unreachable.timeouttest.earthreader.org/',
+                 timeout=1)
+    assert time.time() - start < 2
 
 
 def test_crawl_error(fx_opener):

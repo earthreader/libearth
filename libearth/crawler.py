@@ -5,6 +5,7 @@ Crawl feeds.
 
 """
 import collections
+import functools
 import logging
 import re
 import sys
@@ -25,25 +26,35 @@ from .subscribe import SubscriptionSet
 from .version import VERSION
 
 
-__all__ = 'CrawlError', 'CrawlResult', 'crawl', 'get_feed'
+__all__ = 'DEFAULT_TIMEOUT', 'CrawlError', 'CrawlResult', 'crawl', 'get_feed'
 
 
-def open_url(url):
+#: (:class:`numbers.Integral`) The default timeout for connection attempts.
+#: 10 seconds.
+#:
+#: .. versionadded:: 0.3.0
+DEFAULT_TIMEOUT = 10
+
+
+def open_url(url, *args, **kwargs):
     if isinstance(url, Request):
         request = url
     else:
         request = urllib2.Request(url)
     request.add_header('User-agent', '{0}/{1}'.format(__package__, VERSION))
-    return urllib2.urlopen(request)
+    return urllib2.urlopen(request, *args, **kwargs)
 
 
-def crawl(feed_urls, pool_size):
+def crawl(feed_urls, pool_size, timeout=DEFAULT_TIMEOUT):
     """Crawl feeds in feed list using thread.
 
     :param feed_urls: feed urls to crawl
     :type feed_urls: :class: `collections.Sequence`
     :param pool_size: the number of concurrent workers
     :type pool_size: :class:`numbers.Integral`
+    :param timeout: optional timeout for connection attempts.
+                    :const:`DEFAULT_TIMEOUT` is used if omitted
+    :type timeout: :class:`numbers.Integral`
     :returns: a set of :class:`CrawlResult` objects
     :rtype: :class:`collections.Iterable`
 
@@ -56,15 +67,23 @@ def crawl(feed_urls, pool_size):
 
        The parameter ``feeds`` was renamed to ``feed_urls``.
 
+    .. versionadded:: 0.3.0
+
+       Added optional ``timeout`` parameter.
+
     """
-    return parallel_map(pool_size, get_feed, feed_urls)
+    if type(timeout) is type(DEFAULT_TIMEOUT) and timeout == DEFAULT_TIMEOUT:
+        func = get_feed
+    else:
+        func = functools.partial(get_feed, timeout=int(timeout))
+    return parallel_map(pool_size, func, feed_urls)
 
 
-def get_feed(feed_url):
+def get_feed(feed_url, timeout=DEFAULT_TIMEOUT):
     # TODO: should be documented
     logger = logging.getLogger(__name__ + '.get_feed')
     try:
-        f = open_url(feed_url)
+        f = open_url(feed_url, timeout=timeout)
         feed_xml = f.read()
         f.close()
         parser = get_format(feed_xml)
@@ -88,7 +107,7 @@ def get_feed(feed_url):
             permalink = feed.links.permalink
             if permalink:
                 try:
-                    f = open_url(permalink.uri)
+                    f = open_url(permalink.uri, timeout=timeout)
                 except IOError:
                     pass
                 else:
@@ -109,7 +128,7 @@ def get_feed(feed_url):
                     favicon = urlparse.urljoin(permalink.uri, '/favicon.ico')
                     req = Request(favicon, method='HEAD')
                     try:
-                        f = open_url(req)
+                        f = open_url(req, timeout=timeout)
                     except (IOError, OSError):
                         favicon = None
                     else:

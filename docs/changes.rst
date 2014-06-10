@@ -19,6 +19,14 @@ To be released.
 - Added ``feed_uri`` parameter and corresponding :attr:`feed_uri
   <libearth.crawler.CrawlError.feed_uri>` attribute to
   :class:`~libearth.crawler.CrawlError` exception.
+- Timeout option was added to crawler.
+
+  - Added optional ``timeout`` parameter to :func:`~libearth.crawler.crawl()`.
+  - Added optional ``timeout`` parameter to
+    :func:`~libearth.crawler.get_feed()`.
+  - Added :const:`~libearth.crawler.DEFAULT_TIMEOUT` constant which is
+    10 seconds.
+
 - Added :attr:`LinkList.favicon <libearth.feed.LinkList.favicon>` property.
   [:issue:`49`]
 - :attr:`Link.relation <libearth.feed.Link.relation>` attribute which had

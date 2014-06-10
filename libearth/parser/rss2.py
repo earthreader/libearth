@@ -10,10 +10,6 @@ import logging
 import re
 
 try:
-    import urllib2
-except ImportError:
-    from urllib import request as urllib2
-try:
     import urlparse
 except ImportError:
     from urllib import parse as urlparse
@@ -164,10 +160,10 @@ def rss_get_item_data(entries, default_tzinfo):
                 )
                 entry_data.links.append(link)
             elif data.tag == 'source':
+                from ..crawler import open_url
                 from .autodiscovery import get_format
                 url = data.get('url')
-                request = urllib2.Request(url)
-                f = urllib2.urlopen(request)
+                f = open_url(url)  # FIXME: propagate timeout option
                 xml = f.read()
                 parser = get_format(xml)
                 source, _ = parser(xml, url, parse_entry=False)
