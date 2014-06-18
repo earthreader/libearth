@@ -57,7 +57,7 @@ class AtomParser(object):
         for element_name, (parser, attr_name)\
                 in self.children_parser.items():
             elements = root_element.findall(get_element_id(session.atom_xmlns,
-                                                            element_name))
+                                                           element_name))
             for element in elements:
                 session = copy.copy(root_session)
                 session.xml_base = get_xml_base(element, session.xml_base)
