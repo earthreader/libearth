@@ -44,6 +44,16 @@ def get_xml_base(data, default):
         return default
 
 
+class AtomSession(object):
+
+    atom_xmlns = None
+    xml_base = None
+
+    def __init__(self, atom_xmlns, xml_base):
+        self.atom_xmlns = atom_xmlns
+        self.xml_base = xml_base
+
+
 def parse_atom(xml, feed_url, parse_entry=True):
     """Atom parser.  It parses the Atom XML and returns the feed data
     as internal representation.
