@@ -37,6 +37,13 @@ def get_element_id(name_space, element_name):
     return '{' + name_space + '}' + element_name
 
 
+def get_xml_base(data, default):
+    if get_element_id(XML_XMLNS, 'base') in data.attrib:
+        return data.attrib['{' + XML_XMLNS + '}base']
+    else:
+        return default
+
+
 def parse_atom(xml, feed_url, parse_entry=True):
     """Atom parser.  It parses the Atom XML and returns the feed data
     as internal representation.
