@@ -33,6 +33,10 @@ ATOM_XMLNS_SET = frozenset([
 XML_XMLNS = 'http://www.w3.org/XML/1998/namespace'
 
 
+def get_element_id(name_space, element_name):
+    return '{' + name_space + '}' + element_name
+
+
 def parse_atom(xml, feed_url, parse_entry=True):
     """Atom parser.  It parses the Atom XML and returns the feed data
     as internal representation.
