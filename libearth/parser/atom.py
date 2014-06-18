@@ -8,6 +8,7 @@ Parsing Atom feed. Atom specification is :rfc:`4287`
    Parsing text construct which ``type`` is ``'xhtml'``.
 
 """
+import copy
 try:
     import urlparse
 except ImportError:
@@ -42,6 +43,45 @@ def get_xml_base(data, default):
         return data.attrib['{' + XML_XMLNS + '}base']
     else:
         return default
+
+
+class AtomParser(object):
+
+    def __init__(self, parser=None):
+        if parser:
+            self.parser = parser
+        self.children_parser = {}
+
+    def __call__(self, root_element, session):
+        root, root_session = self.parser(root_element, session)
+        for element_name, (parser, attr_name)\
+                in self.children_parser.items():
+            elements = root_element.findall(get_element_id(session.atom_xmlns,
+                                                            element_name))
+            for element in elements:
+                session = copy.copy(root_session)
+                session.xml_base = get_xml_base(element, session.xml_base)
+                child = parser(element, session)
+                if not child:
+                    continue
+                descriptor = getattr(type(root), attr_name)
+                if descriptor.multiple:
+                    getattr(root, attr_name).append(child)
+                else:
+                    setattr(root, attr_name, child)
+        return root
+
+    def path(self, element_name, attr_name=None):
+
+        def decorator(func):
+            if isinstance(func, AtomParser):
+                func = func.parser
+            parser = AtomParser(func)
+            self.children_parser[element_name] = (parser,
+                                                  attr_name or element_name)
+            return parser
+
+        return decorator
 
 
 class AtomSession(object):
