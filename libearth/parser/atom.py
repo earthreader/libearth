@@ -269,7 +269,7 @@ def parse_atom(xml, feed_url, need_entries=True):
     if not feed_data.id:
         feed_data.id = feed_url
     if need_entries:
-        entries = root.findall('{' + atom_xmlns + '}entry')
+        entries = root.findall(get_element_id(atom_xmlns, 'entry'))
         entry_list = []
         for entry in entries:
             entry_list.append(parse_entry(entry, session))
