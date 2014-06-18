@@ -94,42 +94,6 @@ class AtomSession(object):
         self.xml_base = xml_base
 
 
-def parse_atom(xml, feed_url, need_entries=True):
-    """Atom parser.  It parses the Atom XML and returns the feed data
-    as internal representation.
-
-    :param xml: target atom xml to parse
-    :type xml: :class:`str`
-    :param feed_url: the url used to retrieve the atom feed.
-                     it will be the base url when there are any relative
-                     urls without ``xml:base`` attribute
-    :type feed_url: :class:`str`
-    :param parse_entry: whether to parse inner items as well.
-                        it's useful to ignore items when retrieve
-                        ``<source>`` in rss 2.0.  :const:`True` by default.
-    :type parse_item: :class:`bool`
-    :returns: a pair of (:class:`~libearth.feed.Feed`, crawler hint)
-    :rtype: :class:`tuple`
-
-    """
-    root = fromstring(normalize_xml_encoding(xml))
-    for atom_xmlns in ATOM_XMLNS_SET:
-        if root.tag.startswith('{' + atom_xmlns + '}'):
-            break
-    xml_base = get_xml_base(root, feed_url)
-    session = AtomSession(atom_xmlns, xml_base)
-    feed_data = parse_feed(root, session)
-    if not feed_data.id:
-        feed_data.id = feed_url
-    if need_entries:
-        entries = root.findall('{' + atom_xmlns + '}entry')
-        entry_list = []
-        for entry in entries:
-            entry_list.append(parse_entry(entry, session))
-        feed_data.entries = entry_list
-    return feed_data, None
-
-
 atom_parser = AtomParser()
 
 
@@ -275,3 +239,39 @@ def parse_content(element, session):
         content.source_uri = urlparse.urljoin(session.xml_base,
                                               element.attrib['src'])
     return content, session
+
+
+def parse_atom(xml, feed_url, need_entries=True):
+    """Atom parser.  It parses the Atom XML and returns the feed data
+    as internal representation.
+
+    :param xml: target atom xml to parse
+    :type xml: :class:`str`
+    :param feed_url: the url used to retrieve the atom feed.
+                     it will be the base url when there are any relative
+                     urls without ``xml:base`` attribute
+    :type feed_url: :class:`str`
+    :param parse_entry: whether to parse inner items as well.
+                        it's useful to ignore items when retrieve
+                        ``<source>`` in rss 2.0.  :const:`True` by default.
+    :type parse_item: :class:`bool`
+    :returns: a pair of (:class:`~libearth.feed.Feed`, crawler hint)
+    :rtype: :class:`tuple`
+
+    """
+    root = fromstring(normalize_xml_encoding(xml))
+    for atom_xmlns in ATOM_XMLNS_SET:
+        if root.tag.startswith('{' + atom_xmlns + '}'):
+            break
+    xml_base = get_xml_base(root, feed_url)
+    session = AtomSession(atom_xmlns, xml_base)
+    feed_data = parse_feed(root, session)
+    if not feed_data.id:
+        feed_data.id = feed_url
+    if need_entries:
+        entries = root.findall('{' + atom_xmlns + '}entry')
+        entry_list = []
+        for entry in entries:
+            entry_list.append(parse_entry(entry, session))
+        feed_data.entries = entry_list
+    return feed_data, None
