@@ -94,7 +94,7 @@ class AtomSession(object):
         self.xml_base = xml_base
 
 
-def parse_atom(xml, feed_url, parse_entry=True):
+def parse_atom(xml, feed_url, need_entries=True):
     """Atom parser.  It parses the Atom XML and returns the feed data
     as internal representation.
 
@@ -116,11 +116,17 @@ def parse_atom(xml, feed_url, parse_entry=True):
     for atom_xmlns in ATOM_XMLNS_SET:
         if root.tag.startswith('{' + atom_xmlns + '}'):
             break
-    feed_data = atom_get_feed_data(root, feed_url, atom_xmlns)
-    entries = root.findall('{' + atom_xmlns + '}entry')
-    if parse_entry:
-        entries_data = atom_get_entry_data(entries, feed_url, atom_xmlns)
-        feed_data.entries = entries_data
+    xml_base = get_xml_base(root, feed_url)
+    session = AtomSession(atom_xmlns, xml_base)
+    feed_data = parse_feed(root, session)
+    if not feed_data.id:
+        feed_data.id = feed_url
+    if need_entries:
+        entries = root.findall('{' + atom_xmlns + '}entry')
+        entry_list = []
+        for entry in entries:
+            entry_list.append(parse_entry(entry, session))
+        feed_data.entries = entry_list
     return feed_data, None
 
 
