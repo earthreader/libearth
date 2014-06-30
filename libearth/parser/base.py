@@ -6,16 +6,24 @@ Common interfaces used in both Atom parser and RSS2 parser.
 """
 import copy
 
+__all__ = 'ParserBase', 'XML_XMLNS', 'get_element_id', 'get_xml_base'
+
 
 #: (:class:`str`) The XML namespace for the predefined ``xml:`` prefix.
 XML_XMLNS = 'http://www.w3.org/XML/1998/namespace'
 
 
 def get_element_id(name_space, element_name):
+    """Returns combined string of the name_space and element_name.
+    The return value is `'{namespace}element_name'`
+    """
     return '{' + name_space + '}' + element_name
 
 
 def get_xml_base(data, default):
+    """Find the xml:base in the element. if the element does not have xml:base,
+    it returns the default value.
+    """
     if get_element_id(XML_XMLNS, 'base') in data.attrib:
         return data.attrib['{' + XML_XMLNS + '}base']
     else:
@@ -23,6 +31,26 @@ def get_xml_base(data, default):
 
 
 class ParserBase(object):
+    """The ParserBase object purposes to define parsers. Defined parsers
+    take an XML element, and then return a parsed :class:`~libearth.feed.Feed`
+    object.
+    Every parser is defined together with a path(e.g. ``'channel/item'``) of
+    elements to take through :meth:`path()` decorator.
+
+    Every decorated function becomes to a *child* parser of the parser that
+    decorats it.  ::
+
+        rss2_parser = Parser()
+
+        @rss2_parser.path('channel')
+        def channel_parser(element, session):
+            # ...
+
+        @channel_parser.path('item')
+        def item_parser(element, session):
+            # ...
+
+    """
 
     def __init__(self, parser=None):
         if parser:
@@ -30,6 +58,19 @@ class ParserBase(object):
         self.children_parser = {}
 
     def __call__(self, root_element, session):
+        """The parsing starts when a root parser is called.
+        When parsing, the root parser parses an element designated to itself and
+        it passes the children elements to the children parsers.
+
+        :param root_element: An XML element to be parsed.
+        :type root_element: :class:`xml.etree.ElementTree.Element`
+        :param session: The data needed for parsing in the hierarchical order.
+                        For example, an ATOM_XMLNS and a xml:base is needed to
+                        parse an Atom element and its children. A change of the
+                        session only affects in the parser where the change
+                        occurs and its children.
+
+        """
         root, root_session = self.parser(root_element, session)
         for element_name, (parser, attr_name) \
                 in self.children_parser.items():
@@ -49,6 +90,18 @@ class ParserBase(object):
         return root
 
     def path(self, element_name, attr_name=None):
+        """The decorator function to define a parser in the top of
+        parser hierarchy or its children parsers.
+
+        :param element_name: The element id. It consists of an xml namespace and
+                             an element name. The parser should return a
+                             :class: `~libearth.feed.Element` matches it.
+        :type element_name: :class:`str`
+        :param attr_name: The descriptor attribute name of the parent
+                          :class: `~libearth.feed.Element` for the designated
+                          `Element`
+
+        """
 
         def decorator(func):
             if isinstance(func, ParserBase):
