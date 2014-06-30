@@ -21,8 +21,8 @@ def get_element_id(name_space, element_name):
 
 
 def get_xml_base(data, default):
-    """Find the xml:base in the element. if the element does not have xml:base,
-    it returns the default value.
+    """Extract the xml:base in the element.
+    If the element does not have xml:base, it returns the default value.
     """
     if get_element_id(XML_XMLNS, 'base') in data.attrib:
         return data.attrib['{' + XML_XMLNS + '}base']
