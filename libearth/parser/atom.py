@@ -8,7 +8,6 @@ Parsing Atom feed. Atom specification is :rfc:`4287`
    Parsing text construct which ``type`` is ``'xhtml'``.
 
 """
-import copy
 try:
     import urlparse
 except ImportError:
@@ -19,6 +18,7 @@ from ..compat.etree import fromstring
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Source, Text)
 from ..schema import DecodeError
+from .base import ParserBase, SessionBase, get_element_id, get_xml_base
 from .util import normalize_xml_encoding
 
 __all__ = 'ATOM_XMLNS_SET', 'XML_XMLNS', 'parse_atom'
@@ -30,71 +30,11 @@ ATOM_XMLNS_SET = frozenset([
     'http://purl.org/atom/ns#'
 ])
 
-#: (:class:`str`) The XML namespace for the predefined ``xml:`` prefix.
-XML_XMLNS = 'http://www.w3.org/XML/1998/namespace'
+
+AtomSession = SessionBase
 
 
-def get_element_id(name_space, element_name):
-    return '{' + name_space + '}' + element_name
-
-
-def get_xml_base(data, default):
-    if get_element_id(XML_XMLNS, 'base') in data.attrib:
-        return data.attrib['{' + XML_XMLNS + '}base']
-    else:
-        return default
-
-
-class AtomParser(object):
-
-    def __init__(self, parser=None):
-        if parser:
-            self.parser = parser
-        self.children_parser = {}
-
-    def __call__(self, root_element, session):
-        root, root_session = self.parser(root_element, session)
-        for element_name, (parser, attr_name)\
-                in self.children_parser.items():
-            elements = root_element.findall(get_element_id(session.atom_xmlns,
-                                                           element_name))
-            for element in elements:
-                session = copy.copy(root_session)
-                session.xml_base = get_xml_base(element, session.xml_base)
-                child = parser(element, session)
-                if not child:
-                    continue
-                descriptor = getattr(type(root), attr_name)
-                if descriptor.multiple:
-                    getattr(root, attr_name).append(child)
-                else:
-                    setattr(root, attr_name, child)
-        return root
-
-    def path(self, element_name, attr_name=None):
-
-        def decorator(func):
-            if isinstance(func, AtomParser):
-                func = func.parser
-            parser = AtomParser(func)
-            self.children_parser[element_name] = (parser,
-                                                  attr_name or element_name)
-            return parser
-
-        return decorator
-
-
-class AtomSession(object):
-
-    atom_xmlns = None
-    xml_base = None
-
-    def __init__(self, atom_xmlns, xml_base):
-        self.atom_xmlns = atom_xmlns
-        self.xml_base = xml_base
-
-
-atom_parser = AtomParser()
+atom_parser = ParserBase()
 
 
 @atom_parser.path('feed')
@@ -157,11 +97,11 @@ def parse_text_construct(element, session):
 def parse_person_construct(element, session):
     person = Person()
     for child in element:
-        if child.tag == get_element_id(session.atom_xmlns, 'name'):
+        if child.tag == get_element_id(session.element_ns, 'name'):
             person.name = child.text
-        elif child.tag == get_element_id(session.atom_xmlns, 'uri'):
+        elif child.tag == get_element_id(session.element_ns, 'uri'):
             person.uri = urlparse.urljoin(session.xml_base, child.text)
-        elif child.tag == get_element_id(session.atom_xmlns, 'email'):
+        elif child.tag == get_element_id(session.element_ns, 'email'):
             person.email = child.text
     if not person.name:
         if person.email:
