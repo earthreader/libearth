@@ -21,7 +21,7 @@ from ..schema import DecodeError
 from .base import ParserBase, SessionBase, get_element_id, get_xml_base
 from .util import normalize_xml_encoding
 
-__all__ = 'ATOM_XMLNS_SET', 'XML_XMLNS', 'parse_atom'
+__all__ = 'ATOM_XMLNS_SET', 'parse_atom'
 
 
 #: (:class:`frozenset`) The set of XML namespaces for Atom format.
