@@ -17,7 +17,10 @@ def get_element_id(name_space, element_name):
     """Returns combined string of the name_space and element_name.
     The return value is `'{namespace}element_name'`
     """
-    return '{' + name_space + '}' + element_name
+    if name_space:
+        return '{' + name_space + '}' + element_name
+    else:
+        return element_name
 
 
 def get_xml_base(data, default):
