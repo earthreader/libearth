@@ -74,7 +74,7 @@ _datetime_formats = [
 
 
 @parse_channel.path('pubDate', 'updated_at')
-@parse_item.path('pubDate', 'updated_at')
+@parse_item.path('pubDate', 'published_at')
 def parse_datetime(element, session):
     # https://github.com/earthreader/libearth/issues/30
     string = element.text
