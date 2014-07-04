@@ -255,13 +255,17 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
         for item in items:
             entry_list.append(parse_item(item, session))
         feed_data.entries = entry_list
-    check_valid_as_atom(feed_data)
+    check_valid_as_atom(feed_data, session)
     return feed_data, None
 
 
-def check_valid_as_atom(feed_data):
+def check_valid_as_atom(feed_data, session):
     # FIXME: It doesn't only "check" the feed_data but manipulates it
     # if not valid.  I think the function should be renamed.
+    if not feed_data.id:
+        feed_data.id = session.xml_base
+    if all(l.relation != 'self' for l in feed_data.links):
+        feed_data.links.insert(0, Link(relation='self', uri=session.xml_base))
     if feed_data.updated_at is None:
         if feed_data.entries:
             try:
