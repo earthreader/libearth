@@ -281,4 +281,4 @@ def check_valid_as_atom(feed_data, session):
         # FIXME: what should we do when there's even no subtitle?
     for entry in feed_data.entries:
         if entry.updated_at is None:
-            entry.updated_at = feed_data.updated_at
+            entry.updated_at = entry.published_at or feed_data.updated_at
