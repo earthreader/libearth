@@ -519,14 +519,14 @@ def test_rss_parser():
     assert entries[0].links[1].mimetype == feed.entries[0].links[1].mimetype
     assert entries[0].links[1].uri == feed.entries[0].links[1].uri
     assert entries[0].id == feed.entries[0].id
+    print entries[0].published_at
+    print entries[0].updated_at
+    print feed.entries[0].published_at
+    print feed.entries[0].updated_at
     assert (entries[0].published_at ==
             entries[0].updated_at ==
             feed.entries[0].published_at ==
             feed.entries[0].updated_at)
-    assert data_for_crawl == {
-        'lastBuildDate': datetime.datetime(2002, 9, 7, 0, 0, 1, tzinfo=utc),
-        'ttl': '10',
-    }
     source = entries[0].source
     assert source.title.type == feed.entries[0].source.title.type
     assert source.title.value == feed.entries[0].source.title.value
