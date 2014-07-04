@@ -519,10 +519,6 @@ def test_rss_parser():
     assert entries[0].links[1].mimetype == feed.entries[0].links[1].mimetype
     assert entries[0].links[1].uri == feed.entries[0].links[1].uri
     assert entries[0].id == feed.entries[0].id
-    print entries[0].published_at
-    print entries[0].updated_at
-    print feed.entries[0].published_at
-    print feed.entries[0].updated_at
     assert (entries[0].published_at ==
             entries[0].updated_at ==
             feed.entries[0].published_at ==
