@@ -140,6 +140,7 @@ def parse_text(element, session):
     return Text(value=element.text or ''), session
 
 
+@parse_channel.path('description', 'subtitle')
 @parse_item.path('description', 'content')
 def parse_description(element, session):
     return Text(type='text', value=element.text), session
