@@ -134,7 +134,7 @@ def parse_category(element, session):
 
 
 @parse_channel.path('title')
-@parse_channel.path('copryright', 'rights')
+@parse_channel.path('copyright', 'rights')
 @parse_item.path('title')
 def parse_text(element, session):
     return Text(value=element.text or ''), session
