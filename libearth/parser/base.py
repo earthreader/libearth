@@ -4,6 +4,7 @@
 Common interfaces used in both Atom parser and RSS2 parser.
 
 """
+import collections
 import copy
 
 __all__ = 'ParserBase', 'XML_XMLNS', 'get_element_id', 'get_xml_base'
@@ -110,8 +111,13 @@ class ParserBase(object):
             if isinstance(func, ParserBase):
                 func = func.parser
             parser = ParserBase(func)
-            self.children_parser[element_name] = (parser,
-                                                  attr_name or element_name)
+            if isinstance(element_name, list):
+                for child in element_name:
+                    self.children_parser[child] = (parser,
+                                                   attr_name or child)
+            else:
+                self.children_parser[element_name] = (parser,
+                                                      attr_name or element_name)
             return parser
 
         return decorator
