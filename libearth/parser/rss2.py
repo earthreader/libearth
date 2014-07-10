@@ -8,8 +8,6 @@ Parsing RSS 2.0 feed.
    Set priority among the elements if only one of them will be selected in
    the parsed data.
 
-   Check alternate link for Atom feed.
-
    Fill required elements with another data if the element is empty
 
 """
@@ -30,7 +28,7 @@ from ..feed import (Category, Content, Entry, Feed, Generator, Link,
 from ..schema import DecodeError
 from ..tz import FixedOffset, guess_tzinfo_by_locale, now, utc
 from .atom import ATOM_XMLNS_SET
-from .base import ParserBase, SessionBase
+from .base import ParserBase, SessionBase, get_element_id
 from .util import normalize_xml_encoding
 
 
@@ -146,7 +144,15 @@ def parse_description(element, session):
     return Text(type='text', value=element.text), session
 
 
-#TODO: parse alternate Atom feed link with Atom link element id
+@parse_channel.path([get_element_id(ns, 'link') for ns in ATOM_XMLNS_SET],
+                    'links')
+def parse_atom_link(element, session):
+    link = Link(uri=element.get('href'),
+                relation=element.get('rel', 'alternate'),
+                mimetype=element.get('type'))
+    return link, session
+
+
 @parse_channel.path('link', 'links')
 @parse_item.path('link', 'links')
 def parse_link(element, session):
