@@ -275,6 +275,11 @@ def check_valid_as_atom(feed_data, session):
         feed_data.id = session.xml_base
     if all(l.relation != 'self' for l in feed_data.links):
         feed_data.links.insert(0, Link(relation='self', uri=session.xml_base))
+    for entry in feed_data.entries:
+        if entry.updated_at is None:
+            entry.updated_at = entry.published_at
+        if entry.id is None:
+            entry.id = entry.links[0].uri if entry.links else ''
     if feed_data.updated_at is None:
         if feed_data.entries:
             try:
@@ -283,13 +288,11 @@ def check_valid_as_atom(feed_data, session):
                                            if entry.updated_at)
             except ValueError:
                 feed_data.updated_at = now()
+                for entry in feed_data.entries:
+                    if entry.updated_at is None:
+                        entry.updated_at = feed_data.updated_at
         else:
             feed_data.updated_at = now()
     if feed_data.title is None:
         feed_data.title = feed_data.subtitle
         # FIXME: what should we do when there's even no subtitle?
-    for entry in feed_data.entries:
-        if entry.updated_at is None:
-            entry.updated_at = entry.published_at or feed_data.updated_at
-        if entry.id is None:
-            entry.id = entry.links[0].uri if entry.links else ''
