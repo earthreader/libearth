@@ -150,6 +150,8 @@ def parse_description(element, session):
 @parse_channel.path('link', 'links')
 @parse_item.path('link', 'links')
 def parse_link(element, session):
+    if not element.text:
+        return None, session
     link = Link(uri=element.text,
                 relation='alternate',
                 mimetype='text/html')
