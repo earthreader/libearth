@@ -206,7 +206,7 @@ def parse_guid(element, session):
         return element.text, session
     elif GUID_PATTERN.match(element.text):
         return 'urn:uuid:' + element.text, session
-
+    return None, session
 
 
 def guess_default_tzinfo(root, url):
@@ -283,3 +283,5 @@ def check_valid_as_atom(feed_data, session):
     for entry in feed_data.entries:
         if entry.updated_at is None:
             entry.updated_at = entry.published_at or feed_data.updated_at
+        if entry.id is None:
+            entry.id = entry.links[0].uri if entry.links else ''
