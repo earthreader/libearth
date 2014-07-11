@@ -76,10 +76,9 @@ class ParserBase(object):
 
         """
         root, root_session = self.parser(root_element, session)
-        for element_name, (parser, attr_name) \
+        for element_id, (parser, attr_name) \
                 in self.children_parser.items():
-            elements = root_element.findall(
-                get_element_id(session.element_ns, element_name))
+            elements = root_element.findall(element_id)
             for element in elements:
                 session = copy.copy(root_session)
                 session.xml_base = get_xml_base(element, session.xml_base)
@@ -93,7 +92,7 @@ class ParserBase(object):
                     setattr(root, attr_name, child)
         return root
 
-    def path(self, element_name, attr_name=None):
+    def path(self, element_name, namespace_set=None, attr_name=None):
         """The decorator function to define a parser in the top of
         parser hierarchy or its children parsers.
 
@@ -111,10 +110,11 @@ class ParserBase(object):
             if isinstance(func, ParserBase):
                 func = func.parser
             parser = ParserBase(func)
-            if isinstance(element_name, list):
-                for child in element_name:
-                    self.children_parser[child] = (parser,
-                                                   attr_name or child)
+            if isinstance(namespace_set, collections.Iterable):
+                for namespace in namespace_set:
+                    self.children_parser[get_element_id(namespace,
+                                                        element_name)] = \
+                        parser, attr_name or element_name
             else:
                 self.children_parser[element_name] = (parser,
                                                       attr_name or element_name)

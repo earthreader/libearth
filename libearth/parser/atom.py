@@ -37,41 +37,41 @@ AtomSession = SessionBase
 atom_parser = ParserBase()
 
 
-@atom_parser.path('feed')
+@atom_parser.path('feed', ATOM_XMLNS_SET)
 def parse_feed(element, session):
     return Feed(), session
 
 
-@atom_parser.path('entry')
+@atom_parser.path('entry', ATOM_XMLNS_SET)
 def parse_entry(element, session):
     return Entry(), session
 
 
-@parse_entry.path('source')
+@parse_entry.path('source', ATOM_XMLNS_SET)
 def parse_source(element, session):
     return Source(), session
 
 
-@parse_feed.path('id')
-@parse_feed.path('icon')
-@parse_feed.path('logo')
-@parse_entry.path('id')
-@parse_source.path('id')
-@parse_source.path('icon')
-@parse_source.path('logo')
+@parse_feed.path('id', ATOM_XMLNS_SET)
+@parse_feed.path('icon', ATOM_XMLNS_SET)
+@parse_feed.path('logo', ATOM_XMLNS_SET)
+@parse_entry.path('id', ATOM_XMLNS_SET)
+@parse_source.path('id', ATOM_XMLNS_SET)
+@parse_source.path('icon', ATOM_XMLNS_SET)
+@parse_source.path('logo', ATOM_XMLNS_SET)
 def parse_icon(element, session):
     return urlparse.urljoin(session.xml_base, element.text), session
 
 
-@parse_feed.path('title')
-@parse_feed.path('rights')
-@parse_feed.path('subtitle')
-@parse_entry.path('title')
-@parse_entry.path('rights')
-@parse_entry.path('summary')
-@parse_source.path('title')
-@parse_source.path('rights')
-@parse_source.path('subtitle')
+@parse_feed.path('title', ATOM_XMLNS_SET)
+@parse_feed.path('rights', ATOM_XMLNS_SET)
+@parse_feed.path('subtitle', ATOM_XMLNS_SET)
+@parse_entry.path('title', ATOM_XMLNS_SET)
+@parse_entry.path('rights', ATOM_XMLNS_SET)
+@parse_entry.path('summary', ATOM_XMLNS_SET)
+@parse_source.path('title', ATOM_XMLNS_SET)
+@parse_source.path('rights', ATOM_XMLNS_SET)
+@parse_source.path('subtitle', ATOM_XMLNS_SET)
 def parse_text_construct(element, session):
     text = Text()
     text_type = element.get('type')
@@ -88,12 +88,12 @@ def parse_text_construct(element, session):
     return text, session
 
 
-@parse_feed.path('author', 'authors')
-@parse_feed.path('contributor', 'contributors')
-@parse_entry.path('author', 'authors')
-@parse_entry.path('contributor', 'contributors')
-@parse_source.path('author', 'authors')
-@parse_source.path('contributor', 'contributors')
+@parse_feed.path('author', ATOM_XMLNS_SET, 'authors')
+@parse_feed.path('contributor', ATOM_XMLNS_SET, 'contributors')
+@parse_entry.path('author', ATOM_XMLNS_SET, 'authors')
+@parse_entry.path('contributor', ATOM_XMLNS_SET, 'contributors')
+@parse_source.path('author', ATOM_XMLNS_SET, 'authors')
+@parse_source.path('contributor', ATOM_XMLNS_SET, 'contributors')
 def parse_person_construct(element, session):
     person = Person()
     for child in element:
@@ -113,9 +113,9 @@ def parse_person_construct(element, session):
     return person, session
 
 
-@parse_feed.path('link', 'links')
-@parse_entry.path('link', 'links')
-@parse_source.path('link', 'links')
+@parse_feed.path('link', ATOM_XMLNS_SET, 'links')
+@parse_entry.path('link', ATOM_XMLNS_SET, 'links')
+@parse_source.path('link', ATOM_XMLNS_SET, 'links')
 def parse_link(element, session):
     link = Link(
         uri=urlparse.urljoin(session.xml_base, element.get('href')),
@@ -130,12 +130,12 @@ def parse_link(element, session):
     return link, session
 
 
-@parse_feed.path('updated', 'updated_at')
-@parse_feed.path('modified', 'updated_at')
-@parse_entry.path('updated', 'updated_at')
-@parse_entry.path('published', 'published_at')
-@parse_entry.path('modified', 'updated_at')
-@parse_source.path('updated', 'updated_at')
+@parse_feed.path('updated', ATOM_XMLNS_SET, 'updated_at')
+@parse_feed.path('modified', ATOM_XMLNS_SET, 'updated_at')
+@parse_entry.path('updated', ATOM_XMLNS_SET, 'updated_at')
+@parse_entry.path('published', ATOM_XMLNS_SET, 'published_at')
+@parse_entry.path('modified', ATOM_XMLNS_SET, 'updated_at')
+@parse_source.path('updated', ATOM_XMLNS_SET, 'updated_at')
 def parse_datetime(element, session):
     try:
         return Rfc3339().decode(element.text), session
@@ -143,9 +143,9 @@ def parse_datetime(element, session):
         return Rfc822().decode(element.text), session
 
 
-@parse_feed.path('category', 'categories')
-@parse_entry.path('category', 'categories')
-@parse_source.path('category', 'categories')
+@parse_feed.path('category', ATOM_XMLNS_SET, 'categories')
+@parse_entry.path('category', ATOM_XMLNS_SET, 'categories')
+@parse_source.path('category', ATOM_XMLNS_SET, 'categories')
 def parse_category(element, session):
     if not element.get('term'):
         return
@@ -156,8 +156,8 @@ def parse_category(element, session):
     return category, session
 
 
-@parse_feed.path('generator')
-@parse_source.path('generator')
+@parse_feed.path('generator', ATOM_XMLNS_SET)
+@parse_source.path('generator', ATOM_XMLNS_SET)
 def parse_generator(element, session):
     generator = Generator()
     generator.value = element.text
@@ -168,7 +168,7 @@ def parse_generator(element, session):
     return generator, session
 
 
-@parse_entry.path('content')
+@parse_entry.path('content', ATOM_XMLNS_SET)
 def parse_content(element, session):
     content = Content()
     content.value = element.text

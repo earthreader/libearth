@@ -71,8 +71,8 @@ _datetime_formats = [
 ]
 
 
-@parse_channel.path('pubDate', 'updated_at')
-@parse_item.path('pubDate', 'published_at')
+@parse_channel.path('pubDate', attr_name='updated_at')
+@parse_item.path('pubDate', attr_name='published_at')
 def parse_datetime(element, session):
     # https://github.com/earthreader/libearth/issues/30
     string = element.text
@@ -104,9 +104,9 @@ def parse_datetime(element, session):
     raise ValueError('failed to parse datetime: ' + repr(string))
 
 
-@parse_channel.path('managingEditor', 'contributors')
-@parse_channel.path('webMaster', 'contributors')
-@parse_item.path('author', 'authors')
+@parse_channel.path('managingEditor', attr_name='contributors')
+@parse_channel.path('webMaster', attr_name='contributors')
+@parse_item.path('author', attr_name='authors')
 def parse_person(element, session):
     string = element.text
     name, email_addr = email.utils.parseaddr(string)
@@ -122,8 +122,8 @@ def parse_person(element, session):
     return person, session
 
 
-@parse_channel.path('category', 'categories')
-@parse_item.path('category', 'categories')
+@parse_channel.path('category', attr_name='categories')
+@parse_item.path('category', attr_name='categories')
 def parse_category(element, session):
     return Category(
         term=element.text,
@@ -132,20 +132,19 @@ def parse_category(element, session):
 
 
 @parse_channel.path('title')
-@parse_channel.path('copyright', 'rights')
+@parse_channel.path('copyright', attr_name='rights')
 @parse_item.path('title')
 def parse_text(element, session):
     return Text(value=element.text or ''), session
 
 
-@parse_channel.path('description', 'subtitle')
-@parse_item.path('description', 'content')
+@parse_channel.path('description', attr_name='subtitle')
+@parse_item.path('description', attr_name='content')
 def parse_description(element, session):
     return Text(type='text', value=element.text), session
 
 
-@parse_channel.path([get_element_id(ns, 'link') for ns in ATOM_XMLNS_SET],
-                    'links')
+@parse_channel.path('link', ATOM_XMLNS_SET, attr_name='links')
 def parse_atom_link(element, session):
     link = Link(uri=element.get('href'),
                 relation=element.get('rel', 'alternate'),
@@ -153,8 +152,8 @@ def parse_atom_link(element, session):
     return link, session
 
 
-@parse_channel.path('link', 'links')
-@parse_item.path('link', 'links')
+@parse_channel.path('link', attr_name='links')
+@parse_item.path('link', attr_name='links')
 def parse_link(element, session):
     if not element.text:
         return None, session
@@ -175,7 +174,7 @@ def parse_generator(element, session):
     return generator or Generator(value=element.text), session
 
 
-@parse_item.path('enclosure', 'links')
+@parse_item.path('enclosure', attr_name='links')
 def parse_enclosure(element, session):
     return Link(
         relation='enclosure',
@@ -196,18 +195,18 @@ def parse_source(element, session):
     return source, session
 
 
-@parse_item.path('comments', 'links')
+@parse_item.path('comments', attr_name='links')
 def parse_comments(element, session):
     return Link(uri=element.text, relation='discussion'), session
 
 
-@parse_item.path('description', 'content')
+@parse_item.path('description', attr_name='content')
 @parse_item.path(CONTENT_XMLNS + 'encoded', 'content')
 def parse_content(element, session):
     return Content(type='html', value=element.text), session
 
 
-@parse_item.path('guid', 'id')
+@parse_item.path('guid', attr_name='id')
 def parse_guid(element, session):
     isPermalink = element.get('isPermalink')
     if element.text.startswith('http://') and isPermalink != 'False':
