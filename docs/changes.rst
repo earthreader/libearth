@@ -102,7 +102,7 @@ __ http://bugs.python.org/issue13612
 Version 0.2.1
 -------------
 
-To be released.
+Released on July 12, 2014.
 
 - Fixed :mod:`~libearth.parser.rss2` parsing error when any empty element
   occurs.
@@ -113,7 +113,7 @@ To be released.
 Version 0.2.0
 -------------
 
-Released April 22, 2014.
+Released on April 22, 2014.
 
 - Session files in :file:`.sessions/` directory become to be touched
   only once at a transaction.  [:issue:`43`]
