@@ -4,7 +4,7 @@ Libearth Changelog
 Version 0.3.0
 -------------
 
-To be released.
+Released on July 12, 2014.
 
 - Root :class:`~libearth.session.MergeableDocumentElement`\ s'
   :meth:`~libearth.session.MergeableDocumentElement.__merge_entities__()`
