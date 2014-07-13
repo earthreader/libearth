@@ -31,7 +31,10 @@ ATOM_XMLNS_SET = frozenset([
 ])
 
 
-AtomSession = SessionBase
+class AtomSession(SessionBase):
+    def __init__(self, xml_base, element_ns):
+        self.xml_base = xml_base
+        self.element_ns = element_ns
 
 
 atom_parser = ParserBase()
@@ -60,6 +63,7 @@ def parse_source(element, session):
 @parse_source.path('icon', ATOM_XMLNS_SET)
 @parse_source.path('logo', ATOM_XMLNS_SET)
 def parse_icon(element, session):
+    session.xml_base = get_xml_base(element, session.xml_base)
     return urlparse.urljoin(session.xml_base, element.text), session
 
 
@@ -95,6 +99,7 @@ def parse_text_construct(element, session):
 @parse_source.path('author', ATOM_XMLNS_SET, 'authors')
 @parse_source.path('contributor', ATOM_XMLNS_SET, 'contributors')
 def parse_person_construct(element, session):
+    session.xml_base = get_xml_base(element, session.xml_base)
     person = Person()
     for child in element:
         if child.tag == get_element_id(session.element_ns, 'name'):
@@ -117,6 +122,7 @@ def parse_person_construct(element, session):
 @parse_entry.path('link', ATOM_XMLNS_SET, 'links')
 @parse_source.path('link', ATOM_XMLNS_SET, 'links')
 def parse_link(element, session):
+    session.xml_base = get_xml_base(element, session.xml_base)
     link = Link(
         uri=urlparse.urljoin(session.xml_base, element.get('href')),
         mimetype=element.get('type'),
@@ -159,6 +165,7 @@ def parse_category(element, session):
 @parse_feed.path('generator', ATOM_XMLNS_SET)
 @parse_source.path('generator', ATOM_XMLNS_SET)
 def parse_generator(element, session):
+    session.xml_base = get_xml_base(element, session.xml_base)
     generator = Generator()
     generator.value = element.text
     if 'uri' in element.attrib:
@@ -170,6 +177,7 @@ def parse_generator(element, session):
 
 @parse_entry.path('content', ATOM_XMLNS_SET)
 def parse_content(element, session):
+    session.xml_base = get_xml_base(element, session.xml_base)
     content = Content()
     content.value = element.text
     content_type = element.get('type')
@@ -204,7 +212,7 @@ def parse_atom(xml, feed_url, need_entries=True):
         if root.tag.startswith('{' + atom_xmlns + '}'):
             break
     xml_base = get_xml_base(root, feed_url)
-    session = AtomSession(atom_xmlns, xml_base)
+    session = AtomSession(xml_base, atom_xmlns)
     feed_data = parse_feed(root, session)
     if not feed_data.id:
         feed_data.id = feed_url

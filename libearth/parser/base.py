@@ -73,6 +73,7 @@ class ParserBase(object):
                         parse an Atom element and its children. A change of the
                         session only affects in the parser where the change
                         occurs and its children.
+        :type root_element: :class:`~libearth.parser.base.SessionBase`
 
         """
         root, root_session = self.parser(root_element, session)
@@ -83,7 +84,6 @@ class ParserBase(object):
                 # TODO: Logging unexpected element
                 continue
             session = copy.copy(root_session)
-            session.xml_base = get_xml_base(element, session.xml_base)
             child = parser(element, session)
             if not child:
                 continue
@@ -126,10 +126,4 @@ class ParserBase(object):
 
 
 class SessionBase(object):
-
-    element_ns = None
-    xml_base = None
-
-    def __init__(self, element_ns, xml_base):
-        self.element_ns = element_ns
-        self.xml_base = xml_base
+    pass

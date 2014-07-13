@@ -41,8 +41,8 @@ CONTENT_XMLNS = 'http://purl.org/rss/1.0/modules/content/'
 class RSS2Session(SessionBase):
     default_tz_info = None
 
-    def __init__(self, element_ns, xml_base, default_tz_info):
-        super(RSS2Session, self).__init__(element_ns, xml_base)
+    def __init__(self, feed_url, default_tz_info):
+        self.feed_url = feed_url
         self.default_tz_info = default_tz_info
 
 
@@ -259,7 +259,7 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
     root = fromstring(normalize_xml_encoding(xml))
     channel = root.find('channel')
     default_tzinfo = guess_default_tzinfo(root, feed_url)
-    session = RSS2Session('', feed_url, default_tzinfo)
+    session = RSS2Session(feed_url, default_tzinfo)
     feed_data = parse_channel(channel, session)
     if parse_entry:
         items = channel.findall('item')
@@ -275,9 +275,9 @@ def check_valid_as_atom(feed_data, session):
     # FIXME: It doesn't only "check" the feed_data but manipulates it
     # if not valid.  I think the function should be renamed.
     if not feed_data.id:
-        feed_data.id = session.xml_base
+        feed_data.id = session.feed_url
     if all(l.relation != 'self' for l in feed_data.links):
-        feed_data.links.insert(0, Link(relation='self', uri=session.xml_base))
+        feed_data.links.insert(0, Link(relation='self', uri=session.feed_url))
     for entry in feed_data.entries:
         if entry.updated_at is None:
             entry.updated_at = entry.published_at
