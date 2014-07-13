@@ -36,8 +36,8 @@ def get_xml_base(data, default):
 
 class ParserBase(object):
     """The ParserBase object purposes to define parsers. Defined parsers
-    take an XML element, and then return a parsed :class:`~libearth.feed.Feed`
-    object.
+    take an XML element, and then return a parsed
+    :class:`~libearth.feed.Element` object.
     Every parser is defined together with a path(e.g. ``'channel/item'``) of
     elements to take through :meth:`path()` decorator.
 
