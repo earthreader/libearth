@@ -35,7 +35,7 @@ from .util import normalize_xml_encoding
 GUID_PATTERN = re.compile('^(\{{0,1}([0-9a-fA-F]){8}-([0-9a-fA-F]){4}-([0-9'
                           'a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){12}\}'
                           '{0,1})$')
-CONTENT_XMLNS = '{http://purl.org/rss/1.0/modules/content/}'
+CONTENT_XMLNS = 'http://purl.org/rss/1.0/modules/content/'
 
 
 class RSS2Session(SessionBase):
@@ -139,9 +139,13 @@ def parse_text(element, session):
 
 
 @parse_channel.path('description', attr_name='subtitle')
-@parse_item.path('description', attr_name='content')
-def parse_description(element, session):
+def parse_subtitle(element, session):
     return Text(type='text', value=element.text), session
+
+
+@parse_item.path(CONTENT_XMLNS + 'encoded', 'content')
+def parse_content(element, session):
+    return Content(type='html', value=element.text), session
 
 
 @parse_channel.path('link', ATOM_XMLNS_SET, attr_name='links')
@@ -201,7 +205,7 @@ def parse_comments(element, session):
 
 
 @parse_item.path('description', attr_name='content')
-@parse_item.path(CONTENT_XMLNS + 'encoded', 'content')
+@parse_item.path('encoded', [CONTENT_XMLNS], 'content')
 def parse_content(element, session):
     return Content(type='html', value=element.text), session
 
