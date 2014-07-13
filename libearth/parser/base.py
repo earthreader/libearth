@@ -76,20 +76,22 @@ class ParserBase(object):
 
         """
         root, root_session = self.parser(root_element, session)
-        for element_id, (parser, attr_name) \
-                in self.children_parser.items():
-            elements = root_element.findall(element_id)
-            for element in elements:
-                session = copy.copy(root_session)
-                session.xml_base = get_xml_base(element, session.xml_base)
-                child = parser(element, session)
-                if not child:
-                    continue
-                descriptor = getattr(type(root), attr_name)
-                if descriptor.multiple:
-                    getattr(root, attr_name).append(child)
-                else:
-                    setattr(root, attr_name, child)
+        for element in root_element:
+            try:
+                parser, attr_name = self.children_parser[element.tag]
+            except Exception:
+                # TODO: Logging unexpected element
+                continue
+            session = copy.copy(root_session)
+            session.xml_base = get_xml_base(element, session.xml_base)
+            child = parser(element, session)
+            if not child:
+                continue
+            descriptor = getattr(type(root), attr_name)
+            if descriptor.multiple:
+                getattr(root, attr_name).append(child)
+            else:
+                setattr(root, attr_name, child)
         return root
 
     def path(self, element_name, namespace_set=None, attr_name=None):
