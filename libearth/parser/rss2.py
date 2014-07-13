@@ -3,13 +3,6 @@
 
 Parsing RSS 2.0 feed.
 
-.. todo::
-
-   Set priority among the elements if only one of them will be selected in
-   the parsed data.
-
-   Fill required elements with another data if the element is empty
-
 """
 import datetime
 import email.utils
