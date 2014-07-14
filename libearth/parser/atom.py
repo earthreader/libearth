@@ -46,7 +46,7 @@ def parse_atom(xml, feed_url, parse_entry=True):
     :param parse_entry: whether to parse inner items as well.
                         it's useful to ignore items when retrieve
                         ``<source>`` in rss 2.0.  :const:`True` by default.
-    :type parse_item: :class:`bool`
+    :type parse_entry: :class:`bool`
     :returns: a pair of (:class:`~libearth.feed.Feed`, crawler hint)
     :rtype: :class:`tuple`
 
