@@ -6,6 +6,9 @@ Version 0.3.1
 
 To be released.
 
+- Fixed a bug that subcategory changes hadn't been detected when
+  :class:`~libearth.subscribe.SubscriptionList`\ s are merged.
+
 
 Version 0.3.0
 -------------

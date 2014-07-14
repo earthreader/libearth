@@ -483,3 +483,23 @@ def test_remove_category(fx_stages, fx_subscription):
         assert added in b.subscriptions
         assert c not in b.subscriptions
         assert fx_subscription not in b.subscriptions.recursive_subscriptions
+
+
+def test_detect_subcategory_changes(fx_stages):
+    stage, _ = fx_stages
+    subs = SubscriptionList()
+    category = Category(label='first-order')
+    subcategory = Category(label='second-order')
+    category.add(subcategory)
+    subs.add(category)
+    assert not subs.categories['first-order'].categories['second-order']
+    with stage:
+        stage.subscriptions = subs
+        assert not (stage.subscriptions.categories['first-order']
+                                       .categories['second-order'])
+    subcategory.add(Category(label='added'))
+    assert subs.categories['first-order'].categories['second-order']
+    with stage:
+        stage.subscriptions = subs
+        assert (stage.subscriptions.categories['first-order']
+                                   .categories['second-order'])
