@@ -21,7 +21,7 @@ from ..schema import DecodeError
 from .base import ParserBase, SessionBase, get_element_id, get_xml_base
 from .util import normalize_xml_encoding
 
-__all__ = 'ATOM_XMLNS_SET', 'parse_atom'
+__all__ = 'ATOM_XMLNS_SET', 'AtomSession', 'parse_atom'
 
 
 #: (:class:`frozenset`) The set of XML namespaces for Atom format.
@@ -32,6 +32,15 @@ ATOM_XMLNS_SET = frozenset([
 
 
 class AtomSession(SessionBase):
+    """The session class used for parsing the Atom feed."""
+
+    #: (:class:`str`) The xml:base to retrieve the full uri if an relative uri
+    #: is given in the element.
+    xml_base = None
+
+    #: (:class:`str`) The feed namespace to get the element attribute id.
+    element_ns = None
+
     def __init__(self, xml_base, element_ns):
         self.xml_base = xml_base
         self.element_ns = element_ns

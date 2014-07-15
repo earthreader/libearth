@@ -7,7 +7,8 @@ Common interfaces used in both Atom parser and RSS2 parser.
 import collections
 import copy
 
-__all__ = 'ParserBase', 'XML_XMLNS', 'get_element_id', 'get_xml_base'
+__all__ = ('ParserBase', 'SessionBase', 'XML_XMLNS', 'get_element_id',
+           'get_xml_base')
 
 
 #: (:class:`str`) The XML namespace for the predefined ``xml:`` prefix.
@@ -68,11 +69,7 @@ class ParserBase(object):
 
         :param root_element: An XML element to be parsed.
         :type root_element: :class:`xml.etree.ElementTree.Element`
-        :param session: The data needed for parsing in the hierarchical order.
-                        For example, an ATOM_XMLNS and a xml:base is needed to
-                        parse an Atom element and its children. A change of the
-                        session only affects in the parser where the change
-                        occurs and its children.
+        :param session: The additional data which help parsing the element.
         :type root_element: :class:`~libearth.parser.base.SessionBase`
 
         """
@@ -126,4 +123,12 @@ class ParserBase(object):
 
 
 class SessionBase(object):
+    """The additional data which are needed for parsing the elements.
+    For example, an xml:base is needed to retrieve the full uri when an
+    relative uri is given in the Atom element.
+    A session object is passed from root parser to its children parsers, and
+    A change of the session only affects in the parser
+    where the change occurs and its children parsers.
+
+    """
     pass

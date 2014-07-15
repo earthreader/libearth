@@ -32,6 +32,14 @@ CONTENT_XMLNS = 'http://purl.org/rss/1.0/modules/content/'
 
 
 class RSS2Session(SessionBase):
+    """The session class used for parsing the RSS2.0 feed."""
+
+    #: (:class:`str`) The url of the feed to make :class: `~libearth.feed.Link`
+    #: object of which relation is self in the feed.
+    feed_url = None
+
+    #: (:class:`str`) The default time zone name to set the tzinfo of parsed
+    #: :class: `datetime.datetime` object.
     default_tz_info = None
 
     def __init__(self, feed_url, default_tz_info):
