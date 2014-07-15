@@ -153,8 +153,6 @@ def parse_datetime(element, session):
 @parse_entry.path('category', ATOM_XMLNS_SET, 'categories')
 @parse_source.path('category', ATOM_XMLNS_SET, 'categories')
 def parse_category(element, session):
-    if not element.get('term'):
-        return
     category = Category()
     category.term = element.get('term')
     category.scheme_uri = element.get('scheme')
