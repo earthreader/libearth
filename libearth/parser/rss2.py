@@ -21,7 +21,7 @@ from ..feed import (Category, Content, Entry, Feed, Generator, Link,
 from ..schema import DecodeError
 from ..tz import FixedOffset, guess_tzinfo_by_locale, now, utc
 from .atom import ATOM_XMLNS_SET
-from .base import ParserBase, SessionBase, get_element_id
+from .base import ParserBase, SessionBase
 from .util import normalize_xml_encoding
 
 

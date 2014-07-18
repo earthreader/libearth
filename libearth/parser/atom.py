@@ -18,10 +18,11 @@ from ..compat.etree import fromstring
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Source, Text)
 from ..schema import DecodeError
-from .base import ParserBase, SessionBase, get_element_id, get_xml_base
+from .base import ParserBase, SessionBase
 from .util import normalize_xml_encoding
 
-__all__ = 'ATOM_XMLNS_SET', 'AtomSession', 'parse_atom'
+__all__ = ('ATOM_XMLNS_SET', 'AtomSession', 'XML_XMLNS',
+           'get_element_id', 'get_xml_base', 'parse_atom')
 
 
 #: (:class:`frozenset`) The set of XML namespaces for Atom format.
@@ -29,6 +30,32 @@ ATOM_XMLNS_SET = frozenset([
     'http://www.w3.org/2005/Atom',
     'http://purl.org/atom/ns#'
 ])
+
+
+#: (:class:`str`) The XML namespace for the predefined ``xml:`` prefix.
+XML_XMLNS = 'http://www.w3.org/XML/1998/namespace'
+
+
+def get_element_id(name_space, element_name):
+    """Returns combined string of the name_space and element_name.
+    The return value is `'{namespace}element_name'`
+
+    """
+    if name_space:
+        return '{' + name_space + '}' + element_name
+    else:
+        return element_name
+
+
+def get_xml_base(data, default):
+    """Extract the xml:base in the element.
+    If the element does not have xml:base, it returns the default value.
+
+    """
+    if get_element_id(XML_XMLNS, 'base') in data.attrib:
+        return data.attrib['{' + XML_XMLNS + '}base']
+    else:
+        return default
 
 
 class AtomSession(SessionBase):

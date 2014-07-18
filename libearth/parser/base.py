@@ -7,32 +7,7 @@ Common interfaces used in both Atom parser and RSS2 parser.
 import collections
 import copy
 
-__all__ = ('ParserBase', 'SessionBase', 'XML_XMLNS', 'get_element_id',
-           'get_xml_base')
-
-
-#: (:class:`str`) The XML namespace for the predefined ``xml:`` prefix.
-XML_XMLNS = 'http://www.w3.org/XML/1998/namespace'
-
-
-def get_element_id(name_space, element_name):
-    """Returns combined string of the name_space and element_name.
-    The return value is `'{namespace}element_name'`
-    """
-    if name_space:
-        return '{' + name_space + '}' + element_name
-    else:
-        return element_name
-
-
-def get_xml_base(data, default):
-    """Extract the xml:base in the element.
-    If the element does not have xml:base, it returns the default value.
-    """
-    if get_element_id(XML_XMLNS, 'base') in data.attrib:
-        return data.attrib['{' + XML_XMLNS + '}base']
-    else:
-        return default
+__all__ = 'ParserBase', 'SessionBase'
 
 
 class ParserBase(object):
