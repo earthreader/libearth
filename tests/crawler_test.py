@@ -271,11 +271,6 @@ def test_crawler(fx_opener):
             source = feed_data.entries[0].source
             assert source.title.value == 'Source Test'
             assert result.icon_url == 'http://rsstest.com/images/favicon.ico'
-            assert result.hints == {
-                'ttl': '10',
-                'lastBuildDate': datetime.datetime(2002, 9, 7, 0, 0, 1,
-                                                   tzinfo=utc)
-            }
         elif feed_data.title.value == 'Favicon Test':
             assert result.icon_url == 'http://favicontest.com/favicon.ico'
         elif feed_data.title.value == 'No Favicon Test':

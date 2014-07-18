@@ -6,5 +6,6 @@
 
       parser/atom
       parser/autodiscovery
+      parser/base
       parser/rss2
       parser/util

@@ -18,9 +18,11 @@ from ..compat.etree import fromstring
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Source, Text)
 from ..schema import DecodeError
+from .base import ParserBase, SessionBase, get_element_id
 from .util import normalize_xml_encoding
 
-__all__ = 'ATOM_XMLNS_SET', 'XML_XMLNS', 'parse_atom'
+__all__ = ('ATOM_XMLNS_SET', 'AtomSession', 'XML_XMLNS',
+           'get_xml_base', 'parse_atom')
 
 
 #: (:class:`frozenset`) The set of XML namespaces for Atom format.
@@ -29,11 +31,188 @@ ATOM_XMLNS_SET = frozenset([
     'http://purl.org/atom/ns#'
 ])
 
+
 #: (:class:`str`) The XML namespace for the predefined ``xml:`` prefix.
 XML_XMLNS = 'http://www.w3.org/XML/1998/namespace'
 
 
-def parse_atom(xml, feed_url, parse_entry=True):
+def get_xml_base(data, default):
+    """Extract the xml:base in the element.
+    If the element does not have xml:base, it returns the default value.
+
+    """
+    if get_element_id(XML_XMLNS, 'base') in data.attrib:
+        return data.attrib['{' + XML_XMLNS + '}base']
+    else:
+        return default
+
+
+class AtomSession(SessionBase):
+    """The session class used for parsing the Atom feed."""
+
+    #: (:class:`str`) The xml:base to retrieve the full uri if an relative uri
+    #: is given in the element.
+    xml_base = None
+
+    #: (:class:`str`) The feed namespace to get the element attribute id.
+    element_ns = None
+
+    def __init__(self, xml_base, element_ns):
+        self.xml_base = xml_base
+        self.element_ns = element_ns
+
+
+atom_parser = ParserBase()
+
+
+@atom_parser.path('feed', ATOM_XMLNS_SET)
+def parse_feed(element, session):
+    return Feed(), session
+
+
+@atom_parser.path('entry', ATOM_XMLNS_SET)
+def parse_entry(element, session):
+    return Entry(), session
+
+
+@parse_entry.path('source', ATOM_XMLNS_SET)
+def parse_source(element, session):
+    return Source(), session
+
+
+@parse_feed.path('id', ATOM_XMLNS_SET)
+@parse_feed.path('icon', ATOM_XMLNS_SET)
+@parse_feed.path('logo', ATOM_XMLNS_SET)
+@parse_entry.path('id', ATOM_XMLNS_SET)
+@parse_source.path('id', ATOM_XMLNS_SET)
+@parse_source.path('icon', ATOM_XMLNS_SET)
+@parse_source.path('logo', ATOM_XMLNS_SET)
+def parse_icon(element, session):
+    session.xml_base = get_xml_base(element, session.xml_base)
+    return urlparse.urljoin(session.xml_base, element.text), session
+
+
+@parse_feed.path('title', ATOM_XMLNS_SET)
+@parse_feed.path('rights', ATOM_XMLNS_SET)
+@parse_feed.path('subtitle', ATOM_XMLNS_SET)
+@parse_entry.path('title', ATOM_XMLNS_SET)
+@parse_entry.path('rights', ATOM_XMLNS_SET)
+@parse_entry.path('summary', ATOM_XMLNS_SET)
+@parse_source.path('title', ATOM_XMLNS_SET)
+@parse_source.path('rights', ATOM_XMLNS_SET)
+@parse_source.path('subtitle', ATOM_XMLNS_SET)
+def parse_text_construct(element, session):
+    text = Text()
+    text_type = element.get('type')
+    if text_type is not None:
+        if text_type == 'text/plain':
+            text_type = 'text'
+        elif text_type == 'text/html':
+            text_type = 'html'
+        text.type = text_type
+    if text.type in ('text', 'html'):
+        text.value = element.text
+    elif text.value == 'xhtml':
+        text.value = ''  # TODO
+    return text, session
+
+
+@parse_feed.path('author', ATOM_XMLNS_SET, 'authors')
+@parse_feed.path('contributor', ATOM_XMLNS_SET, 'contributors')
+@parse_entry.path('author', ATOM_XMLNS_SET, 'authors')
+@parse_entry.path('contributor', ATOM_XMLNS_SET, 'contributors')
+@parse_source.path('author', ATOM_XMLNS_SET, 'authors')
+@parse_source.path('contributor', ATOM_XMLNS_SET, 'contributors')
+def parse_person_construct(element, session):
+    session.xml_base = get_xml_base(element, session.xml_base)
+    person = Person()
+    for child in element:
+        if child.tag == get_element_id(session.element_ns, 'name'):
+            person.name = child.text
+        elif child.tag == get_element_id(session.element_ns, 'uri'):
+            person.uri = urlparse.urljoin(session.xml_base, child.text)
+        elif child.tag == get_element_id(session.element_ns, 'email'):
+            person.email = child.text
+    if not person.name:
+        if person.email:
+            person.name = person.email
+        elif person.uri:
+            person.name = person.uri
+        else:
+            person = None
+    return person, session
+
+
+@parse_feed.path('link', ATOM_XMLNS_SET, 'links')
+@parse_entry.path('link', ATOM_XMLNS_SET, 'links')
+@parse_source.path('link', ATOM_XMLNS_SET, 'links')
+def parse_link(element, session):
+    session.xml_base = get_xml_base(element, session.xml_base)
+    link = Link(
+        uri=urlparse.urljoin(session.xml_base, element.get('href')),
+        mimetype=element.get('type'),
+        language=element.get('hreflang'),
+        title=element.get('title'),
+        byte_size=element.get('length')
+    )
+    rel = element.get('rel')
+    if rel:
+        link.relation = rel
+    return link, session
+
+
+@parse_feed.path('updated', ATOM_XMLNS_SET, 'updated_at')
+@parse_feed.path('modified', ATOM_XMLNS_SET, 'updated_at')
+@parse_entry.path('updated', ATOM_XMLNS_SET, 'updated_at')
+@parse_entry.path('published', ATOM_XMLNS_SET, 'published_at')
+@parse_entry.path('modified', ATOM_XMLNS_SET, 'updated_at')
+@parse_source.path('updated', ATOM_XMLNS_SET, 'updated_at')
+def parse_datetime(element, session):
+    try:
+        return Rfc3339().decode(element.text), session
+    except DecodeError:
+        return Rfc822().decode(element.text), session
+
+
+@parse_feed.path('category', ATOM_XMLNS_SET, 'categories')
+@parse_entry.path('category', ATOM_XMLNS_SET, 'categories')
+@parse_source.path('category', ATOM_XMLNS_SET, 'categories')
+def parse_category(element, session):
+    category = Category()
+    category.term = element.get('term')
+    category.scheme_uri = element.get('scheme')
+    category.label = element.get('label')
+    return category, session
+
+
+@parse_feed.path('generator', ATOM_XMLNS_SET)
+@parse_source.path('generator', ATOM_XMLNS_SET)
+def parse_generator(element, session):
+    session.xml_base = get_xml_base(element, session.xml_base)
+    generator = Generator()
+    generator.value = element.text
+    if 'uri' in element.attrib:
+        generator.uri = urlparse.urljoin(session.xml_base,
+                                         element.attrib['uri'])
+    generator.version = element.get('version')
+    return generator, session
+
+
+@parse_entry.path('content', ATOM_XMLNS_SET)
+def parse_content(element, session):
+    session.xml_base = get_xml_base(element, session.xml_base)
+    content = Content()
+    content.value = element.text
+    content_type = element.get('type')
+    if content_type is not None:
+        content.type = content_type
+    if 'src' in element.attrib:
+        content.source_uri = urlparse.urljoin(session.xml_base,
+                                              element.attrib['src'])
+    return content, session
+
+
+def parse_atom(xml, feed_url, need_entries=True):
     """Atom parser.  It parses the Atom XML and returns the feed data
     as internal representation.
 
@@ -55,286 +234,15 @@ def parse_atom(xml, feed_url, parse_entry=True):
     for atom_xmlns in ATOM_XMLNS_SET:
         if root.tag.startswith('{' + atom_xmlns + '}'):
             break
-    feed_data = atom_get_feed_data(root, feed_url, atom_xmlns)
-    entries = root.findall('{' + atom_xmlns + '}entry')
-    if parse_entry:
-        entries_data = atom_get_entry_data(entries, feed_url, atom_xmlns)
-        feed_data.entries = entries_data
+    xml_base = get_xml_base(root, feed_url)
+    session = AtomSession(xml_base, atom_xmlns)
+    feed_data = parse_feed(root, session)
+    if not feed_data.id:
+        feed_data.id = feed_url
+    if need_entries:
+        entries = root.findall(get_element_id(atom_xmlns, 'entry'))
+        entry_list = []
+        for entry in entries:
+            entry_list.append(parse_entry(entry, session))
+        feed_data.entries = entry_list
     return feed_data, None
-
-
-def atom_parse_text_construct(data):
-    text = Text()
-    text_type = data.get('type')
-    if text_type is not None:
-        if text_type == 'text/plain':
-            text_type = 'text'
-        elif text_type == 'text/html':
-            text_type = 'html'
-        text.type = text_type
-    if text.type in ('text', 'html'):
-        text.value = data.text
-    elif text.value == 'xhtml':
-        text.value = ''  # TODO
-    return text
-
-
-def atom_parse_person_construct(data, xml_base, atom_xmlns, as_list=False):
-    person = Person()
-    xml_base = atom_get_xml_base(data, xml_base)
-    for child in data:
-        if child.tag == '{' + atom_xmlns + '}name':
-            person.name = child.text
-        elif child.tag == '{' + atom_xmlns + '}uri':
-            person.uri = urlparse.urljoin(xml_base, child.text)
-        elif child.tag == '{' + atom_xmlns + '}email':
-            person.email = child.text
-    if not person.name:
-        if person.email:
-            person.name = person.email
-        elif person.uri:
-            person.name = person.uri
-        else:
-            person = None
-    if as_list:
-        return [person] if person else []
-    return person
-
-
-def atom_get_feed_data(root, feed_url, atom_xmlns):
-    feed_data = Feed()
-    xml_base = atom_get_xml_base(root, feed_url)
-    alt_id = None
-    for data in root:
-        if data.tag == '{' + atom_xmlns + '}id':
-            feed_data.id = alt_id = atom_get_id_tag(data, xml_base)
-        elif data.tag == '{' + atom_xmlns + '}title':
-            feed_data.title = atom_get_title_tag(data)
-        elif data.tag == '{' + atom_xmlns + '}updated':
-            feed_data.updated_at = atom_parse_datetime(data)
-        elif data.tag == '{' + atom_xmlns + '}modified':
-            # Non-standard: some feeds use <modified> instead of <updated>
-            # which is standard e.g. Naver Blog.
-            if not feed_data.updated_at:
-                feed_data.updated_at = atom_parse_datetime(data)
-        elif data.tag == '{' + atom_xmlns + '}author':
-            feed_data.authors.extend(
-                atom_parse_person_construct(data, xml_base, atom_xmlns, True)
-            )
-        elif data.tag == '{' + atom_xmlns + '}category':
-            category = atom_get_category_tag(data)
-            if category:
-                feed_data.categories.append(atom_get_category_tag(data))
-        elif data.tag == '{' + atom_xmlns + '}contributor':
-            feed_data.contributors.extend(
-                atom_parse_person_construct(data, xml_base, atom_xmlns, True)
-            )
-        elif data.tag == '{' + atom_xmlns + '}link':
-            link = atom_get_link_tag(data, xml_base)
-            if link.relation == 'self':
-                alt_id = alt_id or link.uri
-            feed_data.links.append(link)
-        elif data.tag == '{' + atom_xmlns + '}generator':
-            feed_data.generator = atom_get_generator_tag(data, xml_base)
-        elif data.tag == '{' + atom_xmlns + '}icon':
-            feed_data.icon = atom_get_icon_tag(data, xml_base)
-        elif data.tag == '{' + atom_xmlns + '}logo':
-            feed_data.logo = atom_get_logo_tag(data, xml_base)
-        elif data.tag == '{' + atom_xmlns + '}rights':
-            feed_data.rights = atom_get_rights_tag(data)
-        elif data.tag == '{' + atom_xmlns + '}subtitle':
-            feed_data.subtitle = atom_get_subtitle_tag(data)
-        elif data.tag == '{' + atom_xmlns + '}entry':
-            break
-    if feed_data.id is None:
-        feed_data.id = alt_id or feed_url
-    return feed_data
-
-
-def atom_get_entry_data(entries, feed_url, atom_xmlns):
-    entries_data = []
-    for entry in entries:
-        entry_data = Entry()
-        xml_base = atom_get_xml_base(entry, feed_url)
-        for data in entry:
-            if data.tag == '{' + atom_xmlns + '}id':
-                entry_data.id = atom_get_id_tag(data, xml_base)
-            elif data.tag == '{' + atom_xmlns + '}title':
-                entry_data.title = atom_get_title_tag(data)
-            elif data.tag == '{' + atom_xmlns + '}updated':
-                entry_data.updated_at = atom_parse_datetime(data)
-            elif data.tag == '{' + atom_xmlns + '}modified':
-                # Non-standard: some feeds use <modified> instead of <updated>
-                # which is standard e.g. Naver Blog.
-                if not entry_data.updated_at:
-                    entry_data.updated_at = atom_parse_datetime(data)
-            elif data.tag == '{' + atom_xmlns + '}author':
-                entry_data.authors.extend(
-                    atom_parse_person_construct(
-                        data, xml_base, atom_xmlns,
-                        as_list=True
-                    )
-                )
-            elif data.tag == '{' + atom_xmlns + '}category':
-                category = atom_get_category_tag(data)
-                if category:
-                    entry_data.categories.append(atom_get_category_tag(data))
-            elif data.tag == '{' + atom_xmlns + '}contributor':
-                entry_data.contributors.extend(
-                    atom_parse_person_construct(
-                        data, xml_base, atom_xmlns,
-                        as_list=True
-                    )
-                )
-            elif data.tag == '{' + atom_xmlns + '}link':
-                entry_data.links.append(atom_get_link_tag(data, xml_base))
-            elif data.tag == '{' + atom_xmlns + '}content':
-                entry_data.content = atom_get_content_tag(data, xml_base)
-            elif data.tag == '{' + atom_xmlns + '}published':
-                entry_data.published_at = atom_parse_datetime(data)
-            elif data.tag == '{' + atom_xmlns + '}rights':
-                entry_data.rigthts = atom_get_rights_tag(data)
-            elif data.tag == '{' + atom_xmlns + '}source':
-                entry_data.source = atom_get_source_tag(
-                    data, xml_base, atom_xmlns
-                )
-            elif data.tag == '{' + atom_xmlns + '}summary':
-                entry_data.summary = atom_get_summary_tag(data)
-        entries_data.append(entry_data)
-    return entries_data
-
-
-def atom_get_xml_base(data, default):
-    if '{' + XML_XMLNS + '}base' in data.attrib:
-        return data.attrib['{' + XML_XMLNS + '}base']
-    else:
-        return default
-
-
-def atom_get_id_tag(data, xml_base):
-    xml_base = atom_get_xml_base(data, xml_base)
-    return urlparse.urljoin(xml_base, data.text)
-
-
-def atom_get_title_tag(data):
-    return atom_parse_text_construct(data)
-
-
-def atom_parse_datetime(data):
-    try:
-        return Rfc3339().decode(data.text)
-    except DecodeError:
-        return Rfc822().decode(data.text)
-
-
-def atom_get_category_tag(data):
-    if not data.get('term'):
-        return
-    category = Category()
-    category.term = data.get('term')
-    category.scheme_uri = data.get('scheme')
-    category.label = data.get('label')
-    return category
-
-
-def atom_get_link_tag(data, xml_base):
-    xml_base = atom_get_xml_base(data, xml_base)
-    link = Link(
-        uri=urlparse.urljoin(xml_base, data.get('href')),
-        mimetype=data.get('type'),
-        language=data.get('hreflang'),
-        title=data.get('title'),
-        byte_size=data.get('length')
-    )
-    rel = data.get('rel')
-    if rel:
-        link.relation = rel
-    return link
-
-
-def atom_get_generator_tag(data, xml_base):
-    generator = Generator()
-    xml_base = atom_get_xml_base(data, xml_base)
-    generator.value = data.text
-    if 'uri' in data.attrib:
-        generator.uri = urlparse.urljoin(xml_base, data.attrib['uri'])
-    generator.version = data.get('version')
-    return generator
-
-
-def atom_get_icon_tag(data, xml_base):
-    xml_base = atom_get_xml_base(data, xml_base)
-    return urlparse.urljoin(xml_base, data.text)
-
-
-def atom_get_logo_tag(data, xml_base):
-    xml_base = atom_get_xml_base(data, xml_base)
-    return urlparse.urljoin(xml_base, data.text)
-
-
-def atom_get_rights_tag(data):
-    return atom_parse_text_construct(data)
-
-
-def atom_get_subtitle_tag(data):
-    return atom_parse_text_construct(data)
-
-
-def atom_get_content_tag(data, xml_base):
-    content = Content()
-    content.value = data.text
-    content_type = data.get('type')
-    if content_type is not None:
-        content.type = content_type
-    if 'src' in data.attrib:
-        content.source_uri = urlparse.urljoin(xml_base, data.attrib['src'])
-    return content
-
-
-def atom_get_source_tag(data_dump, xml_base, atom_xmlns):
-    source = Source()
-    xml_base = atom_get_xml_base(data_dump[0], xml_base)
-    authors = []
-    categories = []
-    contributors = []
-    links = []
-    for data in data_dump:
-        xml_base = atom_get_xml_base(data, xml_base)
-        if data.tag == '{' + atom_xmlns + '}author':
-            authors.extend(
-                atom_parse_person_construct(data, xml_base, atom_xmlns, True)
-            )
-            source.authors = authors
-        elif data.tag == '{' + atom_xmlns + '}category':
-            categories.append(atom_get_category_tag(data))
-            source.categories = categories
-        elif data.tag == '{' + atom_xmlns + '}contributor':
-            contributors.extend(
-                atom_parse_person_construct(data, xml_base, atom_xmlns, True)
-            )
-            source.contributors = contributors
-        elif data.tag == '{' + atom_xmlns + '}link':
-            links.append(atom_get_link_tag(data, xml_base))
-            source.links = links
-        elif data.tag == '{' + atom_xmlns + '}id':
-            source.id = atom_get_id_tag(data, xml_base)
-        elif data.tag == '{' + atom_xmlns + '}title':
-            source.title = atom_get_title_tag(data)
-        elif data.tag == '{' + atom_xmlns + '}updated':
-            source.updated_at = atom_parse_datetime(data)
-        elif data.tag == '{' + atom_xmlns + '}generator':
-            source.generator = atom_get_generator_tag(data, xml_base)
-        elif data.tag == '{' + atom_xmlns + '}icon':
-            source.icon = atom_get_icon_tag(data, xml_base)
-        elif data.tag == '{' + atom_xmlns + '}logo':
-            source.logo = atom_get_logo_tag(data, xml_base)
-        elif data.tag == '{' + atom_xmlns + '}rights':
-            source.rights = atom_get_rights_tag(data)
-        elif data.tag == '{' + atom_xmlns + '}subtitle':
-            source.subtitle = atom_get_subtitle_tag(data)
-    return source
-
-
-def atom_get_summary_tag(data):
-    summary_tag = atom_parse_text_construct(data)
-    return summary_tag

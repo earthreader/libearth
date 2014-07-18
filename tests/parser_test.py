@@ -523,10 +523,6 @@ def test_rss_parser():
             entries[0].updated_at ==
             feed.entries[0].published_at ==
             feed.entries[0].updated_at)
-    assert data_for_crawl == {
-        'lastBuildDate': datetime.datetime(2002, 9, 7, 0, 0, 1, tzinfo=utc),
-        'ttl': '10',
-    }
     source = entries[0].source
     assert source.title.type == feed.entries[0].source.title.type
     assert source.title.value == feed.entries[0].source.title.value

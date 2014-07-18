@@ -6,6 +6,19 @@ Version 0.4.0
 
 To be released.
 
+- Refactoring :mod:`~libearth.parser` package.  [:issue:`54`]
+
+  - Every single element parser can be specified using
+    :class:`~libearth.parser.base.ParserBase` and its decorator.
+    When calling root element parser, the children elements are also parsed in
+    hierarchical order.
+  - Basic parsing information is stored in
+    :class:`~libearth.parser.base.SessionBase` and passed from parent parser
+    to chlidren parsers.
+  - Added :func:`~libearth.parser.base.get_element_id`.
+    It returns the string consists of an XML namespace and an element tag that
+    :mod:`xml.etree.ElementTree` can recognize when finding children elements.
+
 
 Version 0.3.0
 -------------
