@@ -10,6 +10,7 @@ import copy
 __all__ = 'ParserBase', 'SessionBase'
 
 
+#: .. versionadded:: 0.4.0
 class ParserBase(object):
     """The ParserBase object purposes to define parsers. Defined parsers
     take an XML element, and then return a parsed
@@ -97,6 +98,7 @@ class ParserBase(object):
         return decorator
 
 
+#: .. versionadded:: 0.4.0
 class SessionBase(object):
     """The additional data which are needed for parsing the elements.
     For example, an xml:base is needed to retrieve the full uri when an

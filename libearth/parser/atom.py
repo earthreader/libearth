@@ -36,6 +36,7 @@ ATOM_XMLNS_SET = frozenset([
 XML_XMLNS = 'http://www.w3.org/XML/1998/namespace'
 
 
+#: .. versionadded:: 0.4.0
 def get_element_id(name_space, element_name):
     """Returns combined string of the name_space and element_name.
     The return value is `'{namespace}element_name'`
