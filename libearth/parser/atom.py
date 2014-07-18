@@ -18,11 +18,11 @@ from ..compat.etree import fromstring
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Source, Text)
 from ..schema import DecodeError
-from .base import ParserBase, SessionBase
+from .base import ParserBase, SessionBase, get_element_id
 from .util import normalize_xml_encoding
 
 __all__ = ('ATOM_XMLNS_SET', 'AtomSession', 'XML_XMLNS',
-           'get_element_id', 'get_xml_base', 'parse_atom')
+           'get_xml_base', 'parse_atom')
 
 
 #: (:class:`frozenset`) The set of XML namespaces for Atom format.
@@ -34,18 +34,6 @@ ATOM_XMLNS_SET = frozenset([
 
 #: (:class:`str`) The XML namespace for the predefined ``xml:`` prefix.
 XML_XMLNS = 'http://www.w3.org/XML/1998/namespace'
-
-
-#: .. versionadded:: 0.4.0
-def get_element_id(name_space, element_name):
-    """Returns combined string of the name_space and element_name.
-    The return value is `'{namespace}element_name'`
-
-    """
-    if name_space:
-        return '{' + name_space + '}' + element_name
-    else:
-        return element_name
 
 
 def get_xml_base(data, default):

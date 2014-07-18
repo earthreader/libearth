@@ -7,7 +7,19 @@ Common interfaces used in both Atom parser and RSS2 parser.
 import collections
 import copy
 
-__all__ = 'ParserBase', 'SessionBase'
+__all__ = 'ParserBase', 'SessionBase', 'get_element_id'
+
+
+#: .. versionadded:: 0.4.0
+def get_element_id(name_space, element_name):
+    """Returns combined string of the name_space and element_name.
+    The return value is `'{namespace}element_name'`
+
+    """
+    if name_space:
+        return '{' + name_space + '}' + element_name
+    else:
+        return element_name
 
 
 #: .. versionadded:: 0.4.0

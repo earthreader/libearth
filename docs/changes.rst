@@ -14,7 +14,7 @@ To be released.
   - Basic parsing information is stored in
   `~libearth.parser.base.SessionBase` and passed from parent parser to chlidren
   parsers.
-  - Added :func:`~libearth.parser.atom.get_element_id`
+  - Added :func:`~libearth.parser.base.get_element_id`
     It returns the string that `~xml.etree.ElementTree` can recognize
     when finding children elements using XML namespace and element tag.
 
