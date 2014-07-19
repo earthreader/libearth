@@ -4,7 +4,7 @@ Libearth Changelog
 Version 0.3.1
 -------------
 
-To be released.
+Released on July 20, 2014.
 
 - Fixed two backward compatibility breakages:
 
