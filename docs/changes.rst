@@ -6,8 +6,11 @@ Version 0.3.1
 
 To be released.
 
-- Fixed a bug that subcategory changes hadn't been detected when
-  :class:`~libearth.subscribe.SubscriptionList`\ s are merged.
+- Fixed two backward compatibility breakages:
+
+  - A bug that subcategory changes hadn't been detected when
+    :class:`~libearth.subscribe.SubscriptionList`\ s are merged.
+  - A bug that all children outlines become wiped when a category is deleted.
 
 
 Version 0.3.0

@@ -191,7 +191,6 @@ class SubscriptionSet(collections.MutableSet):
         for child in self.children:
             if child == outline:
                 child.deleted_at = deleted_at
-                del outline.children[:]
                 assert child.deleted
 
     def subscribe(self, feed, icon_uri=None):
