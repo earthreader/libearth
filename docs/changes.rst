@@ -20,6 +20,18 @@ To be released.
     :mod:`xml.etree.ElementTree` can recognize when finding children elements.
 
 
+Version 0.3.1
+-------------
+
+Released on July 20, 2014.
+
+- Fixed two backward compatibility breakages:
+
+  - A bug that subcategory changes hadn't been detected when
+    :class:`~libearth.subscribe.SubscriptionList`\ s are merged.
+  - A bug that all children outlines become wiped when a category is deleted.
+
+
 Version 0.3.0
 -------------
 

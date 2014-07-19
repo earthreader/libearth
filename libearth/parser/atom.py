@@ -222,12 +222,15 @@ def parse_atom(xml, feed_url, need_entries=True):
                      it will be the base url when there are any relative
                      urls without ``xml:base`` attribute
     :type feed_url: :class:`str`
-    :param parse_entry: whether to parse inner items as well.
-                        it's useful to ignore items when retrieve
-                        ``<source>`` in rss 2.0.  :const:`True` by default.
-    :type parse_item: :class:`bool`
+    :param need_entries: whether to parse inner items as well.
+                         it's useful to ignore items when retrieve
+                         ``<source>`` in rss 2.0.  :const:`True` by default.
+    :type need_entries: :class:`bool`
     :returns: a pair of (:class:`~libearth.feed.Feed`, crawler hint)
     :rtype: :class:`tuple`
+
+    .. versionchanged:: 0.4.0
+       The ``parse_entries`` parameter was renamed to ``need_entries``.
 
     """
     root = fromstring(normalize_xml_encoding(xml))

@@ -191,7 +191,6 @@ class SubscriptionSet(collections.MutableSet):
         for child in self.children:
             if child == outline:
                 child.deleted_at = deleted_at
-                del outline.children[:]
                 assert child.deleted
 
     def subscribe(self, feed, icon_uri=None):
@@ -284,11 +283,10 @@ class SubscriptionSet(collections.MutableSet):
                     elif outline.deleted_at:
                         child.deleted_at = max(child.deleted_at,
                                                outline.deleted_at)
-                    if child.children:
-                        if child.deleted:
-                            del child.children[:]
-                        else:
-                            child.__merge_entities__(outline)
+                    if child.children and child.deleted:
+                        del child.children[:]
+                    if child.children or outline.children:
+                        SubscriptionSet.__merge_entities__(child, outline)
                     break
             else:
                 self.add(outline)
