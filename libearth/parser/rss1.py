@@ -1,4 +1,4 @@
-""":mod:`libearth.parser.rss2` --- RSS 2.0 parser
+""":mod:`libearth.parser.rss1` --- RSS 1.0 parser
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Parsing RSS 1.0 feed.
