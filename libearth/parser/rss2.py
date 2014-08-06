@@ -4,8 +4,6 @@
 Parsing RSS 2.0 feed.
 
 """
-import datetime
-import email.utils
 import re
 
 try:
@@ -13,15 +11,13 @@ try:
 except ImportError:
     from urllib import parse as urlparse
 
-from ..codecs import Rfc3339, Rfc822
-from ..compat import IRON_PYTHON
 from ..compat.etree import fromstring
-from ..feed import (Category, Content, Entry, Feed, Generator, Link,
-                    Person, Text)
-from ..schema import DecodeError
-from ..tz import FixedOffset, guess_tzinfo_by_locale, now, utc
+from ..feed import Category, Entry, Feed, Generator, Link
+from ..tz import guess_tzinfo_by_locale, now, utc
 from .atom import ATOM_XMLNS_SET
 from .base import ParserBase, SessionBase
+from .rss_base import (content_parser, datetime_parser, link_parser,
+                       person_parser, subtitle_parser, text_parser)
 from .util import normalize_xml_encoding
 
 
@@ -60,67 +56,17 @@ def parse_item(element, session):
     return Entry(), session
 
 
-_rfc3339 = Rfc3339()
-_rfc822 = Rfc822()
-_datetime_formats = [
-    ('%Y-%m-%d %H:%M:%S', None),  # daumwebtoon
-    ('%m/%d/%Y %H:%M:%S GMT', utc),  # msdn
-    ('%m/%d/%y %H:%M:%S GMT', utc),  # msdn
-    ('%a, %d %b %Y %H:%M:%S GMT 00:00:00 GMT', utc),  # msdn
-    ('%Y.%m.%d %H:%M:%S', None),  # imbcnews
-    ('%d %b %Y %H:%M:%S %z', None),  # lee-seungjae
-]
-
-
 @parse_channel.path('pubDate', attr_name='updated_at')
 @parse_item.path('pubDate', attr_name='published_at')
 def parse_datetime(element, session):
-    # https://github.com/earthreader/libearth/issues/30
-    string = element.text
-    try:
-        return _rfc822.decode(string), session
-    except DecodeError:
-        pass
-    try:
-        return _rfc3339.decode(string), session
-    except DecodeError:
-        pass
-    for fmt, tzinfo in _datetime_formats:
-        try:
-            if IRON_PYTHON:
-                # IronPython strptime() seems to ignore whitespace
-                string = string.replace(' ', '|')
-                fmt = fmt.replace(' ', '|')
-            if fmt.endswith('%z'):
-                dt = datetime.datetime.strptime(string[:-5], fmt[:-2])
-                tz_sign = -1 if string[-5:-4] == '-' else 1
-                tz_hour = int(string[-4:-2])
-                tz_min = int(string[-2:])
-                tzinfo = FixedOffset(tz_sign * (tz_hour * 60 + tz_min))
-            else:
-                dt = datetime.datetime.strptime(string, fmt)
-            return dt.replace(tzinfo=tzinfo or session.default_tz_info), session
-        except ValueError:
-            continue
-    raise ValueError('failed to parse datetime: ' + repr(string))
+    return datetime_parser(element, session)
 
 
 @parse_channel.path('managingEditor', attr_name='contributors')
 @parse_channel.path('webMaster', attr_name='contributors')
 @parse_item.path('author', attr_name='authors')
 def parse_person(element, session):
-    string = element.text
-    name, email_addr = email.utils.parseaddr(string)
-    if '@' not in email_addr:
-        if not name:
-            name = email_addr
-        email_addr = None
-    if not name:
-        name = email_addr
-    if not name:
-        return None, session
-    person = Person(name=name, email=email_addr or None)
-    return person, session
+    return person_parser(element, session)
 
 
 @parse_channel.path('category', attr_name='categories')
@@ -136,17 +82,12 @@ def parse_category(element, session):
 @parse_channel.path('copyright', attr_name='rights')
 @parse_item.path('title')
 def parse_text(element, session):
-    return Text(value=element.text or ''), session
+    return text_parser(element, session)
 
 
 @parse_channel.path('description', attr_name='subtitle')
 def parse_subtitle(element, session):
-    return Text(type='text', value=element.text), session
-
-
-@parse_item.path(CONTENT_XMLNS + 'encoded', 'content')
-def parse_content(element, session):
-    return Content(type='html', value=element.text), session
+    return subtitle_parser(element, session)
 
 
 @parse_channel.path('link', ATOM_XMLNS_SET, attr_name='links')
@@ -160,12 +101,7 @@ def parse_atom_link(element, session):
 @parse_channel.path('link', attr_name='links')
 @parse_item.path('link', attr_name='links')
 def parse_link(element, session):
-    if not element.text:
-        return None, session
-    link = Link(uri=element.text,
-                relation='alternate',
-                mimetype='text/html')
-    return link, session
+    return link_parser(element, session)
 
 
 @parse_channel.path('generator')
@@ -208,7 +144,7 @@ def parse_comments(element, session):
 @parse_item.path('description', attr_name='content')
 @parse_item.path('encoded', [CONTENT_XMLNS], 'content')
 def parse_content(element, session):
-    return Content(type='html', value=element.text), session
+    return content_parser(element, session)
 
 
 @parse_item.path('guid', attr_name='id')

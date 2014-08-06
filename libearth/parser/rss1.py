@@ -5,9 +5,10 @@ Parsing RSS 1.0 feed.
 
 """
 from ..compat.etree import fromstring
-from ..feed import Entry, Feed
+from ..feed import Category, Entry, Feed
 from .base import ParserBase, get_element_id
-from .rss2 import parse_category, parse_content, parse_link, parse_person, parse_subtitle, parse_text, parse_datetime
+from .rss_base import (content_parser, datetime_parser, link_parser,
+                       person_parser, subtitle_parser, text_parser)
 from .util import normalize_xml_encoding
 
 
@@ -23,52 +24,63 @@ def parse_channel(element, session):
     return Feed(), session
 
 
-parse_text = parse_channel.path('title', [RSS1_XMLNS, DC_NAMESPACE])(parse_text)
-parse_text = parse_channel.path('rights', [DC_NAMESPACE])(parse_text)
-parse_link = parse_channel.path('link', [RSS1_XMLNS], 'links')(parse_link)
-parse_subtitle = parse_channel.path(
-    'description', [RSS1_XMLNS, DC_NAMESPACE], 'subtitle')(parse_subtitle)
-parse_person = parse_channel.path(
-    'creator', [DC_NAMESPACE], 'authors')(parse_person)
-parse_person = parse_channel.path(
-    'publisher', [DC_NAMESPACE], 'contributors')(parse_person)
-parse_person = parse_channel.path(
-    'contributor', [DC_NAMESPACE], 'contributors')(parse_person)
-parse_datetime = parse_channel.path(
-    'date', [DC_NAMESPACE], 'updated_at')(parse_datetime)
-parse_category = parse_channel.path(
-    'type', [DC_NAMESPACE], 'categories')(parse_category)
-parse_category = parse_channel.path(
-    'subject', [DC_NAMESPACE], 'categories')(parse_category)
-
-
-
 @rss1_parser.path('item', [RSS1_XMLNS])
 def parse_item(element, session):
     return Entry(), session
 
 
-parse_text = parse_item.path('title', [RSS1_XMLNS, DC_NAMESPACE])(parse_text)
-parse_text = parse_item.path('rights', [DC_NAMESPACE])(parse_text)
-parse_link = parse_item.path('link', [RSS1_XMLNS], 'links')(parse_link)
-parse_content = parse_item.path(
-    'description', [RSS1_XMLNS, DC_NAMESPACE], 'content')(parse_content)
-parse_person = parse_item.path(
-    'creator', [DC_NAMESPACE], 'authors')(parse_person)
-parse_person = parse_item.path(
-    'contributor', [DC_NAMESPACE], 'contributors')(parse_person)
-parse_datetime = parse_item.path(
-    'date', [DC_NAMESPACE], 'updated_at')(parse_datetime)
-parse_category = parse_item.path(
-    'type', [DC_NAMESPACE], 'categories')(parse_category)
-parse_category = parse_item.path(
-    'subject', [DC_NAMESPACE], 'categories')(parse_category)
+@parse_channel.path('description', [RSS1_XMLNS, DC_NAMESPACE], 'subtitle')
+def parse_subtitle(element, session):
+    return subtitle_parser(element, session)
+
+
+@parse_channel.path('creator', [DC_NAMESPACE], 'authors')
+@parse_channel.path('contributor', [DC_NAMESPACE], 'contributors')
+@parse_channel.path('publisher', [DC_NAMESPACE], 'contributors')
+@parse_item.path('creator', [DC_NAMESPACE], 'authors')
+@parse_item.path('contributor', [DC_NAMESPACE], 'contributors')
+@parse_item.path('publisher', [DC_NAMESPACE], 'contributors')
+def parse_person(element, session):
+    return person_parser(element, session)
+
+
+@parse_channel.path('date', [DC_NAMESPACE], 'updated_at')
+@parse_item.path('date', [DC_NAMESPACE], 'updated_at')
+def parse_datetime(element, session):
+    return datetime_parser(element, session)
+
+
+@parse_channel.path('title', [RSS1_XMLNS, DC_NAMESPACE])
+@parse_channel.path('rights', [DC_NAMESPACE])
+@parse_item.path('title', [RSS1_XMLNS, DC_NAMESPACE])
+@parse_item.path('rights', [DC_NAMESPACE])
+def parse_text(element, session):
+    return text_parser(element, session)
+
+
+@parse_channel.path('link', [RSS1_XMLNS], 'links')
+@parse_item.path('link', [RSS1_XMLNS], 'links')
+def parse_link(element, session):
+    return link_parser(element, session)
+
+
+@parse_item.path('description', [RSS1_XMLNS, DC_NAMESPACE], 'content')
+def parse_content(element, session):
+    return content_parser(element, session)
 
 
 @parse_channel.path('identifier', [DC_NAMESPACE], 'id')
 @parse_item.path('identifier', [DC_NAMESPACE])
 def parse_id(element, session):
     return element.text, session
+
+
+@parse_channel.path('type', [DC_NAMESPACE], 'categories')
+@parse_channel.path('subject', [DC_NAMESPACE], 'categories')
+@parse_item.path('type', [DC_NAMESPACE], 'categories')
+@parse_item.path('subject', [DC_NAMESPACE], 'categories')
+def parse_category(element, session):
+    return Category(term=element.text), session
 
 
 def parse_rss1(xml, feed_url=None, parse_entry=True):
