@@ -13,11 +13,12 @@ except ImportError:
 
 from ..compat.etree import fromstring
 from ..feed import Category, Entry, Feed, Generator, Link
-from ..tz import guess_tzinfo_by_locale, now, utc
+from ..tz import now
 from .atom import ATOM_XMLNS_SET
-from .base import ParserBase, SessionBase
-from .rss_base import (content_parser, datetime_parser, link_parser,
-                       person_parser, subtitle_parser, text_parser)
+from .base import ParserBase
+from .rss_base import (RSSSession, content_parser, datetime_parser,
+                       guess_default_tzinfo, link_parser, person_parser,
+                       subtitle_parser, text_parser)
 from .util import normalize_xml_encoding
 
 
@@ -25,22 +26,6 @@ GUID_PATTERN = re.compile('^(\{{0,1}([0-9a-fA-F]){8}-([0-9a-fA-F]){4}-([0-9'
                           'a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){12}\}'
                           '{0,1})$')
 CONTENT_XMLNS = 'http://purl.org/rss/1.0/modules/content/'
-
-
-class RSS2Session(SessionBase):
-    """The session class used for parsing the RSS2.0 feed."""
-
-    #: (:class:`str`) The url of the feed to make :class: `~libearth.feed.Link`
-    #: object of which relation is self in the feed.
-    feed_url = None
-
-    #: (:class:`str`) The default time zone name to set the tzinfo of parsed
-    #: :class: `datetime.datetime` object.
-    default_tz_info = None
-
-    def __init__(self, feed_url, default_tz_info):
-        self.feed_url = feed_url
-        self.default_tz_info = default_tz_info
 
 
 rss2_parser = ParserBase()
@@ -157,23 +142,6 @@ def parse_guid(element, session):
     return None, session
 
 
-def guess_default_tzinfo(root, url):
-    """Guess what time zone is implied in the feed by seeing the TLD of
-    the ``url`` and its ``<language>`` tag.
-
-    """
-    lang = root.find('channel/language')
-    if lang is None or not lang.text:
-        return utc
-    lang = lang.text.strip()
-    if len(lang) == 5 and lang[2] == '-':
-        lang = lang[:2]
-    parsed = urlparse.urlparse(url)
-    domain = parsed.hostname.rsplit('.', 1)
-    country = domain[1] if len(domain) > 1 and len(domain[1]) == 2 else None
-    return guess_tzinfo_by_locale(lang, country) or utc
-
-
 def parse_rss(xml, feed_url=None, parse_entry=True):
     """Parse RSS 2.0 XML and translate it into Atom.
 
@@ -196,7 +164,7 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
     root = fromstring(normalize_xml_encoding(xml))
     channel = root.find('channel')
     default_tzinfo = guess_default_tzinfo(root, feed_url)
-    session = RSS2Session(feed_url, default_tzinfo)
+    session = RSSSession(feed_url, default_tzinfo)
     feed_data = parse_channel(channel, session)
     if parse_entry:
         items = channel.findall('item')

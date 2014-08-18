@@ -7,8 +7,9 @@ Parsing RSS 1.0 feed.
 from ..compat.etree import fromstring
 from ..feed import Category, Entry, Feed
 from .base import ParserBase, get_element_id
-from .rss_base import (content_parser, datetime_parser, link_parser,
-                       person_parser, subtitle_parser, text_parser)
+from .rss_base import (RSSSession, content_parser, datetime_parser,
+                       guess_default_tzinfo, link_parser, person_parser,
+                       subtitle_parser, text_parser)
 from .util import normalize_xml_encoding
 
 
@@ -86,11 +87,13 @@ def parse_category(element, session):
 def parse_rss1(xml, feed_url=None, parse_entry=True):
     root = fromstring(normalize_xml_encoding(xml))
     channel = root.find(get_element_id(RSS1_XMLNS, 'channel'))
-    feed_data = parse_channel(channel, None)
+    default_tzinfo = guess_default_tzinfo(root, feed_url)
+    session = RSSSession(feed_url, default_tzinfo)
+    feed_data = parse_channel(channel, session)
     if parse_entry:
         entries = root.findall(get_element_id(RSS1_XMLNS, 'item'))
         entry_list = []
         for entry in entries:
-            entry_list.append(parse_item(entry, None))
+            entry_list.append(parse_item(entry, session))
         feed_data.entries = entry_list
     return feed_data, None

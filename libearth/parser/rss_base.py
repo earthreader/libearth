@@ -4,12 +4,14 @@
 """
 import datetime
 import email.utils
+import urlparse
 
+from .base import SessionBase
 from ..codecs import Rfc3339, Rfc822
 from ..compat import IRON_PYTHON
 from ..feed import Content, Link, Person, Text
 from ..schema import DecodeError
-from ..tz import FixedOffset, utc
+from ..tz import FixedOffset, guess_tzinfo_by_locale, utc
 
 
 _rfc3339 = Rfc3339()
@@ -22,6 +24,39 @@ _datetime_formats = [
     ('%Y.%m.%d %H:%M:%S', None),  # imbcnews
     ('%d %b %Y %H:%M:%S %z', None),  # lee-seungjae
 ]
+
+
+class RSSSession(SessionBase):
+    """The session class used for parsing the RSS2.0 feed."""
+
+    #: (:class:`str`) The url of the feed to make :class: `~libearth.feed.Link`
+    #: object of which relation is self in the feed.
+    feed_url = None
+
+    #: (:class:`str`) The default time zone name to set the tzinfo of parsed
+    #: :class: `datetime.datetime` object.
+    default_tz_info = None
+
+    def __init__(self, feed_url, default_tz_info):
+        self.feed_url = feed_url
+        self.default_tz_info = default_tz_info
+
+
+def guess_default_tzinfo(root, url):
+    """Guess what time zone is implied in the feed by seeing the TLD of
+    the ``url`` and its ``<language>`` tag.
+
+    """
+    lang = root.find('channel/language')
+    if lang is None or not lang.text:
+        return utc
+    lang = lang.text.strip()
+    if len(lang) == 5 and lang[2] == '-':
+        lang = lang[:2]
+    parsed = urlparse.urlparse(url)
+    domain = parsed.hostname.rsplit('.', 1)
+    country = domain[1] if len(domain) > 1 and len(domain[1]) == 2 else None
+    return guess_tzinfo_by_locale(lang, country) or utc
 
 
 def content_parser(element, session):
