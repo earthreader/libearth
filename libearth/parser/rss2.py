@@ -13,12 +13,11 @@ except ImportError:
 
 from ..compat.etree import fromstring
 from ..feed import Category, Entry, Feed, Generator, Link
-from ..tz import now
 from .atom import ATOM_XMLNS_SET
 from .base import ParserBase
 from .rss_base import (RSSSession, content_parser, datetime_parser,
-                       guess_default_tzinfo, link_parser, person_parser,
-                       subtitle_parser, text_parser)
+                       guess_default_tzinfo, link_parser, make_legal_as_atom,
+                       person_parser, subtitle_parser, text_parser)
 from .util import normalize_xml_encoding
 
 
@@ -172,35 +171,5 @@ def parse_rss(xml, feed_url=None, parse_entry=True):
         for item in items:
             entry_list.append(parse_item(item, session))
         feed_data.entries = entry_list
-    check_valid_as_atom(feed_data, session)
+    make_legal_as_atom(feed_data, session)
     return feed_data, None
-
-
-def check_valid_as_atom(feed_data, session):
-    # FIXME: It doesn't only "check" the feed_data but manipulates it
-    # if not valid.  I think the function should be renamed.
-    if not feed_data.id:
-        feed_data.id = session.feed_url
-    if all(l.relation != 'self' for l in feed_data.links):
-        feed_data.links.insert(0, Link(relation='self', uri=session.feed_url))
-    for entry in feed_data.entries:
-        if entry.updated_at is None:
-            entry.updated_at = entry.published_at
-        if entry.id is None:
-            entry.id = entry.links[0].uri if entry.links else ''
-    if feed_data.updated_at is None:
-        if feed_data.entries:
-            try:
-                feed_data.updated_at = max(entry.updated_at
-                                           for entry in feed_data.entries
-                                           if entry.updated_at)
-            except ValueError:
-                feed_data.updated_at = now()
-                for entry in feed_data.entries:
-                    if entry.updated_at is None:
-                        entry.updated_at = feed_data.updated_at
-        else:
-            feed_data.updated_at = now()
-    if feed_data.title is None:
-        feed_data.title = feed_data.subtitle
-        # FIXME: what should we do when there's even no subtitle?

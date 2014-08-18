@@ -8,8 +8,8 @@ from ..compat.etree import fromstring
 from ..feed import Category, Entry, Feed
 from .base import ParserBase, get_element_id
 from .rss_base import (RSSSession, content_parser, datetime_parser,
-                       guess_default_tzinfo, link_parser, person_parser,
-                       subtitle_parser, text_parser)
+                       guess_default_tzinfo, link_parser, make_legal_as_atom,
+                       person_parser, subtitle_parser, text_parser)
 from .util import normalize_xml_encoding
 
 
@@ -96,4 +96,5 @@ def parse_rss1(xml, feed_url=None, parse_entry=True):
         for entry in entries:
             entry_list.append(parse_item(entry, session))
         feed_data.entries = entry_list
+    make_legal_as_atom(feed_data, session)
     return feed_data, None

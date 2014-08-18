@@ -11,7 +11,7 @@ from ..codecs import Rfc3339, Rfc822
 from ..compat import IRON_PYTHON
 from ..feed import Content, Link, Person, Text
 from ..schema import DecodeError
-from ..tz import FixedOffset, guess_tzinfo_by_locale, utc
+from ..tz import FixedOffset, guess_tzinfo_by_locale, now, utc
 
 
 _rfc3339 = Rfc3339()
@@ -124,3 +124,33 @@ def subtitle_parser(element, session):
 
 def text_parser(element, session):
     return Text(value=element.text or ''), session
+
+
+def make_legal_as_atom(feed_data, session):
+    # FIXME: It doesn't only "check" the feed_data but manipulates it
+    # if not valid.  I think the function should be renamed.
+    if not feed_data.id:
+        feed_data.id = session.feed_url
+    if all(l.relation != 'self' for l in feed_data.links):
+        feed_data.links.insert(0, Link(relation='self', uri=session.feed_url))
+    for entry in feed_data.entries:
+        if entry.updated_at is None:
+            entry.updated_at = entry.published_at
+        if entry.id is None:
+            entry.id = entry.links[0].uri if entry.links else ''
+    if feed_data.updated_at is None:
+        if feed_data.entries:
+            try:
+                feed_data.updated_at = max(entry.updated_at
+                                           for entry in feed_data.entries
+                                           if entry.updated_at)
+            except ValueError:
+                feed_data.updated_at = now()
+                for entry in feed_data.entries:
+                    if entry.updated_at is None:
+                        entry.updated_at = feed_data.updated_at
+        else:
+            feed_data.updated_at = now()
+    if feed_data.title is None:
+        feed_data.title = feed_data.subtitle
+        # FIXME: what should we do when there's even no subtitle?
