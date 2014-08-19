@@ -19,6 +19,7 @@ except ImportError:
 from ..compat import text
 from ..compat.etree import fromstring
 from .atom import parse_atom
+from .rss1 import parse_rss1
 from .rss2 import parse_rss2
 from .util import normalize_xml_encoding
 
@@ -41,7 +42,7 @@ ATOM_TYPE = 'application/atom+xml'
 FEED_TYPES = frozenset([RSS_TYPE, ATOM_TYPE])
 
 #: (:class:`collections.Mapping`) The mapping table of feed types
-TYPE_TABLE = {parse_atom: ATOM_TYPE, parse_rss2: RSS_TYPE}
+TYPE_TABLE = {parse_atom: ATOM_TYPE, parse_rss2: RSS_TYPE, parse_rss1: RSS_TYPE}
 
 #: Namedtuple which is a pair of ``type` and ``url``
 FeedLink = collections.namedtuple('FeedLink', 'type url')
@@ -180,6 +181,8 @@ def get_format(document):
     if root.tag in ('{http://www.w3.org/2005/Atom}feed',
                     '{http://purl.org/atom/ns#}feed'):
         return parse_atom
+    elif root.tag == '{http://www.w3.org/1999/02/22-rdf-syntax-ns#}RDF':
+        return parse_rss1
     elif root.tag == 'rss':
         return parse_rss2
     else:
