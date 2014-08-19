@@ -89,6 +89,25 @@ def parse_category(element, session):
 
 
 def parse_rss1(xml, feed_url=None, parse_entry=True):
+    """Parse RSS 1.0 XML and translate it into Atom.
+
+    if ``dc:identifier`` is not present in channel or item elements,
+    the uri in the link element would become the id of them.
+
+    ``dc:date`` can be used as ``updated`` element in Atom, but if not present,
+    it uses other elements' ``dc:date`` or parsing time is used to fill the
+    ``updated`` element.
+
+    :param xml: rss 1.0 xml string to parse
+    :type xml: :class:`str`
+    :param parse_item: whether to parse items (entries) as well.
+                       it's useful when to ignore items when retrieve
+                       ``<source>``.  :const:`True` by default
+    :type parse_item: :class:`bool`
+    :returns: a pair of (:class:`~libearth.feed.Feed`, None)
+    :rtype: :class:`tuple`
+
+    """
     root = fromstring(normalize_xml_encoding(xml))
     channel = root.find(get_element_id(RSS1_XMLNS, 'channel'))
     default_tzinfo = guess_default_tzinfo(root, feed_url)
