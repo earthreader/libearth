@@ -1,5 +1,9 @@
-""":mod:`libearth.parser.rss_base` --- Commonly used parsers in rss1 and rss2
+""":mod:`libearth.parser.rss_base` --- Commonly used objects in RSS1 and RSS2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+RSS1 and RSS2 are naive compared to Atom feed. So there are several things
+such as namespace or parsing logic that can be used to parse both feeds.
+This module contains those common things.
 
 """
 import datetime
