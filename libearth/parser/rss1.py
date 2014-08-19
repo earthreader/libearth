@@ -7,9 +7,10 @@ Parsing RSS 1.0 feed.
 from ..compat.etree import fromstring
 from ..feed import Category, Entry, Feed
 from .base import ParserBase, get_element_id
-from .rss_base import (RSSSession, content_parser, datetime_parser,
-                       guess_default_tzinfo, link_parser, make_legal_as_atom,
-                       person_parser, subtitle_parser, text_parser)
+from .rss_base import (CONTENT_XMLNS, RSSSession, content_parser,
+                       datetime_parser, guess_default_tzinfo, link_parser,
+                       make_legal_as_atom, person_parser, subtitle_parser,
+                       text_parser)
 from .util import normalize_xml_encoding
 
 
@@ -65,6 +66,7 @@ def parse_link(element, session):
     return link_parser(element, session)
 
 
+@parse_item.path('encoded', [CONTENT_XMLNS], 'content')
 @parse_item.path('description', [RSS1_XMLNS, DC_NAMESPACE], 'content')
 def parse_content(element, session):
     return content_parser(element, session)

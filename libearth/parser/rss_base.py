@@ -26,6 +26,9 @@ _datetime_formats = [
 ]
 
 
+CONTENT_XMLNS = 'http://purl.org/rss/1.0/modules/content/'
+
+
 class RSSSession(SessionBase):
     """The session class used for parsing the RSS2.0 feed."""
 

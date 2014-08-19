@@ -15,16 +15,16 @@ from ..compat.etree import fromstring
 from ..feed import Category, Entry, Feed, Generator, Link
 from .atom import ATOM_XMLNS_SET
 from .base import ParserBase
-from .rss_base import (RSSSession, content_parser, datetime_parser,
-                       guess_default_tzinfo, link_parser, make_legal_as_atom,
-                       person_parser, subtitle_parser, text_parser)
+from .rss_base import (CONTENT_XMLNS, RSSSession, content_parser,
+                       datetime_parser, guess_default_tzinfo, link_parser,
+                       make_legal_as_atom, person_parser, subtitle_parser,
+                       text_parser)
 from .util import normalize_xml_encoding
 
 
 GUID_PATTERN = re.compile('^(\{{0,1}([0-9a-fA-F]){8}-([0-9a-fA-F]){4}-([0-9'
                           'a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){12}\}'
                           '{0,1})$')
-CONTENT_XMLNS = 'http://purl.org/rss/1.0/modules/content/'
 
 
 rss2_parser = ParserBase()
