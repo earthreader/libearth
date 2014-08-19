@@ -131,8 +131,6 @@ def text_parser(element, session):
 
 
 def make_legal_as_atom(feed_data, session):
-    # FIXME: It doesn't only "check" the feed_data but manipulates it
-    # if not valid.  I think the function should be renamed.
     if not feed_data.id:
         feed_data.id = session.feed_url
     if all(l.relation != 'self' for l in feed_data.links):
