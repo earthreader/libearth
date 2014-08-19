@@ -20,7 +20,7 @@ from libearth.parser.atom import parse_atom
 from libearth.parser.autodiscovery import (AutoDiscovery, FeedLink,
                                            FeedUrlNotFoundError,
                                            autodiscovery, get_format)
-from libearth.parser.rss2 import parse_rss
+from libearth.parser.rss2 import parse_rss2
 from libearth.parser.util import normalize_xml_encoding
 from libearth.schema import read, write
 from libearth.tz import utc
@@ -299,7 +299,7 @@ def test_autodiscovery_when_atom():
 ])
 def test_get_format(string):
     assert get_format(string(atom_xml)) is parse_atom
-    assert get_format(string(rss_xml)) is parse_rss
+    assert get_format(string(rss_xml)) is parse_rss2
     assert get_format(string(atom_blog)) is None
     assert get_format(string(rss_blog)) is None
     assert get_format(string(blog_with_two_feeds)) is None
@@ -482,7 +482,7 @@ class TestHTTPHandler(urllib2.HTTPHandler):
 def test_rss_parser():
     my_opener = urllib2.build_opener(TestHTTPHandler)
     urllib2.install_opener(my_opener)
-    crawled_feed, data_for_crawl = parse_rss(
+    crawled_feed, data_for_crawl = parse_rss2(
         rss_xml,
         'http://sourcetest.com/rss.xml'
     )
@@ -564,7 +564,7 @@ rss_with_no_pubDate = '''
 
 
 def test_rss_with_no_pubDate():
-    feed_data, crawler_hints = parse_rss(rss_with_no_pubDate)
+    feed_data, crawler_hints = parse_rss2(rss_with_no_pubDate)
     assert feed_data.updated_at
     assert feed_data.entries[0].updated_at
 
@@ -583,7 +583,7 @@ rss_with_empty_title = '''
 
 def test_rss_with_empty_title():
     """Empty title should be empty string, not :const:`None`."""
-    feed, crawler_hints = parse_rss(rss_with_empty_title)
+    feed, crawler_hints = parse_rss2(rss_with_empty_title)
     assert feed.title.value == ''
 
 
@@ -608,7 +608,7 @@ rss_with_guid = '''
 
 
 def test_rss_item_guid():
-    feed_data, crawler_hints = parse_rss(rss_with_guid, None)
+    feed_data, crawler_hints = parse_rss2(rss_with_guid, None)
     assert feed_data.entries[0].id == \
         'urn:uuid:3F2504E0-4F89-11D3-9A0C-0305E82C3301'
     assert feed_data.entries[1].id == 'http://guidtest.com/1'
@@ -625,7 +625,7 @@ rss_without_title = '''
 
 
 def test_rss_without_title():
-    feed, _ = parse_rss(rss_without_title, None)
+    feed, _ = parse_rss2(rss_without_title, None)
     assert not feed.entries
     assert (text_type(feed.title) == text_type(feed.subtitle) ==
             'only description')

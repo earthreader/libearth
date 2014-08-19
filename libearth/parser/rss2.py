@@ -141,7 +141,7 @@ def parse_guid(element, session):
     return None, session
 
 
-def parse_rss(xml, feed_url=None, parse_entry=True):
+def parse_rss2(xml, feed_url=None, parse_entry=True):
     """Parse RSS 2.0 XML and translate it into Atom.
 
     To make the feed data valid in Atom format, ``id`` and ``link[rel=self]``
