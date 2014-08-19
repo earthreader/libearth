@@ -8,7 +8,10 @@ This module contains those common things.
 """
 import datetime
 import email.utils
-import urlparse
+try:
+    import urlparse
+except ImportError:
+    from urllib import parse as urlparse
 
 from .base import SessionBase
 from ..codecs import Rfc3339, Rfc822
