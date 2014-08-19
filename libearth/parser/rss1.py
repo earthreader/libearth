@@ -14,7 +14,9 @@ from .rss_base import (CONTENT_XMLNS, RSSSession, content_parser,
 from .util import normalize_xml_encoding
 
 
+#: (:class:`str`) The XML namespace used in RSS1 feed.
 RSS1_XMLNS = 'http://purl.org/rss/1.0/'
+#: (:class:`str`) The XML namespace for the predefined ``dc:`` prefix.
 DC_NAMESPACE = 'http://purl.org/dc/elements/1.1/'
 
 

@@ -26,6 +26,7 @@ _datetime_formats = [
 ]
 
 
+#: (:class:`str`) The XML namespace for the predefined ``content:`` prefix.
 CONTENT_XMLNS = 'http://purl.org/rss/1.0/modules/content/'
 
 
