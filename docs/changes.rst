@@ -6,6 +6,7 @@ Version 0.4.0
 
 To be released.
 
+- Parsing RSS1.0 feed is available.
 - Refactoring :mod:`~libearth.parser` package.  [:issue:`54`]
 
   - Every single element parser can be specified using

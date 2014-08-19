@@ -88,6 +88,7 @@ def parse_category(element, session):
     return Category(term=element.text), session
 
 
+#: .. versionadded:: 0.4.0
 def parse_rss1(xml, feed_url=None, parse_entry=True):
     """Parse RSS 1.0 XML and translate it into Atom.
 
