@@ -7,7 +7,7 @@ from libearth.codecs import Integer
 from libearth.compat import (IRON_PYTHON, binary_type, text, text_type,
                              string_type)
 from libearth.compat.etree import fromstringlist, tostring
-from libearth.parser.rss2 import parse_rss
+from libearth.parser.rss2 import parse_rss2
 from libearth.schema import (SCHEMA_XMLNS,
                              Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
@@ -1205,7 +1205,7 @@ rss_template_with_title = '''
 
 def test_write_subscription_with_ascii_title():
     rss = rss_template_with_title.format('english')
-    feed, _ = parse_rss(rss)
+    feed, _ = parse_rss2(rss)
     feed.id = 'id'
 
     sublist = SubscriptionList()
@@ -1221,7 +1221,7 @@ def test_write_subscription_with_nonascii_title():
     When non-ascii characters are in the title, UnicodeDecodeError is raised.
     '''
     rss = rss_template_with_title.format('한글')
-    feed, _ = parse_rss(rss)
+    feed, _ = parse_rss2(rss)
     feed.id = 'id'
 
     sublist = SubscriptionList()
