@@ -41,10 +41,7 @@ def get_xml_base(data, default):
     If the element does not have xml:base, it returns the default value.
 
     """
-    if get_element_id(XML_XMLNS, 'base') in data.attrib:
-        return data.attrib['{' + XML_XMLNS + '}base']
-    else:
-        return default
+    return data.attrib.get(get_element_id(XML_XMLNS, 'base'), default)
 
 
 class AtomSession(SessionBase):
