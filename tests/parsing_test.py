@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import functools
+import io
 import logging
 import os
 import os.path
@@ -7,7 +9,7 @@ import sys
 
 from pytest import mark
 
-from libearth.compat import IRON_PYTHON
+from libearth.compat import IRON_PYTHON, PY3
 from libearth.compat.etree import fromstringlist
 from libearth.parser.autodiscovery import get_format
 from libearth.schema import write
@@ -47,9 +49,13 @@ def test_parse(input_, expected):
     parsed_tree = fromstringlist(
         write(parsed_feed, canonical_order=True, hints=False)
     )
-    with open(os.path.join(test_suite_dir, expected)) as f:
-        if IRON_PYTHON:
-            f = f.read().decode('utf-8'),
+    if IRON_PYTHON:
+        open_ = functools.partial(io.open, encoding='utf-8')
+    elif PY3 and sys.platform == 'win32':
+        open_ = functools.partial(open, encoding='utf-8')
+    else:
+        open_ = open
+    with open_(os.path.join(test_suite_dir, expected)) as f:
         expected_tree = fromstringlist(f)
     compare_tree(expected_tree, parsed_tree)
 
