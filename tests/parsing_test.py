@@ -56,7 +56,7 @@ def test_parse(input_, expected):
     else:
         open_ = open
     with open_(os.path.join(test_suite_dir, expected)) as f:
-        expected_tree = fromstringlist(f)
+        expected_tree = fromstringlist(f.read() if IRON_PYTHON else f)
     compare_tree(expected_tree, parsed_tree)
 
 
