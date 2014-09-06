@@ -49,8 +49,15 @@ Continuous integration (Travis)
    https://travis-ci.org/earthreader/libearth
 
    .. image:: https://travis-ci.org/earthreader/libearth.svg
-      :alt: Build Status
+      :alt: Build Status (Travis)
       :target: https://travis-ci.org/earthreader/libearth
+
+Continuous integration (AppVeyor)
+   https://ci.appveyor.com/project/dahlia/libearth
+
+   .. image:: https://ci.appveyor.com/api/projects/status/6o48y74m0itba32k?svg=true
+      :alt: Build Status (AppVeyor)
+      :target: https://ci.appveyor.com/project/dahlia/libearth
 
 Test coverage (Coveralls)
    https://coveralls.io/r/earthreader/libearth
