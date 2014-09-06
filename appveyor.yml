@@ -25,7 +25,7 @@ install:
 - "git -C %APPVEYOR_BUILD_FOLDER% submodule update --init"
 - ps: (new-object net.webclient).DownloadFile('https://raw.githubusercontent.com/ogrisel/python-appveyor-demo/master/appveyor/install.ps1', 'C:/python-install.ps1')
 - "powershell C:/python-install.ps1"
-- "%PYTHON%\\Scripts\\pip.exe install pytest mock pytest-capturelog"
+- "%PYTHON%\\Scripts\\pip.exe install -e . pytest mock pytest-capturelog"
 build: false
 test_script:
 - "%PYTHON%\\Scripts\\py.test.exe --durations=5 tests"
