@@ -33,11 +33,17 @@ Package Index (PyPI)
 Docs (ReadTheDocs)
    http://libearth.earthreader.org/
 
+   .. image:: https://readthedocs.org/projects/libearth/badge/
+      :target: http://libearth.earthreader.org/
+
 Git repository (GitHub)
    https://github.com/earthreader/libearth
 
 Issue tracker (GitHub)
    https://github.com/earthreader/libearth/issues
+
+   .. image:: http://img.shields.io/github/issues/earthreader/libearth.svg
+      :target: https://github.com/earthreader/libearth/issues
 
 Mailing list
    earthreader@librelist.com
