@@ -75,7 +75,7 @@ __all__ = ('PARSER_LIST', 'SCHEMA_XMLNS',
            'read', 'validate', 'write')
 
 
-#: (:class:`str`) The XML namespace name used for schema metadatq.
+#: (:class:`str`) The XML namespace name used for schema metadata.
 SCHEMA_XMLNS = 'http://earthreader.org/schema/'
 
 
