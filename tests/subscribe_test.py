@@ -220,6 +220,20 @@ def test_subscription_feed_id(fx_subscription_list):
     assert cnet.feed_id == '95e2b8d3378bc34d13685583528d616f9b8dce1b'
 
 
+def test_subscription_feed_id_with_category(fx_categorized_subscription_list):
+    subscriptions = fx_categorized_subscription_list
+    games = subscriptions.categories['Game']
+    musics = subscriptions.categories['Music']
+
+    valve = games.children[0]
+    nintendo = games.children[1]
+    capsule = musics.children[0]
+
+    assert valve.feed_id
+    assert nintendo.feed_id
+    assert capsule.feed_id
+
+
 @fixture
 def fx_categorized_subscription_list():
     return read(SubscriptionList, [XML_CATEGORY])
