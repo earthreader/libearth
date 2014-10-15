@@ -1,0 +1,917 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+
+
+
+
+
+
+
+<feed version="0.3"
+		xmlns="http://purl.org/atom/ns#"
+		xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+		xmlns:dc="http://purl.org/dc/elements/1.1/"
+		xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/"
+		xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+		xmlns:activity="http://activitystrea.ms/spec/1.0/" >
+	
+		
+			<title><![CDATA[Complex mind _ blog]]></title>
+			<link rel="alternate" type="text/html" href="http://catmyo.blog.me" />
+			<author><name></name></author>
+			<id>http://blog.rss.naver.com/rss/blogRssForDomain.nhn?atom=0.3&amp;domainUrl=catmyo.blog.me</id>
+			<info><![CDATA[]]></info>
+			<modified>Sat, 07 Jun 2014 04:59:03 +0900</modified>
+			
+				<entry>
+					<title><![CDATA[홍홍홍]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/220007895632"/>
+					<id>http://catmyo.blog.me/220007895632</id>
+					<modified>Fri, 23 May 2014 01:37:18 +0900</modified>
+					<issued>Fri, 23 May 2014 01:37:18 +0900</issued>
+					<created>Fri, 23 May 2014 01:37:18 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[네이버 웹툰 10주년 기념 축전!이렇게 바글바글 있는거 넘 좋아요아는사람이야기 표지도 그렇고...근데 일로 그리면 찢어버리고싶...+스튜디오 짭쪼롬이 오디오 드라마로 나왔습니다멋진 성우분들이 연기해주셨어요 학학 듣고 싶으신 분들은http://cafe.naver.com/voicestories로 가시면 업데이트된걸 들으실 수 있습니다~^0^]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[ff6]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/200000304783"/>
+					<id>http://catmyo.blog.me/200000304783</id>
+					<modified>Mon, 12 May 2014 08:00:06 +0900</modified>
+					<issued>Mon, 12 May 2014 08:00:06 +0900</issued>
+					<created>Mon, 12 May 2014 08:00:06 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  
+  게임은 모바일이고 온라인이고 암튼 다 꾸준히 못하는데
+유일하게 몇번이고 반복플래이하는 게임 파판6..
+다른 파판시리즈들도 안함.. 호로지 6만^0^ 씹덕임. 여러분 파판6하세여 오래된 게임이지만 명작임 무기랑 무기든 손은 내 능력 밖이당..^_T
+ ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 23화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10189133761"/>
+					<id>http://catmyo.blog.me/10189133761</id>
+					<modified>Thu, 10 Apr 2014 23:10:00 +0900</modified>
+					<issued>Thu, 10 Apr 2014 23:10:00 +0900</issued>
+					<created>Thu, 10 Apr 2014 23:10:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  짭쪼롬 23화가 업데이트 되었습니다 + 마지막 일러스트... 지금보니 BL만화의 한장면 같기도하고ㅋㅋㅋㅋㅋ
+ㅋㅋㅋㅋ의도치 않게 ㅋㅋ..부끄럽네여 이제와서 고칠수는 없으니.. + 황사 조심하세여
+목구멍이 간질간질 ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 22화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10188703241"/>
+					<id>http://catmyo.blog.me/10188703241</id>
+					<modified>Thu, 03 Apr 2014 23:10:00 +0900</modified>
+					<issued>Thu, 03 Apr 2014 23:10:00 +0900</issued>
+					<created>Thu, 03 Apr 2014 23:10:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  
+22화 업데이트 제목은 스튜디오 짭쪼롬이면서 언제 그림 그리냐는 말이 많은데
+사실 딱히 그림그리는데 중점은 둔 만화는 아닙니다..^_T 제목이 그러할뿐..으으 물론 뒤로가면 지금보다는 조금 더 내용상 그림에 대한 이야기가 나오지 말입니다^_T + 4월은 내내 바쁠 것 같습니다
+뭐ㅝㅁ가 해보려고 핶는데 일정이 너무 빡빡해서 일단 보류 ㅋ..
+여름엔 꼭 뭐라도 내봐야지 
+]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 21화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10188301548"/>
+					<id>http://catmyo.blog.me/10188301548</id>
+					<modified>Thu, 27 Mar 2014 23:09:44 +0900</modified>
+					<issued>Thu, 27 Mar 2014 23:09:44 +0900</issued>
+					<created>Thu, 27 Mar 2014 23:09:44 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  21화는 쉬어가는 4컷만화.. + 안시가 등장했습니다 + 이번주는 고기를 먹었습니다 생삼겹을 먹었어요
+고기먹고 집에올땐 졸려서 좀비같이 구웨웨ㅔ에엑 하고 왔는데
+집에오니까 쌩쌩해 지는것이 저는 역시 집순이인가봄. 집 최고 집 만세! + 뭔가 꼼질꼼질 만들계획을 짜보고있습니다
+미니북이나 머그컵이나 뭐 그런거
+아직 구체적이진 않음.. 쥐도새도 모르게 사라질 계획일지도 모름 ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 20화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10187827652"/>
+					<id>http://catmyo.blog.me/10187827652</id>
+					<modified>Thu, 20 Mar 2014 23:10:00 +0900</modified>
+					<issued>Thu, 20 Mar 2014 23:10:00 +0900</issued>
+					<created>Thu, 20 Mar 2014 23:10:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[
+드뎌끝난 나무요한 이야기.
+징했다... + 오늘의 마감한 선물은 육회입니다.
+사실뷔페에서나 아니면 한정식집에 딸려나오는 육회만 먹어봤지
+육회만 먹으러는 가본적이 없어서.. 설레여...u///u 하아.. 채식주의자 할거라고 매년 다짐하지만 작심삼일.
+고기..치명적인 매력의 너.. 다음생에 양이나 토끼로 태어나는 수밖엔 없을것 같습니당.. ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 19화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10187365903"/>
+					<id>http://catmyo.blog.me/10187365903</id>
+					<modified>Thu, 13 Mar 2014 23:10:00 +0900</modified>
+					<issued>Thu, 13 Mar 2014 23:10:00 +0900</issued>
+					<created>Thu, 13 Mar 2014 23:10:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  사실은 19화로 요한+나무 에피소드는 끝낼 예정이었는데...
+분량 조절 실패로 다음주까지 이어지게 되었습니다..ㅠㅠ 8p~10p를 더 그리리고 끝내는 대신 늦느냐.
+애매한 곳에서 끊느냐의 기로에서 저는 패배하였슴.
+도저히 할 수가없었음..엉엉 + 암튼 저는 오늘 마감을 끝내고 초밥과 맥주를 마시러 갈껍니다.
+역시 이 글이 올라갈때쯤엔 저는 배부르고 행복한 시간을 보내고있겠지요.... + 곧 봄입니다. 벌써 설레여..u//u ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 18화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10186924715"/>
+					<id>http://catmyo.blog.me/10186924715</id>
+					<modified>Thu, 06 Mar 2014 23:10:00 +0900</modified>
+					<issued>Thu, 06 Mar 2014 23:10:00 +0900</issued>
+					<created>Thu, 06 Mar 2014 23:10:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  
+이번주는다필요없고피자가먹고싶었다.
+배고파...배..배고파...........ㅠㅠ
+동네에24시간피자집좀차려주세여...제가매상책임짐.. + 봄이오면좀비처럼슬금슬금기어나오는버스커버스커노래를듣고있습니다.
+분명작년에질리게들었는데들으면또좋음ㅋㅋ + 머리가굳어가고있습니다.
+짬을내서책이라도읽어야겠.....는데난놀겠지그냥놀겠징헤헿.. + 마감하고자고일어나서집청소하고밀린설거지도하고
+미뤄뒀던이불빨래도하고건조도뽀송하게시키고
+샤워싹하고좋아하는바디로션듬뿍바르고
+배도부르고집은따뜻하고고양이는고릉고릉자고.. 이제불끄고누워서영화보다나도모르게잠들건데열라행복하다흐으ㅏㅢㅏ흐헤헤ㅔ헿.........]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 17화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10186474222"/>
+					<id>http://catmyo.blog.me/10186474222</id>
+					<modified>Thu, 27 Feb 2014 23:10:00 +0900</modified>
+					<issued>Thu, 27 Feb 2014 23:10:00 +0900</issued>
+					<created>Thu, 27 Feb 2014 23:10:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  17화! 나무야 미아내..
+인생이 원래다 그런거야..생각처럼쉬운게 아니란다.. + 아무튼!
+오늘도 마감끝나고 미리 써두는 예약글인데
+저는 이글이 올라갈때쯤 아마 초밥을 배터지게먹고
+감자튀김에 맥주를 마시고 있을것 같네요!!!!!!!
+저번주엔 꼬끼!!! 이번주엔 쌩썬!!!!!!!! 아하하ㅏ 하하하ㅏㅎㅎ + 미세먼지 조심하세여 먼지는 나의 원수 먼지를 주기자.
+]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 16화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10185992016"/>
+					<id>http://catmyo.blog.me/10185992016</id>
+					<modified>Thu, 20 Feb 2014 23:10:00 +0900</modified>
+					<issued>Thu, 20 Feb 2014 23:10:00 +0900</issued>
+					<created>Thu, 20 Feb 2014 23:10:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[
+발랄한 나무
+손발이 사라질것 같은 16화...
+대사없는 컷들이 많아서 분량이 적어보이지만 정 분량 맞습니다^_T 헤헿... + 이거 예약글인데..
+이 글이 올라갈때쯤엔 제가 고기를 먹고있을것 같네요
+집에서 스테이크 구워먹을거임 챱챱!!!!!!
+마감 끝난기념으로 고기!!! 와인!!!! 샐러드!!!! 생각만해도 기분좋다 + 짭쪼롬 단행본은 나오긴 합니다 시기가 정해지지 않았을뿐..^_T
+정해지면 공지하겠습니다  ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 15화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10185540730"/>
+					<id>http://catmyo.blog.me/10185540730</id>
+					<modified>Thu, 13 Feb 2014 23:10:00 +0900</modified>
+					<issued>Thu, 13 Feb 2014 23:10:00 +0900</issued>
+					<created>Thu, 13 Feb 2014 23:10:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  저번주에 이어 나무+요한 에피소드가 업뎃되었습니당. 그러고보니 과거컷들은 테두리를 둥글렸었는데 깜빡했네요
+다음주부턴 하고 전것도 수정해야겠다..으으..  +  자랑할게 있어서..흐흐
+어떤분이 만들어주신 소낙이랑 나무   소낙이 ㅠㅠㅠㅠㅠㅠㅠ
+넘 귀여움.. 탐난다   이건 나무!!! ㅠㅠㅠㅠ 헐 귀엽
+양말봐... 헝허ㅏㅜㅜㅏㅓ헝 감사합니다 사진보고 넘 좋았어요 
+더 많은 사진이 있는 출처는 이곳입니다
+http://blog.naver.com/pacivnal  자랑자랑  ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[ㅠㅠ]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10185408395"/>
+					<id>http://catmyo.blog.me/10185408395</id>
+					<modified>Tue, 11 Feb 2014 17:45:42 +0900</modified>
+					<issued>Tue, 11 Feb 2014 17:45:42 +0900</issued>
+					<created>Tue, 11 Feb 2014 17:45:42 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  
+단행본 관련 질문이 많아서 ..
+아는사람 이야기 3,4권은 한꺼번에 작업 진행중입니다
+봄쯤엔 만나보실 수 있어요 짭쪼롬 단행본은 아직 미정입니당
+정해지는대로 글 올리겠습니다 위 짤은 4권 표지중 일부]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[한줌 물망초 축전!]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10185370240"/>
+					<id>http://catmyo.blog.me/10185370240</id>
+					<modified>Tue, 11 Feb 2014 04:17:10 +0900</modified>
+					<issued>Tue, 11 Feb 2014 04:17:10 +0900</issued>
+					<created>Tue, 11 Feb 2014 04:17:10 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  
+한줌물망초 완결 축전..
+조금 수정했는데 수정본 보내는걸 깜빡해서 
+혜진양작가님 후기엔 수정전 그림이 올라갔습니당 ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 14화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10185073445"/>
+					<id>http://catmyo.blog.me/10185073445</id>
+					<modified>Thu, 06 Feb 2014 23:20:00 +0900</modified>
+					<issued>Thu, 06 Feb 2014 23:20:00 +0900</issued>
+					<created>Thu, 06 Feb 2014 23:20:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  14화 부터 나무와 요한이 에피소드가 시작되었습니다
+아마 과거 위주의 에피소드가 될 것같아요   이런컷 그리는거 좋아해요
+투닥투닥 하는거.. 
+원고 내내 슈퍼키드의 그리 쉽게 이별을 말하지 말아요를 들었습니다
+추억돋아서 좋았어요 이번주도 추운데 캄키조심 몸살조심]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 13화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10184697849"/>
+					<id>http://catmyo.blog.me/10184697849</id>
+					<modified>Thu, 30 Jan 2014 23:10:00 +0900</modified>
+					<issued>Thu, 30 Jan 2014 23:10:00 +0900</issued>
+					<created>Thu, 30 Jan 2014 23:10:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  13화 마지막컷 소낙이..
+비하인드 스토리가 있지만 무덤까지 가져가겠다... 여러분 새해 복 많이 받으시고
+올 한해도 잘 부탁드립니다 굽신굽신 사..사..사리곰탕!  ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 11화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10183264394"/>
+					<id>http://catmyo.blog.me/10183264394</id>
+					<modified>Thu, 09 Jan 2014 23:20:00 +0900</modified>
+					<issued>Thu, 09 Jan 2014 23:20:00 +0900</issued>
+					<created>Thu, 09 Jan 2014 23:20:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  11화 업뎃. 학생들이 많이 나오면 풋풋해서 좋음 날씨가 급 추워졌네여 늘 하는 이야기지만 감기조심.. 식욕이 폭발해서 엄청나게 먹고있음 노래방 가고싶당.. 아 목욕탕도 가고싶어..근데 밖에 너무 추움.. 
+담주에 만나영 
+]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬10화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10182802342"/>
+					<id>http://catmyo.blog.me/10182802342</id>
+					<modified>Thu, 02 Jan 2014 23:20:00 +0900</modified>
+					<issued>Thu, 02 Jan 2014 23:20:00 +0900</issued>
+					<created>Thu, 02 Jan 2014 23:20:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  짭쪼롬 10화가 업데이트 되었습니다! 마감이 끝나고나니 해가 바뀌어있는 기현상을...올해도....ㅠㅠ..흐흐ㅏ그ㅏㅣㅎㄱ
+내년엔 꼭 미리해두거나 하......할 수 있을리가 없징... 숙명임. 아무튼 여러분새해복 많이 받으세요!! + 10화엔 진국이가 등장했네요..
+외국인 같은 생김새를 못그려서 그냥 머리색+눈색으로 커버하는 저를 용서하쎄여.. + 감기가 독하다고합니다.. 조심하세여
+이거쓰고있는 지금은 사실 아침 아홉시인데
+이따 일어나서 떡국해먹을테야... 떡국도 못먹음 ㅠㅠ 엉엉 
+]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 9화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10182399995"/>
+					<id>http://catmyo.blog.me/10182399995</id>
+					<modified>Thu, 26 Dec 2013 23:20:00 +0900</modified>
+					<issued>Thu, 26 Dec 2013 23:20:00 +0900</issued>
+					<created>Thu, 26 Dec 2013 23:20:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  짭쪼롬 9화가 올라왔습니당 이번주는 마감이...마감이 힘들었음..
+분량도 고대로인데 그냥 손이 좀 많이감.. ㅇ으으으...으으... 덕분에 제 크리스마스는 마감과 함께 사라졌습니다 하ㅏㅏ하핳..   그래도 간만에 그리면서 즐거웠던 컷 
+전체그림은 웹툰에서 보실 수 있습니당
+위는 잘라낸 크롭샷.  
+소낙이 그림..은 내그림 걍 내그림 엉엉
+다시는 그림 잘 그린다는 설정의 캐릭터 그리지 않을테야 ..
+ㅠㅠ그려봐야 내 그림밖에 안되는데..외주를 쓸 수 도 없고...   
+빨간후드입은 토근이 그리면서 
+아 얘 어디서 본거 같은데..뭐지..했더니만   자기복제였음..ㅋ..
+정상이랑 넘 비슷햌.......]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 8화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10182034192"/>
+					<id>http://catmyo.blog.me/10182034192</id>
+					<modified>Fri, 20 Dec 2013 00:39:34 +0900</modified>
+					<issued>Fri, 20 Dec 2013 00:39:34 +0900</issued>
+					<created>Fri, 20 Dec 2013 00:39:34 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  http://comic.naver.com/webtoon/detail.nhn?titleId=597480&amp;no=8&amp;weekday=fri
+8화 업뎃! + 스튜먹고싶다..
+날추울땐 따끈한걸 먹어야졍.. ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 7화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10181608486"/>
+					<id>http://catmyo.blog.me/10181608486</id>
+					<modified>Fri, 13 Dec 2013 00:31:29 +0900</modified>
+					<issued>Fri, 13 Dec 2013 00:31:29 +0900</issued>
+					<created>Fri, 13 Dec 2013 00:31:29 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  짭쪼롬 7화가 올라왔습니다~
+http://comic.naver.com/webtoon/detail.nhn?titleId=597480&amp;no=7&amp;weekday=fri 이번화엔 먹을게 안나와서 속상... + 3주연속 감기조심하란 말만 썼지만..
+감기 조심하세요]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 6화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10181128751"/>
+					<id>http://catmyo.blog.me/10181128751</id>
+					<modified>Thu, 05 Dec 2013 23:20:00 +0900</modified>
+					<issued>Thu, 05 Dec 2013 23:20:00 +0900</issued>
+					<created>Thu, 05 Dec 2013 23:20:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  짭쪼롬 6화가 올라왔습니다
+새로운 인물 둘이 나왔네요.. 윤나무 윤강 윤남매랍니다
+파릇파릇한 고딩들.. + 요즘 연말이라그런지 여러일이 마구 겹쳐서그런지 제정신이 아닙니다
+올해만 잘 넘기면 좀 나아지겠지요..제발 ㅠㅠ + 원래 마감할땐 조용한 노래를 반복듣기 하는편인데
+너무 쳐지는거 아닌가 싶어 이번 마감은 댄스곡으로 리스트를 짜봤더니 너무 신나서 진도가 안가는 현상이..ㅠㅠ
+혼자 신나서 앉은채로 꿈틀거렸습니다. 춤이아님 꿈틀임. 
+거울이 옆에 없어서 다행이었습니다. + 날이 따셔졌다 추워졌다하는데 감기 조심하세영! ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 5화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10180711118"/>
+					<id>http://catmyo.blog.me/10180711118</id>
+					<modified>Thu, 28 Nov 2013 23:20:00 +0900</modified>
+					<issued>Thu, 28 Nov 2013 23:20:00 +0900</issued>
+					<created>Thu, 28 Nov 2013 23:20:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  스튜디오 짭쪼롬 5화가 올라왔습니다 저희 작업실도 옥탑인데 여름엔 고기를 구워먹었지여
+이젠 추워서 옥상에서 고기는 물건너갔지만.. 
+먹고싶당..맛있었는데..:Q....
+봄되면 꼭 먹어야 겠습니다 
+]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 4화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10180310295"/>
+					<id>http://catmyo.blog.me/10180310295</id>
+					<modified>Thu, 21 Nov 2013 23:20:00 +0900</modified>
+					<issued>Thu, 21 Nov 2013 23:20:00 +0900</issued>
+					<created>Thu, 21 Nov 2013 23:20:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  스튜디오 짭쪼롭 4화가 나왔습니다 만화전체 제목은 짭쪼롬인데 이야기속 작업실 이름은 달콤이라 의아해하셨을 것 같습니다
+아무튼 토근이와 소낙이의 작업실 이름은 스튜디오 달콤입니다ㅎㅎ + 전 포스팅에서도 이야기했지만
+아는사람이야기 3,4권은 조금 기다려주셔야 할것 같습니다.
+올해에는 나오지 않을것 같아요 ㅠㅠ + 날이 춥네요 감기조심하시고 귤 많이 드세영 ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 3화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10179803438"/>
+					<id>http://catmyo.blog.me/10179803438</id>
+					<modified>Thu, 14 Nov 2013 23:30:00 +0900</modified>
+					<issued>Thu, 14 Nov 2013 23:30:00 +0900</issued>
+					<created>Thu, 14 Nov 2013 23:30:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[   3화가 올라왔습니다~ 1화와 비교해보시면 아시겠지만가독성을 위해 칸과 칸의간격을 조금 넓혔습니다. 
+절대 분량 늘리기가 아니랍니다..ㅠㅠ. 
++  네 제가 먹고싶어서 그린거 맞아요
+새우 먹고싶다 매콤달콤새우..^ㅜ^....
+근데 사실 저렇게 통통한건 밀가루옷이 넘 커서 별로임 
++ 날이 추워졌습니다.. 모두 감기조심하세요
+저는 이미 늦었어요.......... 
+]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[스튜디오 짭쪼롬 1화]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10179064572"/>
+					<id>http://catmyo.blog.me/10179064572</id>
+					<modified>Thu, 31 Oct 2013 23:35:45 +0900</modified>
+					<issued>Thu, 31 Oct 2013 23:35:45 +0900</issued>
+					<created>Thu, 31 Oct 2013 23:35:45 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[   http://comic.naver.com/webtoon/detail.nhn?titleId=597480&amp;no=1&amp;weekday=fri 스튜디오 짭쪼롬 1화가 업데이트 되었습니다 다시한번 잘부탁드립니다..^0^ + 아는사람이야기 3,4권은 준비중입니다
+천천히 기다려주세요ㅜㅜ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[크케케케헤케켛]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10179008118"/>
+					<id>http://catmyo.blog.me/10179008118</id>
+					<modified>Thu, 31 Oct 2013 03:13:09 +0900</modified>
+					<issued>Thu, 31 Oct 2013 03:13:09 +0900</issued>
+					<created>Thu, 31 Oct 2013 03:13:09 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  
+짤은 작업중인거 크롭샷
+최근그린게 이런거뿐임..ㅠㅠ.. 암튼 그거 아시나요 오늘 밤11시에 차기작 "스튜디오 짭쪼롬" 1화가 올라옵니다
+아옭 설렘ㅋㅋㅋㅋ떨림ㅋㅋㅋㅋㅋ 그토록 원하던 금요일로 다시 돌아갈 수 있어서 넘 기뻐요 1화 올라온 후 포스팅으로 다시 돌아오겠습니다..ㅋㅋㅋ  ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[오늘의 낙서]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10176439243"/>
+					<id>http://catmyo.blog.me/10176439243</id>
+					<modified>Mon, 16 Sep 2013 21:32:56 +0900</modified>
+					<issued>Mon, 16 Sep 2013 21:32:56 +0900</issued>
+					<created>Mon, 16 Sep 2013 21:32:56 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[       
+오덕오덕..
+블로그를 좀 활성화 시켜야겠습니당 ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[우리요리]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10176393031"/>
+					<id>http://catmyo.blog.me/10176393031</id>
+					<modified>Mon, 16 Sep 2013 03:37:38 +0900</modified>
+					<issued>Mon, 16 Sep 2013 03:37:38 +0900</issued>
+					<created>Mon, 16 Sep 2013 03:37:38 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  
+작년에 작업했던 만화입니다 
+지금은 서비스가 종료되어 더이상 볼수가 없는듯해서올려봐요 비슷한시기에 단편 두개를 했었는데
+유료였던터라 다른단편 흐린뒤 맑음과 우리요리중 
+우리요리만공개합니다 접어놨어요                                                                 끝! 
+==========================    
+]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[웨딩피치여..]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10176280594"/>
+					<id>http://catmyo.blog.me/10176280594</id>
+					<modified>Sat, 14 Sep 2013 01:54:51 +0900</modified>
+					<issued>Sat, 14 Sep 2013 01:54:51 +0900</issued>
+					<created>Sat, 14 Sep 2013 01:54:51 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  
+웨딩피치봄.. 릴리랑 데이지가 나쁨 피치는 걍 호구같음..
+그리고 셋이 남자에 너무 환장했음..ㅠㅠ.... 재미져여 ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[헝]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10175728219"/>
+					<id>http://catmyo.blog.me/10175728219</id>
+					<modified>Thu, 05 Sep 2013 00:53:35 +0900</modified>
+					<issued>Thu, 05 Sep 2013 00:53:35 +0900</issued>
+					<created>Thu, 05 Sep 2013 00:53:35 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[연재를 안하니 포스팅이 뜸하네요 ㅠㅠ환절기라 감기에 걸렸습니다열이 폴폴나서 약먹으면 병든 닭처럼 졸고.. 안먹자니 어지럽고 그런 가을맞이 중입니다.감기조심하세영..아니 지금 이 포스팅 쓰는데 공지를보니 1시~6시까지 점검한다네여 이거 제시간에 등록 될까과연..지금이 12시 49분정도거든여혹시 미드나 영드많이 보시는분 계신가요저 그럼 드라마 추천좀 해주세요 헤헤..에피소드 시트콤 같은 드라마들로..일본드라마도 괜찮은데 이런 시트콤 같은 일드가 있던가...으으..투 브로크 걸스나 하우 아이 멧 유어 마더나 뉴걸같은 가벼운 류 면 좋을것 같습니다!]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[타임인조선 축전]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10175227505"/>
+					<id>http://catmyo.blog.me/10175227505</id>
+					<modified>Wed, 28 Aug 2013 01:11:22 +0900</modified>
+					<issued>Wed, 28 Aug 2013 01:11:22 +0900</issued>
+					<created>Wed, 28 Aug 2013 01:11:22 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[정말 좋아하는 만화가 완결이 났지요 ㅠㅠ...우리 대례 ㅠㅠ 흑흑..]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[끄잉]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10174990208"/>
+					<id>http://catmyo.blog.me/10174990208</id>
+					<modified>Sat, 24 Aug 2013 05:12:52 +0900</modified>
+					<issued>Sat, 24 Aug 2013 05:12:52 +0900</issued>
+					<created>Sat, 24 Aug 2013 05:12:52 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[근황이 뜸했습니다..위 짤은 어따 쓸라고 한컷을 위해 낑낑 그린거 잘라봄요즘 주간식은 삶은 옥수수잔뜩 삶아서 냉동실에 얼려두고 심심할때마다 꺼내먹으면 꿀맛더워서 고양이도 나도 늘어진다아주그냥 바닥에 껌딱지 댄싱나인 보는데 재미지다!!!! 어쩜 저렇게 몸을 움직이누..내게도 저런 근육이 있긴한건가... 운동해야겠단 생각.벌써 다섯시가 넘었구나 자야지
+ 
+ ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[맥스]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10173410734"/>
+					<id>http://catmyo.blog.me/10173410734</id>
+					<modified>Wed, 31 Jul 2013 02:50:53 +0900</modified>
+					<issued>Wed, 31 Jul 2013 02:50:53 +0900</issued>
+					<created>Wed, 31 Jul 2013 02:50:53 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[맥스 짱짱걸너무 좋음]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[후기]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10170306897"/>
+					<id>http://catmyo.blog.me/10170306897</id>
+					<modified>Thu, 13 Jun 2013 23:51:01 +0900</modified>
+					<issued>Thu, 13 Jun 2013 23:51:01 +0900</issued>
+					<created>Thu, 13 Jun 2013 23:51:01 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[후기가 올라왔습니다우왕 이제 진짜 끝이네요1년이 넘는 시간동안 정말로 고마웠어요또 만나게 된다면 더 좋은 모습으로 만나고싶어요 ㅠㅠ이제 칭찬을 받아도 부끄럽지 않고 당당히 받을수있게!!감사합니다! ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[아는사람이야기 2권 예약판매 시작!]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10170272797"/>
+					<id>http://catmyo.blog.me/10170272797</id>
+					<modified>Thu, 13 Jun 2013 14:43:43 +0900</modified>
+					<issued>Thu, 13 Jun 2013 14:43:43 +0900</issued>
+					<created>Thu, 13 Jun 2013 14:43:43 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[교보http://www.kyobobook.co.kr/product/detailViewKor.laf?ejkGb=KOR&amp;mallGb=KOR&amp;barcode=9788901158419&amp;orderClick=LAG&amp;Kc=예스24tp://www.yes24.com/24/goods/9023149?scode=032&amp;OzSrank=1인터파크http://book.interpark.com/product/BookDisplay.do?_method=detail&amp;sc.shopNo=0000400000&amp;sc.prdNo=212617662&amp;bid1=search&amp;bid2=product&amp;bid3=title&amp;bid4=001알라딘http://www.aladin.co.kr/shop/wproduct.aspx?ISBN=8901158418 11번가http://book.11st.co.kr/Goods.do?cmd=detail&amp;&amp;dispCtgNo=002030002000000000&amp;dispCrnNo=LIST_CRN_21&amp;plnDispNo=&amp;pgUnqNo=030&amp;gdsNo=M0.......]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[꿀잼]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10170074724"/>
+					<id>http://catmyo.blog.me/10170074724</id>
+					<modified>Mon, 10 Jun 2013 16:29:20 +0900</modified>
+					<issued>Mon, 10 Jun 2013 16:29:20 +0900</issued>
+					<created>Mon, 10 Jun 2013 16:29:20 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[밀렸던 웹툰들 보고있는데 사랑의 외계인 넘좋아서..ㅠㅠ좋아하는게 다들어가있다 우주 외계인 교복학생 초능력보세요 두번보세요..]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[끝!]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10169838175"/>
+					<id>http://catmyo.blog.me/10169838175</id>
+					<modified>Thu, 06 Jun 2013 23:10:00 +0900</modified>
+					<issued>Thu, 06 Jun 2013 23:10:00 +0900</issued>
+					<created>Thu, 06 Jun 2013 23:10:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[아는사람이야기 마지막화가 올라왔습니다~소감(?)은 다음주 후기에 길게쓰기로하고...블로그엔 일단 2권홍보를..ㅋㅋ..브로마이드가 한정으로 나가고 표지는 위와같습니다~이대로라면 4권까지 나올것 같아요마지막까지 함께해주셔서 진심으로 감사드립니다다음주에 만나요!]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[2권준비중]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10169418404"/>
+					<id>http://catmyo.blog.me/10169418404</id>
+					<modified>Fri, 31 May 2013 11:12:28 +0900</modified>
+					<issued>Fri, 31 May 2013 11:12:28 +0900</issued>
+					<created>Fri, 31 May 2013 11:12:28 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[굳모닝 포스팅.....이라기엔 곧 점심이구나아는사람이야기 2권 준비중입니다6월 중순~말에 나와요이번엔 브로마이드가 함께 나옵니다~이런걸로!아는사람이야기는 아니고 그냥 일러스트 브로마이드...올린건 작지만 실물은 크고아름다울것이여요 ㅋㅋㅋ이건 표지일부분..이번 표지엔 미라평화커플이 메인으로 들어가요또 소식오는대로 포스팅할께영]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[트위터]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10169191499"/>
+					<id>http://catmyo.blog.me/10169191499</id>
+					<modified>Tue, 28 May 2013 02:48:16 +0900</modified>
+					<issued>Tue, 28 May 2013 02:48:16 +0900</issued>
+					<created>Tue, 28 May 2013 02:48:16 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[친구들의 도움으로 트위터를 시작했습니다..사실 아직도 어떻게 하는지 잘 모르겠어요 ㅋㅋ@catmyo  ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[티셔츠 관련 이벤트가 있습니다~]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10168888982"/>
+					<id>http://catmyo.blog.me/10168888982</id>
+					<modified>Thu, 23 May 2013 14:40:41 +0900</modified>
+					<issued>Thu, 23 May 2013 14:40:41 +0900</issued>
+					<created>Thu, 23 May 2013 14:40:41 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[티셔츠와 관련해서 웹툰샵에서 이벤트를 한다고합니다~===========================================================================[아는 사람 이야기] 반팔티셔츠 출시 기념 &#65279;작가 사인 반팔티셔츠 증정 이벤트웹툰샵내 [아는 사람 이야기] 반팔티셔츠 상품페이지 밑에 댓글을달아 주세요.story of some one 반팔티http://www.webtoonshop.com/shop/goods/goods_view.php?&amp;goodsno=3137&amp;category=011069하트 반팔티http://www.webtoonshop.com/shop/goods/goods_view.php?&amp;goodsno=3138&amp;category=011069추첨을 통해 작가 사인이 프린팅 되어 있는 [아는 사람 이야기] 초레어아이템 반팔티셔츠를 드립니다.이벤트 운영.......]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[웹툰샵에서 티셔츠가 나왔습니다]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10168318894"/>
+					<id>http://catmyo.blog.me/10168318894</id>
+					<modified>Tue, 14 May 2013 18:45:21 +0900</modified>
+					<issued>Tue, 14 May 2013 18:45:21 +0900</issued>
+					<created>Tue, 14 May 2013 18:45:21 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[웹툰샵에서 아는사람이야기 반팔 티셔츠가 나왔습니다~들어간 그림이 여름인데 좀 봄같죠..?..구입을 원하시는분은 아래 링크 걸어두었습니다^0^!!바로가기 : http://www.webtoonshop.com/shop/goods/goods_list.php?category=011069웹툰샵 : http://www.webtoonshop.com   ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[이번주]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10166632674"/>
+					<id>http://catmyo.blog.me/10166632674</id>
+					<modified>Thu, 18 Apr 2013 06:27:20 +0900</modified>
+					<issued>Thu, 18 Apr 2013 06:27:20 +0900</issued>
+					<created>Thu, 18 Apr 2013 06:27:20 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[급졸려져서 급마무리근데 지금자고 일어나서 청소하고 씻고나면 또 밤일것 같아 망했어..정말 다행인건 우리동네 벚꽃이 좀 늦게 개화했다는게..딱 지금 가면 좋을때일듯.꼭 간다 얼른자야지]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[근황]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10166209593"/>
+					<id>http://catmyo.blog.me/10166209593</id>
+					<modified>Thu, 11 Apr 2013 15:31:13 +0900</modified>
+					<issued>Thu, 11 Apr 2013 15:31:13 +0900</issued>
+					<created>Thu, 11 Apr 2013 15:31:13 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[스포로.. 남선오.얘는 잘못그리면 정말 촌스러워짐..52화 끝일러스트근황.이게 몇주간 반복되고 있는데..멈출수 없음..날이 좋으니까 자꾸 모여서 놀게된다술은 취하도록 많이는 안마심 그냥 찔끔찔끔 자주 마실뿐!이번 주말은 전시회구경 + 꽃놀이 + 미러볼환영회..ㅋㅋㅋ아마 2주정도의 주말 안주 메뉴..색을 보니 왜 사람이 토하면 그런색인지 알것 같습니다분명 더먹었을텐데 기억이....지방은 늘고 뇌세포는 줄어드는가 보다주말에 놀기위해 열심히 일해놔야지...그전에 청소...     ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[안녕 잘가]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10164918873"/>
+					<id>http://catmyo.blog.me/10164918873</id>
+					<modified>Thu, 28 Mar 2013 15:29:40 +0900</modified>
+					<issued>Thu, 28 Mar 2013 15:29:40 +0900</issued>
+					<created>Thu, 28 Mar 2013 15:29:40 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[    
+이렇게 그려두니 참 나쁜여자같다...ㅋㅋㅋ..
+정말...몇번을 날리고 그림깨먹고..마감때마다 어르고 달래고...
+진심으로 이번주 휴재나는줄 알았음.. 사실 아직 모니터만 도착음.. 내일은 본체도 오니까 ...
+이제 로그인하는데 안기다려도돼!!!!! 포토샵열다가 멈출까봐 걱정 안해도돼!!!!!!!
+압축하다 컴퓨터 멈추는일도 없엉!!!!!!!!!!!!! 파워딸려서 모니터가 두댄데 하나밖에 못쓰는 설움도 안녕!!!!!
+컴터킬때 이번엔 한번에 켜지길!!하는 기원도 안해도돼!!!! 동영상 다음편으로 자동으로 넘어갈때 다운도 안되겠지!!!!!
+키보드도 산다!!!!!!! 프린팅 지워져서 영타칠때 괴롭던 날들이여 안녕이다!!!!!!!  어.......]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[꼬양이들]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10163859422"/>
+					<id>http://catmyo.blog.me/10163859422</id>
+					<modified>Wed, 20 Mar 2013 02:57:33 +0900</modified>
+					<issued>Wed, 20 Mar 2013 02:57:33 +0900</issued>
+					<created>Wed, 20 Mar 2013 02:57:33 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[작업실 이쁜이들 루팡잘보면 꼬리가 솜방망이가 되어있는데이날 꽁이 중성화하고 엘리자베스칼라 하고온거보고 저렇게됨ㅋㅋㅋ겁쟁이도 이런겁쟁이가 없다봉지좋아하는 꽁..하도 꽁! 꽁! 하고 불러서 꽁치야~ 하고부르기 어색함..이젠 아무도 꽁을 꽁치라고 부르지 않는다ㅋㅋ친구가 잠깐 빌려준 목걸이 착용루팡이는 정말로 빨강이 잘어울린다 넘 예뻥..ㅠㅠ..하지만 겁쟁이에 바보형꽁아저앀ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ아 표정 ㅋㅋㅋㅋㅋㅋㅋ 포즠ㅋㅋㅋㅋㅋㅋㅋ 힘들어간 발ㅋㅋㅋㅋㅋㅋ아..넌 어쩜 그렇게 날 웃기는지..귀요미들 내 천사들임]]></summary>
+					<tag><![CDATA[iPhone]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[14일이라니..]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10163139816"/>
+					<id>http://catmyo.blog.me/10163139816</id>
+					<modified>Thu, 14 Mar 2013 23:10:00 +0900</modified>
+					<issued>Thu, 14 Mar 2013 23:10:00 +0900</issued>
+					<created>Thu, 14 Mar 2013 23:10:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[...친구가 말 안해줬으면 그냥 8일인줄 알았겠지..치매가오나...허허..그러고보니 화이트데이네여 ...깔깔깔 그게뭐지 먹는건가!!! 챱챱현현님 생일축하합니당!!!!!!이번화 상훈이 참 빙구 같네요 앞머리하나 짧을 뿐인데정말 빙구같아서 상훈이 아닌것 같다...그림을 정말 심하게 안그려서 친구들이랑 일주일에 한장씩 팬아트그리기를 하고있습니다맨위는...나중에 그려볼까 싶은 만화 캐릭터들두번째는 핑드럼의 히마리 세번째는 하울이렇게라도 그리니 좋아요 근데 문제는 자꾸 마감중에 그리고싶다는거... 다른사람의 캐릭터를 내그림으로 그린다는건 참 재미있는것 같습니당요즘은 해가 반짝떠서 참좋습니다이불말리러가야징  ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[후후호호]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10162311550"/>
+					<id>http://catmyo.blog.me/10162311550</id>
+					<modified>Thu, 07 Mar 2013 13:44:45 +0900</modified>
+					<issued>Thu, 07 Mar 2013 13:44:45 +0900</issued>
+					<created>Thu, 07 Mar 2013 13:44:45 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[   그리고 올리고보니 반말이네요
+포스팅을 안할순 없기에 일단 사실 기쁠때도 슬플때도 행복할때도 먹습니다 항상 먹엉
+그리고 안움직여!!! 하하호호 결국 결론은 또 먹겠단이야기.. 
+뭐부터 하면 좋을까요..먹을까.. 치울까 ..씻을까..잘까...아.... 
+]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[잠깐 설문조사]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10159944892"/>
+					<id>http://catmyo.blog.me/10159944892</id>
+					<modified>Thu, 14 Feb 2013 14:14:15 +0900</modified>
+					<issued>Thu, 14 Feb 2013 14:14:15 +0900</issued>
+					<created>Thu, 14 Feb 2013 14:14:15 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[짤은 유전자우월 김씨남매 상훈상희닮았나요?....사실 제그림은 머리색 + 머리스타일만 비슷하면 다 똑같앙^0^..+수능이 에피는 3화까지입니다.임수능1,2,3 으로 제목을 했는데 상중하로 할껄 하는 후회가..+여름이 에피전에 쉬어가는겸 짤막한걸로 몇화쯤 나올예정이었는데왜 여름이 에피 안하냐는질문이 이어져서잠깐 설문조사합니다~그래봐야 1~2주 정도겠지만 여름이 에피전에 가벼운일상(?)화가 들어가는게 좋을까요아니면 수능이 이야기 끝나면 바로 여름이 에피 들어가는게 좋을까요답변 감사합니다!덧글은 이제 닫아둘게요! ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[43화 후기 +a]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10159369766"/>
+					<id>http://catmyo.blog.me/10159369766</id>
+					<modified>Thu, 07 Feb 2013 23:10:00 +0900</modified>
+					<issued>Thu, 07 Feb 2013 23:10:00 +0900</issued>
+					<created>Thu, 07 Feb 2013 23:10:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[  멋지고 잘생긴남자는 아무나 그리는게 아니라는 교훈을 얻었습니다..
+호우작가님 감사해요 권쌤 죄송해요..   아는사람이야기 카카오톡 이모티콘이 나왔습니다  이렇게 총 18종입니다
+너무 예전에 그린거라...눙물이...ㅠㅠ... 이쁘게 사용해주시길!  +  사인본에 들어간 사인에 제(?)표정말인데요
+표정이 다르다고해서 남이 한게 아니고 사인할때 여러종류로 그렸습니다 ㅠㅠ 
+맨위가 가장 많은 기본형얼굴.. 
+그밖에도 아래것들이 조금씩 들어가있습니다~
+까먹었는데 =▽= &lt;-이런표정도 있어요 전신은 딱 하나있는데 어느분께 갔을까 궁금...   
+]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+				<entry>
+					<title><![CDATA[발렌타인이벤트]]></title>
+					<link rel="alternate" type="text/html" href="http://catmyo.blog.me/10158682123"/>
+					<id>http://catmyo.blog.me/10158682123</id>
+					<modified>Thu, 31 Jan 2013 23:00:00 +0900</modified>
+					<issued>Thu, 31 Jan 2013 23:00:00 +0900</issued>
+					<created>Thu, 31 Jan 2013 23:00:00 +0900</created>
+					<summary type="text/html" mode="escaped"><![CDATA[정아에피소드는 저번주로 끝났지만이번화 정상이 이야기로 이제야 정말 끝났다는 느낌이 듭니다이해할수 없는 점들이 너무 많지만연애가 끝날때는 항상 그런식으로 이해할수 없는 점들이 잔뜩인것 같네요 .......라고 부족한 제가 합리화를 합니다 ㅠㅠㅠ 죄송합니다...bgm 추천해두었는데 참좋아하는 곡입니다이승환_잘못+스포를 하자면 여름이 에피전에 정상이(는 했고) 수능이이야기랑미라이야기랑..정도가 짧게짧게 나올것 같습니다+단행본이 나오고 이벤트중입니다~위는 발렌타인이벤트!이거외에 달력이벤트도 하고있고... 사인본도 만들었어요 ㅠㅠㅠ 세상에..관심 1g 부탁드려요!  ]]></summary>
+					<tag><![CDATA[]]></tag>
+					<activity:object>
+						<activity:object-type>http://activitystrea.ms/schema/1.0/blog-entry</activity:object-type>
+					</activity:object>
+					<activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+				</entry>
+			
+		
+		
+	
+</feed>

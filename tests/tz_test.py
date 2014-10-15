@@ -1,6 +1,6 @@
 import datetime
 
-from libearth.tz import FixedOffset, now, utc
+from libearth.tz import FixedOffset, guess_tzinfo_by_locale, now, utc
 
 
 def test_utc():
@@ -35,3 +35,14 @@ def test_now():
     actual = now()
     after = datetime.datetime.utcnow().replace(tzinfo=utc)
     assert before <= actual <= after
+
+
+def test_guess_tzinfo_by_locale():
+    tz = guess_tzinfo_by_locale('ko', 'kr')
+    dt = datetime.datetime(2013, 8, 15, 3, 18, 30, tzinfo=tz)
+    assert tz.utcoffset(dt) == datetime.timedelta(hours=9)
+    assert guess_tzinfo_by_locale('ko') == tz
+    tz = guess_tzinfo_by_locale(' JA ', ' JP ')
+    dt = datetime.datetime(2013, 8, 15, 3, 18, 30, tzinfo=tz)
+    assert tz.utcoffset(dt) == datetime.timedelta(hours=9)
+    assert guess_tzinfo_by_locale('en', 'us') is None

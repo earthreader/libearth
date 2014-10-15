@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:s="http://earthreader.org/session/" s:bases="">
+  <id>http://feeds.feedburner.com/yyahn</id>
+  <title type="text">YY - 블로그</title>
+  <link type="application/rss+xml" rel="self" href="http://feeds.feedburner.com/yyahn"/>
+  <link rel="hub" href="http://pubsubhubbub.appspot.com/"/>
+  <updated>2011-02-03T00:00:00+05:00</updated>
+  <subtitle type="text">Posts in Korean</subtitle>
+  <entry>
+    <id>/2011/02/03/blog-latex-environment.html</id>
+    <title type="text">LaTeX 환경: vim + make + monex.py</title>
+    <link type="text/html" rel="alternate" href="/2011/02/03/blog-latex-environment.html"/>
+    <updated>2011-02-03T00:00:00+05:00</updated>
+    <published>2011-02-03T00:00:00+05:00</published>
+    <content type="html">&lt;p&gt;오래전에 &lt;a href="http://yongyeol.com/blog/entry/latexing-in-mac-with-textmate"&gt;LaTeXing in Mac (with TextMate)&lt;/a&gt; 라는 글에서 &lt;a href="http://macromates.com/"&gt;TextMate&lt;/a&gt;와 &lt;a href="http://skim-app.sourceforge.net/"&gt;Skim&lt;/a&gt;을 이용한 LaTeX 논문작성 환경을 소개했습니다. 그런데 저는 정작 이 환경을 이제는 이용하지 않고 있습니다. 제가 요새 이용하는 환경을 소개합니다.&lt;/p&gt;
+
+&lt;h3 id="textmate_"&gt;TextMate의 한계&lt;/h3&gt;
+
+&lt;p&gt;TextMate는 훌륭한 편집기지만, 맥에서만 사용 가능하고, 자유 소프트웨어가 아니며, 개발이 수년간 정체되어 있습니다. 2006년에 안정 버전 1.5가 출시되었고 2009년에 2.0이 곧 출시된다는 예고가 등장했지만, 버전 2.0은 아직도 소식이 없습니다.&lt;/p&gt;
+
+&lt;h3 id="vim"&gt;Vim&lt;/h3&gt;
+
+&lt;p&gt;TextMate가 가져온 편리한 기능들은 그 사이 다른 편집기에 반영되었습니다. Vim 진영에서는 &lt;a href="https://github.com/b4winckler/macvim"&gt;macvim&lt;/a&gt;이 활발히 개발되고, &lt;a href="https://github.com/tpope/vim-pathogen"&gt;pathogen&lt;/a&gt;, &lt;a href="https://github.com/scrooloose/nerdtree"&gt;NERDTree&lt;/a&gt;, &lt;a href="https://github.com/msanders/snipmate.vim"&gt;snipMate&lt;/a&gt; 등 훌륭한 플러그인들이 등장하여 TextMate와 비슷한 환경을 구축하는 게 가능해졌습니다. 자연스럽게, 많은 개발자들이 Vim으로 이주하기 시작했습니다. 최근 vim을 다룬 블로그 글이 늘어나는 것도 이런 흐름을 반영하는 게 아닌가 싶습니다. 저도 원래 Vim과 TextMate를 함께 써 왔지만, 작년 Steve Losh의 &lt;a href="http://stevelosh.com/blog/2010/09/coming-home-to-vim/"&gt;Coming home to vim&lt;/a&gt;, Vincent Driessen의 &lt;a href="http://nvie.com/posts/how-i-boosted-my-vim/"&gt;How I boosted my Vim&lt;/a&gt; 같은 글을 보다가 결국 Vim으로 이주를 결행했고, 현재 아주 만족하고 있습니다. Vim을 본격적으로 써 보고 싶으신 분은 제가 Vim을 사용하기 시작하면서 &lt;a href="http://yongyeol.com/w/index.php?title=Vim"&gt;정리한 자료&lt;/a&gt;를 참고하시면 아마 도움이 되실 겁니다.&lt;/p&gt;
+
+&lt;h3 id="make"&gt;Make&lt;/h3&gt;
+
+&lt;p&gt;컴퓨터 과학자들과 논문을 함께 쓰면서 여러 가지를 배웠는데, 그 중 하나가 &lt;a href="http://www.gnu.org/software/make/"&gt;GNU Make&lt;/a&gt;의 유용성입니다. 그림을 그리는 &lt;a href="http://www.gnuplot.info/"&gt;gnuplot&lt;/a&gt; 스크립트나 TeX 컴파일 명령들을 &lt;code&gt;Makefile&lt;/code&gt;로 조직해 놓으면 매번 그림을 다시 그리고 논문을 컴파일하는 번거로움 없이 &lt;code&gt;make&lt;/code&gt; 한번으로 최신 버전의 결과물을 얻을 수 있습니다. 사실 make가 그런 일에 쓰라고 만들어놓은 물건인데 전 논문 작성할 때 쓰면 된다는 생각은 못하고 있었죠.&lt;/p&gt;
+
+&lt;p&gt;TextMate 환경은 &lt;a href="http://www.ctan.org/tex-archive/support/latexmk/"&gt;&lt;code&gt;latexmk.pl&lt;/code&gt;&lt;/a&gt;을 사용합니다. LaTeX에 최적화된 Make 유틸리티라고 보시면 되는데, 무척 편리하긴 하지만 저는 그냥 간단한 &lt;code&gt;Makefile&lt;/code&gt;을 만들어 사용하는 게 편하더군요. 논문을 작성할 때 TeX 컴파일만 하는 게 아니라 gnuplot으로 그림도 그리고 PDF 결과물들을 합치기도 하는데 latexmk만 쓰는 건 한계가 있습니다. 아주 기본적인 Makefile은 대략 다음과 같습니다. &lt;code&gt;make&lt;/code&gt;를 실행하면 편지 (cover letter), 논문 본문, 기타 자료 (supporting material) 이렇게 세 개의 PDF 결과물을 만들고 이걸 하나로 합쳐주게 됩니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://gist.github.com/yy/808914"&gt;https://gist.github.com/yy/808914&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=""&gt;&lt;code&gt;monex.py&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;Vim과 make의 조합에만 익숙해져도 꽤 편한 작업이 가능합니다. 하지만 매번 make를 실행하는 건 여전히 귀찮죠. 어떻게 하면 자동화를 할 수 있을까 고민하다가 예전에 봤던 &lt;a href="http://www.google.com/search?q=autotest"&gt;autotest&lt;/a&gt; 가 생각나 &lt;code&gt;monex.py&lt;/code&gt;라는 짤막한 스크립트를 하나 만들었습니다. 이 스크립트가 하는 일은 무척 단순합니다. 주어진 파일들을 감시하다가 파일이 변경되면 주어진 명령어를 실행하는 거죠.&lt;/p&gt;
+
+&lt;p&gt;결과물을 Preview에 띄워놓고, 다음과 같이 실행해 놓으면,&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ python monex.py -c &amp;quot;make all&amp;quot; *.tex *.bib *.plt &lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;파일을 저장할 때마다 알아서 그림을 그리고 컴파일해서 결과물을 갱신 해 줍니다. 이걸 만들어 놓으니 논문 쓸 때뿐만 아니라 여기저기 쓸모가 있더군요. 이 글을 보시는 분들에게도 유용할까 싶어 여기에 붙입니다. (혹시 더 좋은 방법을 알고 계시면 알려주세요. :)&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://gist.github.com/yy/729404"&gt;https://gist.github.com/yy/729404&lt;/a&gt;&lt;/p&gt;&lt;img src="http://feeds.feedburner.com/~r/yyahn/~4/3xe2dnf1SpU" height="1" width="1"/&gt;</content>
+  </entry>
+  <entry>
+    <id>/2010/01/31/blog-latexing-in-mac-with-textmate.html</id>
+    <title type="text">LaTeXing in Mac (with TextMate)</title>
+    <link type="text/html" rel="alternate" href="/2010/01/31/blog-latexing-in-mac-with-textmate.html"/>
+    <updated>2010-01-31T00:00:00+05:00</updated>
+    <published>2010-01-31T00:00:00+05:00</published>
+    <content type="html">&lt;p&gt;(Tip via &lt;a href="http://bagrow.com/"&gt;James Bagrow&lt;/a&gt;)&lt;/p&gt;
+
+&lt;h3 id="tex_distribution"&gt;TeX distribution&lt;/h3&gt;
+
+&lt;p&gt;먼저 TeX은 가장 널리 쓰이는 배포본인 &lt;a href="http://www.tug.org/mactex/2009/"&gt;MacTeX&lt;/a&gt;이 정답이다. 가장 깔끔한 관리가 가능하고, Bibdesk나 ghostscript등 유용하고 필요한 패키지들이 알아서 설치된다.&lt;/p&gt;
+
+&lt;h3 id="textmate"&gt;TextMate&lt;/h3&gt;
+
+&lt;p&gt;MacTeX에 포함된 &lt;a href="http://www.uoregon.edu/~koch/texshop/"&gt;TeXShop&lt;/a&gt;도 훌륭한 편집기지만, 아무래도 &lt;a href="http://macromates.com/"&gt;TextMate&lt;/a&gt;의 강력한 편집기능과 자유로운 번들 기능과는 비교가 힘들다. TextMate의 문제는 기본 LaTeX 번들이 시원찮다는 것인데, 현재 개발중인 LaTeX 번들을 아래와 같이 따로 설치하는 것으로 해결이 된다.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://github.com/textmate/latex.tmbundle"&gt;http://github.com/textmate/latex.tmbundle&lt;/a&gt; 에서 download source를 선택해서 다운받고 압축을 푼다.&lt;/li&gt;
+
+&lt;li&gt;압축을 풀면 만들어지는 폴더 이름을 .tmbundle로 끝나도록 바꾸어주면, 폴더가 하나의 아이콘으로 변한다.&lt;/li&gt;
+
+&lt;li&gt;아이콘을 더블클릭해서 설치.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id="skim"&gt;Skim&lt;/h3&gt;
+
+&lt;p&gt;컴파일 결과물 (PDF) 를 보는 용도로는 &lt;a href="http://skim-app.sourceforge.net/"&gt;Skim&lt;/a&gt;이 쓸만하다 (Skim이 실행되어 있지 않은 상태에서 TextMate에서 컴파일을 하면 Skim이 나타났다 죽어버리는 현상이 보고되어 있다. Skim을 먼저 실행시키는 것으로 해결 가능하다). 보통 논문을 작성할 때, 결과물과 소스 사이를 수없이 오고가는데, 이때 PDF의 특정 위치가 TeX 파일의 어느 위치에 해당하는지를 알 수 있어야 한다. 그래서 나온 것이 &lt;a href="http://mactex-wiki.tug.org/wiki/index.php?title=SyncTeX"&gt;SyncTeX&lt;/a&gt;인데, Skim이 이걸 지원한다(참고로, TeXShop은 더 정확한 자체기능을 가지고 있다).&lt;/p&gt;
+
+&lt;p&gt;Skim을 설치하고 나서 TextMate LaTeX 번들 환경설정에서 skim을 기본 뷰어로 설정해준다. 환경설정에 Latexmk.pl라는게 있는데, 이 스크립트는 결과물을 모니터하면서 bibTeX과 LaTeX을 번갈아 돌려주는 스크립트다. LaTeX - BibTeX - LaTeX - LaTeX 의 번거로운 과정 없이 한번의 컴파일 명령으로 최종 결과물을 얻을 수 있다.&lt;/p&gt;
+
+&lt;h3 id=""&gt;사용방법&lt;/h3&gt;
+
+&lt;p&gt;이제 TextMate에서 command + R 을 누르면 컴파일을 해 준다. command + control + W 은 ‘watch’ 기능이다. 누르면 컴파일한 결과물을 보여주는데, TeX 파일을 수정하고 저장하면 알아서 PDF를 갱신해준다. Skim에서 command + shift + 클릭 을 하면 TeX 파일에서 해당되는 부분으로 이동한다.&lt;/p&gt;
+
+&lt;p&gt;각종 자동완성과 편리한 기능들은 TextMate의 LaTeX 번들 메뉴를 참고.&lt;/p&gt;&lt;img src="http://feeds.feedburner.com/~r/yyahn/~4/qyyXARG8xb8" height="1" width="1"/&gt;</content>
+  </entry>
+  <entry>
+    <id>/2009/08/31/blog-flu-vaccine-safety.html</id>
+    <title type="text">독감 백신의 위험에 대해</title>
+    <link type="text/html" rel="alternate" href="/2009/08/31/blog-flu-vaccine-safety.html"/>
+    <updated>2009-08-31T00:00:00+04:00</updated>
+    <published>2009-08-31T00:00:00+04:00</published>
+    <content type="html">&lt;p&gt;&lt;a href="http://www.leejeonghwan.com/media/archives/001585.html"&gt;이정환:신종 플루보다 백신이 더 위험하다?&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;몇가지 주석.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;다들 잘 알겠지만 백신은 병원체를 약하게 만들어 주입해서 몸 안에 항체를 형성하고 면역성을 키우도록 돕는 의약품이다. 백신 역시 바이러스의 일종인 셈인데 &lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;병원체를 죽이지 않고 약하게 만든 백신을 생백신 (live vaccine) 이라고 부르며, 여러 종류의 백신 중 &lt;a href="http://en.wikipedia.org/wiki/Vaccine#Types"&gt;한 종류일 뿐이다&lt;/a&gt;. BCG나 MMR (Measles-mumps-rubella) 백신이 좋은 예인데, 미국의 경우 예방 접종 전에 살아 있는 병원체가 들어있음을 알려준다. 반면에, 우리가 흔히 맞는 독감 예방주사는 바이러스를 죽여서 만든다 (다만 코에 뿌리는 방식의 백신은 생백신이다. &lt;a href="http://www.cdc.gov/vaccines/pubs/vis/downloads/vis-flulive.pdf"&gt;cdc의 안내 (pdf)&lt;/a&gt;).&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;실제로 1976년에는 그해 유행했던 돼지독감으로 죽은 사람보다 백신의 부작용으로 죽은 사람이 훨씬 많았다.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;참고로 돼지독감으로 죽은 사람은 한 명, 백신을 접종한 사람은 48,161,019명, GBS (Guillain-Barré syndrome) 로 사망한 사람 수는 &lt;a href="http://en.wikipedia.org/wiki/Swine_flu#1976_U.S._outbreak"&gt;25명이다&lt;/a&gt;. 약 백만 명 중에 한 명꼴.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;다만 길리안 바레 증후군을 보이는 환자 가운데 상당수가 1년 이내에 독감백신을 맞은 사실이 있다는 연구결과가 있다. 물론 1970년대와 비교하면 백신 제조기술이 크게 발전했지만 올해 11월부터 접종받게 될 신종 플루 백신은 안전성 검사가 제대로 이뤄지지 않은채 보급될 가능성이 크다.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;언급된 연구결과가 궁금하다. 1년이란 시간은 꽤 길다. 예방 접종이 바로 GBS를 일으키지 않은채로 수 개월 동안 잠복했다가 GBS를 일으킬 가능성은 매우 낮아보인다. 보통 감염이 원인이 되는 GBS의 경우 감염으로부터 한 달이내에 발병한다고 한다. 독감 백신 접종 통계를 잘 모르겠는데, 독감 백신을 맞는 사람이 충분히 많으면 무슨 병을 택해도 1년 이내에 독감 백신을 맞은 사람은 상당수가 될 것 같다.&lt;/p&gt;
+
+&lt;p&gt;GBS의 원인은 아직 확실히 밝혀지지 않았는데, 유력한 용의자는 &lt;a href="http://www.ncbi.nlm.nih.gov/pubmed/15304587"&gt;&lt;em&gt;Campylobacter jejuni&lt;/em&gt; 감염이라고 한다&lt;/a&gt; 최근에는 독감 바이러스가 GBS를 일으킨다는 &lt;a href="http://www.ncbi.nlm.nih.gov/pubmed/19025491"&gt;주장이 등장했다&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;CDC 웹사이트에는 독감 예방주사와 GBS의 관계에 대한 &lt;a href="http://www.cdc.gov/FLU/about/qa/gbs.htm"&gt;안내 페이지&lt;/a&gt;가 있다.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Several studies have been done to evaluate if other flu vaccines since 1976 were associated with GBS. Only one of the studies showed an association. That study suggested that one person out of 1 million vaccinated persons may be at risk of GBS associated with the vaccine.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;1976년 돼지독감 사태이후 독감 예방주사와 GBS의 발병사이의 관계를 밝히기 위한 연구가 여럿 있었지만 그 중 하나의 연구에서만 상관관계가 보였다고 한다. 1976년의 경우를 제외하고는 예방주사가 GBS의 위험을 높이는 것 같지는 않지만, 그래도 아예 부정할 수는 없다는 이야기. 그래도 백만명 중의 한 명꼴이면 매우 희귀하므로 그렇게 걱정할 일은 아니다. GBS가 발병해도 대부분은 건강하게 회복되므로, 독감 백신으로 GBS가 발병해서 사망까지 이를 확률은 일반적인 독감의 사망률과도 비교할 수 없이 작다.&lt;/p&gt;
+
+&lt;p&gt;미국에서 이번 신종독감 백신의 임상실험을 진행하고 있는 NIAID (National Institute of Allergy and Infectious Diseases) 는 최근 500명 이상의 성인을 대상으로 한 임상실험에서 부작용이 발견되지 않았고, 그래서 아이들을 대상으로 임상실험을 진행한다고 &lt;a href="http://www3.niaid.nih.gov/news/newsreleases/2009/H1N1pedvax.htm"&gt;발표했다&lt;/a&gt;.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;http://www.infowars.com/category/flu-pandemic/&lt;/li&gt;
+
+&lt;li&gt;http://globalresearch.ca/index.php?context=newsHighlights&amp;amp;newsId=46&lt;/li&gt;
+
+&lt;li&gt;http://globalresearch.ca/index.php?context=va&amp;amp;aid=14618&lt;/li&gt;
+
+&lt;li&gt;http://www.vaccine911.com/vacreference.pdf&lt;/li&gt;
+
+&lt;li&gt;http://www.greatfallspro.com/vaccine.htm&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;글에 링크된 위 사이트들을 들어가서 잠시 훑어봤는데 근거자료는 부실하고, 수은이 자폐증을 일으킨다는 &lt;a href="http://www.koreahealthlog.com/319"&gt;떡밥&lt;/a&gt;이 넘실대고, 인용된 논문을 몇 개 찍어서 찾아봤더니 검색도 안 된다. 그래도 무려 Lancet에 실린 논문이 있길래 찾아봤더니 두 번 인용됐고, 그중 한 논문은 Lancet에 실린 논문의 연구 방법이 잘못됐다는 내용 (다른 하나는 이탈리아어). 더이상 시간을 쓸 가치를 느끼지 못했다.&lt;/p&gt;
+
+&lt;p&gt;구지 ‘신종’이 아니더라도 독감은 한국에서 매년 (아마도) 수천명의 목숨을 앗아가는 무서운 병이다. 이런 병을 효과적으로 막는 방법인 예방접종에 대한 글을 쓸 때는 좀 더 신중해야 하지 않을까.&lt;/p&gt;&lt;img src="http://feeds.feedburner.com/~r/yyahn/~4/vfjrjbyxPfg" height="1" width="1"/&gt;</content>
+  </entry>
+  <entry>
+    <id>/2009/08/21/blog-twitter-chatter.html</id>
+    <title type="text">트위터와 쓸데없는 주절거림</title>
+    <link type="text/html" rel="alternate" href="/2009/08/21/blog-twitter-chatter.html"/>
+    <updated>2009-08-21T00:00:00+04:00</updated>
+    <published>2009-08-21T00:00:00+04:00</published>
+    <content type="html">&lt;p&gt;&lt;a href="http://itviewpoint.com/133319"&gt;서명덕:트위팅 2000개 분석해 보니…40%가 쓸데없는 주절거림&lt;/a&gt; 에서 소개하고 있는 &lt;a href="http://www.pearanalytics.com/wp-content/uploads/2009/08/Twitter-Study-August-2009.pdf"&gt;자료 (pdf)&lt;/a&gt;에 의하면 트윗의 40%가 쓸데없는 주절거림 (pointless babble) 이라고 한다.&lt;/p&gt;
+
+&lt;p&gt;MSR New England의 연구원 &lt;a href="http://www.danah.org/"&gt;danah boyd&lt;/a&gt;는 우리가 입 밖으로 내는 수많은 말들, 표정, 몸짓들도 정보를 전달하기 보다는 사교적/의례적/교감적 (phatic) 인 기능만을 하며, 이들도 사회적 관계의 맥락에서 떨어져 나오면 ‘쓸데없는 주절거림’으로만 보일 것이라고 말한다. 낯선이가 보면 의미가 없어 보이는 트윗들도 나름대로 사람들을 엮어주는 기능을 하고 있다는 말이다.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&lt;a href="http://www.zephoria.org/thoughts/archives/2009/08/16/twitter_pointle.html"&gt;Twitter: “pointless babble” or peripheral awareness + social grooming?&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;I challenge each and every one of you to record every utterance that comes out of your mouth (and that of everyone you interact with) for an entire day. And then record every facial expression and gesture. You will most likely find what communications scholars found long ago - people are social creatures and a whole lot of what they express is phatic communication. (Phatic expressions do social work rather than conveying information… think “Hi” or “Thank you”.)&lt;/p&gt;
+
+&lt;p&gt;Now, turn all of your utterances over to an analytics firm so that they can code everything that you’ve said. I think that you’ll be lucky if only 40% of what you say constitutes “pointless babble” to a third party ear.&lt;/p&gt;
+
+&lt;p&gt;…&lt;/p&gt;
+
+&lt;p&gt;It’s all about shared intimacy that is of no value to a third-party ear who doesn’t know the person babbling. Of course, as Alice Marwick has argued, some celebs are also very invested in giving off a performance of intimacy and access; this is part of the appeal. This is why you can read what they ate for breakfast.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;이런 생각이 갑자기 나온 것은 아니다. Clive Thompson은 작년 9월 뉴욕타임즈에 &lt;a href="http://www.nytimes.com/2008/09/07/magazine/07awareness-t.html"&gt;Brave New World of Digital Intimacy&lt;/a&gt; 라는 글을 기고했는데, 이 글에서 그는 주변자각 (ambient awareness) 이라는 개념을 통해 페이스북과 트위터가 왜 사람들을 끌어들이는지를 설명한다. (이 글은 감사하게도 &lt;a href="http://bahamund.wordpress.com"&gt;bahamund님&lt;/a&gt;이 전문 번역을 해 놓으신 글 중에 하나다.)&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&lt;a href="http://bahamund.wordpress.com/2008/09/09/twitter-2/"&gt;bahamund:트위터의 사회학, p4&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;이렇게 끊임없이 온라인 상으로 접촉하는 것에다가 사회과학자들은 “주변자각(ambient awareness)”이라는 이름을 붙였다. 물리적으로 가까이 있는 경우 상대방이 하는 사소한 짓, 즉 몸짓이나 한숨, 뜬금없는 말 따위에서 그의 기분이 어떤지를 알아챌 수 있다. “주변자각”도 이와 마찬가지라는 것이다.&lt;/p&gt;
+
+&lt;p&gt;…&lt;/p&gt;
+
+&lt;p&gt;이것이야말로 자기 주변에 촉각을 곤두세우고 있는 삶의 역설이라 하겠다. 사소한 업데이트 하나하나, 개별 ‘사회정보’ 한 조각은 그 자체로는 별 의미가 없다. 지루하기까지 하다. 하지만 시간이 지나면서 이들이 모이면 작은 정보 갈래들이 하나로 뭉쳐 여울을 이루어, 친구나 가족 구성원의 삶을 놀랍도록 세밀하게 그려내게 된다. 마치 점묘파 화가의 그림이 하나하나의 점으로서는 별 의미가 없지만 점이 모여서 하나의 아름다운 그림을 그려내듯이 말이다. 예전에는 불가능한 일이었다. 어느 친구가 자기가 무슨 샌드위치를 먹는지 매번 전화를 걸어 보고할까. 헤일리는 이러한 정보를 “일종의 초감각 정보”라고 표현한다. 일상을 떠다니는 보이지 않는 차원의 정보라는 의미란다.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;의미없는 주절거림에 너무 큰 의미를 부여하고 있는 것일까? 하지만, 글쓰기 창 위에 “What are you doing?” 라고 크게 써 놓은 걸 보면, 트위터를 만든 사람들도 트위터의 심장이 바로 그 쓸데없는 주절거림이라고 믿고 있는 것 같다.&lt;/p&gt;&lt;img src="http://feeds.feedburner.com/~r/yyahn/~4/vg3bvaXzusg" height="1" width="1"/&gt;</content>
+  </entry>
+  <entry>
+    <id>/2009/05/05/blog-immunizing-networks.html</id>
+    <title type="text">네트워크 위에서 전염병 막기</title>
+    <link type="text/html" rel="alternate" href="/2009/05/05/blog-immunizing-networks.html"/>
+    <updated>2009-05-05T00:00:00+04:00</updated>
+    <published>2009-05-05T00:00:00+04:00</published>
+    <content type="html">&lt;p&gt;너구리님이 쓰신 &lt;a href="http://econclass.egloos.com/2336085"&gt;그림으로 이해하는 전염병 확산 매커니즘&lt;/a&gt;을 보고 전염병의 확산을 막는 방법에 대한 연구결과들을 설명해본다.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="http://yongyeol.com/blog/entry/h1n1_flu"&gt;앞선 글&lt;/a&gt;에서 설명했고, 너구리님도 그림으로 보여주셨듯이, 질병 모델에 네트워크라는 요소를 넣으면 허브가 대단히 중요한 역할을 하게 된다: 이웃이 많기 때문에 병에 걸릴 수 있는 기회가 많아지고 (대략 이웃의 수에 비례하여 병에 걸릴 확률이 높아지게 된다,) 이렇게 병에 걸리게 된 허브는 또 많은 이웃에게 병을 퍼뜨린다. 이런 허브의 효과로 인해, 허브가 무시할 수 없을 만크 존재하는 네트워크에서는 전염병을 막기가 매우 힘들어진다.&lt;/p&gt;
+
+&lt;p&gt;그럼 우리가 손쓸 방법은 없는 것일까? 손이나 열심히 씻어야 하는 걸까?&lt;/p&gt;
+
+&lt;p&gt;허브가 전염병을 퍼뜨리는 데 몹시 중요한 역할을 한다는 사실을 이해한 연구자들은 곧, 반대로 허브가 병에 걸리지 않도록 막기만 하면 병을 효율적으로 막을 수 있다는 것을 깨달았다&lt;sup id="fnref:1"&gt;&lt;a href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;. 전염병이 퍼져나가는 상황에서 제한된 수의 격리나 예방 접종만이 가능한 상황을 가정해보자. 만약 되는 대로 사람들을 격리/접종 한다면 전염병은 별 문제 없이 전체 네트워크로 퍼져 나간다. 반면에, 허브들을 골라내어 이웃이 많은 허브부터 격리/접종을 하면 전염병은 확산되지 못한채 사라진다.&lt;/p&gt;
+
+&lt;p&gt;사실 이 결과는 네트워크 과학의 초기에 큰 반향을 불러일으켰던 논문인 “Error and attack tolerance of complex networks”라는 논문&lt;sup id="fnref:2"&gt;&lt;a href="#fn:2" rel="footnote"&gt;2&lt;/a&gt;&lt;/sup&gt;의 결과와 일맥상통한다. 이 논문의 주요 내용은 다음과 같다. 척도없는 네트워크의 구조는 임의적으로 노드를 망가뜨리는 ‘error’에는 대단히 강하지만, 허브를 차례대로 망가뜨리는 ‘attack’에는 너무나 쉽게 망가진다. 말하자면, 척도없는 네트워크에서는 허브가 네트워크를 하나로 묶어주고 있기때문에 이 허브들이 온전하게 살아남아 있는 한은 네트워크의 구조가 보존된다는 것이다.&lt;/p&gt;
+
+&lt;p&gt;전염병 동역학의 맥락에서 이 결과를 다시 해석해보자. 임의적으로 사람들을 격리시켜 네트워크에서 제거한다면, 허브들은 남아 네트워크를 잘 묶어주고 있을 것이므로 전염병은 여전히 잘 퍼질 수 있다. 네트워크에서 허브부터 제거한다면, 네트워크의 구조는 쉽게 망가지고, 전염병은 더 이상 퍼질 수 없게 된다. (이 모든 결과들은 네트워크의 percolation 성질과 연결되어 있다.)&lt;/p&gt;
+
+&lt;p&gt;실현되기는 매우 어려워보이지만, 이론적으로는 재미있는 또다른 가능성은 위험한 전염병과 매우 비슷한 사촌 전염병을 위험한 전염병보다 먼저 퍼뜨리는 것이다. (예방 접종과의 차이점은, 구지 사람들이 주사를 맞지 않아도 되는 편리함과 자칫 잘못하면 변종이 진화하여 엄청난 피해를 줄 수 있는 위험성이 추가된다는 점이다.) 이때, 사촌은 위험하지 않으면서도, 사람의 면역 시스템이 보기에는 충분히 비슷하여 위험한 전염병에 대한 면역을 생성해주어야 한다 (교차 면역, cross immunity)&lt;sup id="fnref:3"&gt;&lt;a href="#fn:3" rel="footnote"&gt;3&lt;/a&gt;&lt;/sup&gt;. 만약에 이런 이상적인 상황이 가능하다면, 네트워크 위에서 위험한 질병이 퍼져나가기에 적당한 경로 (주로 허브들) 를 정확히 그 사촌이 먼저 퍼져나가 면역을 생성시키게 되므로 전염병을 효율적으로 막을 수 있게 된다&lt;sup id="fnref:4"&gt;&lt;a href="#fn:4" rel="footnote"&gt;4&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;div class="footnotes"&gt;&lt;hr /&gt;&lt;ol&gt;&lt;li id="fn:1"&gt;
+&lt;p&gt;Romualdo Pastor-Satorras, Alessandro Vespignani, Immunization of complex networks, &lt;a href="http://arxiv.org/abs/cond-mat/0107066"&gt;Phys. Rev. E 65, 036104 (2002)&lt;/a&gt; ; Zoltan Dezso, Albert-László Barabási, Halting viruses in scale-free networks, &lt;a href="http://arxiv.org/abs/cond-mat/0107420"&gt;Phys. Rev. E 65, 055103 (2002)&lt;/a&gt; &lt;a href="#fnref:1" rev="footnote"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;&lt;li id="fn:2"&gt;
+&lt;p&gt;Réka Albert, Hawoong Jeong &amp;amp; Albert-László Barabási, Error and attack tolerance of complex networks, &lt;a href="http://www.nature.com/nature/journal/v406/n6794/full/406378a0.html"&gt;Nature 406, 378-382 (2000)&lt;/a&gt; &lt;a href="#fnref:2" rev="footnote"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;&lt;li id="fn:3"&gt;
+&lt;p&gt;교차면역은 자연에서 흔히 관찰되는데, 한가지 흥미로운 예는 나병 (leprosy) 과 결핵 (tuberculosis) 이다. 전혀 달라보이는 두 병이지만, 병을 일으키는 박테리아는 &lt;em&gt;&lt;a href="http://en.wikipedia.org/wiki/Mycobacterium"&gt;Mycobacterium&lt;/a&gt;&lt;/em&gt; genus에 속하는 친척이다. 나병은 11세기부터 13세기까지 서유럽의 풍토병이었지만, 17,18세기에 결핵이 유행하는 것과 동시에 거의 자취를 감추었는데, 이 현상이 &lt;a href="http://www.semel.ucla.edu/biomedicalmodeling/pdf/leprosy.pdf"&gt;두 병 사이의 교차 면역 때문이라는 가설&lt;/a&gt;이 꽤 설득력이 있다. &lt;a href="#fnref:3" rev="footnote"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;&lt;li id="fn:4"&gt;
+&lt;p&gt;M. E. J. Newman, Threshold effects for two pathogens spreading on a network, &lt;a href="http://arxiv.org/abs/cond-mat/0502373"&gt;Phys. Rev. Lett. 95, 108701 (2005)&lt;/a&gt; - 첫번째 병이 퍼져나가고 난 뒤에 남게 되는 면역이 형성되지 않은 네트워크 구조를 수학적으로 풀었다. 꽤 아름다운 논문. &lt;a href="#fnref:4" rev="footnote"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;&lt;/ol&gt;&lt;/div&gt;&lt;img src="http://feeds.feedburner.com/~r/yyahn/~4/7BxN7Q8uFVs" height="1" width="1"/&gt;</content>
+  </entry>
+  <entry>
+    <id>/2009/05/03/blog-h1n1-flu.html</id>
+    <title type="text">H1N1 독감</title>
+    <link type="text/html" rel="alternate" href="/2009/05/03/blog-h1n1-flu.html"/>
+    <updated>2009-05-03T00:00:00+04:00</updated>
+    <published>2009-05-03T00:00:00+04:00</published>
+    <content type="html">&lt;p&gt;먼저, 이번 독감에 대해 유익한 글을 올려주고 계신 블로그들을 소개한다. (특히 crete님의 활약이 눈부시다. ㅎㅎ)&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://crete.pe.kr/"&gt;http://crete.pe.kr/&lt;/a&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;a href="http://biotechnology.tistory.com/"&gt;http://biotechnology.tistory.com/&lt;/a&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;a href="http://fiatlux.egloos.com/"&gt;http://fiatlux.egloos.com/&lt;/a&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;a href="http://mogibul.egloos.com"&gt;http://mogibul.egloos.com&lt;/a&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;a href="http://redwood.egloos.com/"&gt;http://redwood.egloos.com/&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id="be_alert"&gt;Be Alert&lt;/h3&gt;
+
+&lt;p&gt;전염병이 퍼지는데 매우 중요한 것은 인구 집단의 크기이다. 많은 전염병들은 ‘crowd disease’ 라고도 불린다. 전염병이 유지되기 위해서는 보통 일정 크기 이상의 큰 집단 (끊임없는 새로운 숙주의 보충) 이 필요하기 때문이다. 농업은 이런 큰 규모의 집단을 만들어 냄과 동시에 다양한 전염병을 인간에게 가져왔는데, 이에 대해 Arno Karlen은 &lt;a href="http://janice.kaist.ac.kr/~gomeisa/blog/?p=14"&gt;전염병의 문화사 (Man and Microbes)&lt;/a&gt;라는 책에서 이렇게 말한다.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;농업은 인간에게 너무도 많은 새로운 병원균을 가져다주어서 인류가 살아남았다는 사실이 놀라울 정도다. (p66, 전염병의 문화사)&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;큰 도시가 형성되면서 전염병은 더욱 기승을 부리기 시작했다.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;그 발생부터 현대에 이르기까지 도시는 전염병의 온상이었다. 사실 마을이 큰 도시가 되고서야 대규모 죽음이 인간사의 일상적인 부분이 되었다. … 수백만 년 동안 인간의 주요 사망 원인은 사고와 부상이었다. 그러다가 영구적인 농경과 촌락 생활 덕분에 질병으로 인한 죽음이 더욱 흔하게 되었다. (p80, 전염병의 문화사)&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;과학과 기술의 발전은 더욱 더 많은 사람들이 한 곳에 모여 살 수 있도록 만들었다. 현대의 도시에는 과거와 비교할때 훨씬 많은 사람들이 같은 공간을 공유하며 살고 있다. 게다가 발전된 항공망은 수많은 사람들을 한 도시에서 또 다른 도시로 매 시간 운반하고 있다. 과거의 세계가 약하게 연결된 격자 구조였다면, 현재의 세계는 강하게 연결된 &lt;a href="http://ko.wikipedia.org/wiki/작은세상네트워크"&gt;작은 세상 네트워크 (small-world network)&lt;/a&gt; 이다. &lt;del&gt;스페인 독감이 돌았던 1918년이 세계적인 항공망이 갖추어지기 전이라는 것을 떠올려보면, 항공망으로 연결된 현재의 세계가 처한 위험은 비교할 수 없이 커 보인다.&lt;/del&gt; &lt;a href="http://fiatlux.egloos.com/4340164"&gt;1918년의 독감도 전쟁으로 인해 대량으로 수송된 군인들에의해 전세계로 퍼져나갔다&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;네트워크 이론은 여기에 더해 또 하나의 어두운 전망을 내놓았다. 네트워크 구조를 크게 고려하지 않았던 전통적인 전염 모델에는 언제나 0이 아닌 전염 한계치 (epidemic threshold) 가 존재한다. 전염 한계치는 전염병이 전체 집단에 퍼질 수 있는지 아니면 매우 적은 수의 사람들만을 감염시킨 뒤 사라질 것인지를 결정하는 기준인데, 전염병의 전염율과 치료율의 비가 이 전염 한계치보다 높으면 전염병이 전체 집단으로 퍼지게 된다. 반대로 그 비율이 전염 한계치에 도달하지 못하면 전염병은 사라지게 된다. 따라서 전염율을 낮추거나 치료율을 증가시킴으로써 전염병을 없애는 것이 가능하다는 결론을 얻게 된다. 그런데 허브가 충분히 많이 존재하는 &lt;a href="http://en.wikipedia.org/wiki/Scale-free_network"&gt;척도없는 (scale-free) 네트워크&lt;/a&gt;에서 전염병이 퍼질 경우, 네트워크의 크기가 커짐에 따라 전염 한계치는 0으로 수렴한다&lt;sup id="fnref:1"&gt;&lt;a href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;. 다시 말해 무슨 수를 써도 전염병의 전염력를 전염 한계치 아래로 줄이기가 힘들어진다.&lt;/p&gt;
+
+&lt;p&gt;이런 현상이 생기는 이유는 큰 허브일 수록 효과적으로 병을 전파하는 매개자의 역할을 하기 때문이다. 허브는 많은 링크를 가지고 있기 때문에 감염될 확률이 자연히 높아지며, 감염된 허브는 수많은 이웃들에게 병을 전파시키게 된다. 문제는, 세상에 존재하는 대다수의 네트워크들이 척도없는 네트워크, 혹은 최소한 많은 허브가 존재하는 네트워크라는 것이다. 공항 사이의 항공망&lt;sup id="fnref:2"&gt;&lt;a href="#fn:2" rel="footnote"&gt;2&lt;/a&gt;&lt;/sup&gt;과 성관계 네트워크&lt;sup id="fnref:3"&gt;&lt;a href="#fn:3" rel="footnote"&gt;3&lt;/a&gt;&lt;/sup&gt;가 중요한 예이다. 독감이 퍼져나가는 네트워크는 고정되어 있는 것도 아니고 그 구조를 확실하게 알기도 어렵지만, &lt;a href="http://media.daum.net/cplist/view.html?cateid=1007&amp;amp;cpid=33&amp;amp;newsid=20090430114606471&amp;amp;p=seoul"&gt;인구조사원&lt;/a&gt;과 같은 허브가 존재하는 것은 사실이다. SARS의 경우에도 &lt;a href="http://www.cdc.gov/mmwr/preview/mmwrhtml/mm5218a1.htm"&gt;‘super spreader’&lt;/a&gt;라 불리는 소수의 환자들이 매우 많은 사람들을 감염시켰다.&lt;/p&gt;
+
+&lt;h3 id="dont_panic"&gt;Don’t panic&lt;/h3&gt;
+
+&lt;p&gt;전염병이 퍼지기에 좋은 네트워크 구조를 지속적으로 구축하고 있음에도, 선진국에서 전염병에 걸려 죽는 사람의 수는 매우 드물다. 그 이유는 인류가 백신을 발명하고, 훌륭한 감시 &amp;amp; 치료 체계를 만들고, 상하수도 시스템을 구축하고, 훌륭한 위생상태를 가지게 되었기 때문이다. 이러한 노력들은 전염병이 새로운 숙주로 옮겨 가기 힘들게 만들어 전염병을 효과적으로 차단해왔다.&lt;/p&gt;
+
+&lt;p&gt;작년에 &lt;a href="http://yongyeol.com/blog/entry/in-germs-shoes"&gt;병원체의 입장에서 생각하기&lt;/a&gt; 라는 글을 통해 폴 이왈드의 주장을 소개한 적이 있는데, 다시 요약해본다.&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;병원체는 지속적으로 돌연변이를 일으키며, 이렇게 생겨난 수많은 변종들은 서로 경쟁하며 진화한다.&lt;/li&gt;
+
+&lt;li&gt;병원체에게 가해지는 두 가지 주요 선택압은 숙주 안에서 다른 병원체들과의 경쟁과 다른 숙주로의 전염이라는 경쟁에서 비롯된다.&lt;/li&gt;
+
+&lt;li&gt;숙주 안에서 이루어지는 경쟁에서는 치명적인 (숙주로부터 최대한 많은 것을 얻어내는) 병원체가 승리할 가능성이 높다.&lt;/li&gt;
+
+&lt;li&gt;따라서 병원체가 숙주를 죽이거나 심하게 앓게 만들더라도 다른 숙주로의 이동이 용이하다면 병원체는 치명적인 방향으로 진화한다 (수인성 전염병이나 모기가 매개하는 전염병등).&lt;/li&gt;
+
+&lt;li&gt;반면에 병원체가 숙주를 죽이거나 심하게 앓게 만들 경우 다른 숙주로의 이동이 힘들어진다면 병원체의 독성은 약화된다.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;그는 이 논리를 바탕으로 1918년과 같은 대유행이 다시 일어나기 힘들다고 주장한다. 주장의 골자는 1918년의 독감이 특수한 상황에서 진화한, 특별히 독성이 강한 바이러스였다는 것이다. 그 특수한 상황이란 다름 아닌 제1차 세계 대전이었다. 1918년의 바이러스는 전선에 위치한 집단 병동 - 바이러스가 바로 옆의 환자에게 너무나 쉽게 옮겨 갈 수 있는 - 에서 처음 등장했기 때문에 강한 살상력을 가진 바이러스로 진화했다는 것이다. 게다가 전쟁이 사회의 많은 기능을 마비시켰기 때문에 효과적으로 유행을 차단하는 것까지 불가능했다는 것이다. 반대로, 사회가 잘 기능하여 심하게 앓는 환자들이 다른 사람들에게 병을 옮기는 것을 차단할 수 있다면 전염병의 피해를 줄일 수 있다는 것이다.&lt;/p&gt;
+
+&lt;p&gt;이 주장을 H1N1 독감에 적용해보면, 이번 독감이 그렇게 위험하지는 않을 것이라는 결론에 도달한다. 세계 대전과 집단 병동이라는 여건이 마련되어 있는 것도 아니고, 과거의 교훈때문에 많은 나라들이 적극적으로 이에 대처하고 있다. 미국의 경우를 보아도 환자들이 확인되는 즉시 치료를 받고 격리되고 있다. 게다가 &lt;a href="http://crete.pe.kr/BulletinBoard2009/12035"&gt;crete님이 지적하신 것처럼&lt;/a&gt; 지금은 계절과 기온상 독감이 쉽게 퍼지기 힘든 계절이기까지 하다. crete님이 &lt;a href="http://crete.pe.kr/12096"&gt;멕시코와 다른 나라의 사망률의 차이에 대한 포스팅&lt;/a&gt;에서 멕시코와 미국에서 발견된 바이러스가 유전적으로 일치한다고 말씀해주시긴 했지만, 현재까지의 사망자 발생 패턴은 이 이론을 뒷받침하는 것처럼 보인다&lt;sup id="fnref:4"&gt;&lt;a href="#fn:4" rel="footnote"&gt;4&lt;/a&gt;&lt;/sup&gt;.&lt;/p&gt;
+
+&lt;h3 id="but_still"&gt;But, still.&lt;/h3&gt;
+
+&lt;p&gt;하지만, 그렇다고 마음을 놓아도 된다는 뜻은 아니다. 위에서 소개한 주장은 설득력은 있지만, 검증은 힘들다. 생각지 못했던 다른 시나리오가 현실이 되어 우리의 기대를 배반할 가능성도 있다. 또한, 처음에 설명한 것처럼 우리가 살고 있는 세상의 ‘구조’는 언제든지 전염병의 전파를 도와줄 수 있기때문에, 우리의 방심을 틈타 치명적으로 진화한 병원체가 전세계를 휩쓰는 일이 발생할 수도 있다. 게다가 초기 진화에 실패하여 환자의 수가 급격히 증가하면 병원들이 바이러스의 독성을 증가시키는 허브의 역할을 하는 것도 가능할 뿐만 아니라, 엄청난 사회적 비용이 들어가게 된다. 그러므로, 각 국의 정부와 개개인들 모두 전염병 확산의 초기 단계에서 가능한 노력을 기울여 확산을 막는 것이 좋다.&lt;/p&gt;
+
+&lt;p&gt;결론은, “손을 잘 씻읍시다”. ㅎㅎ&lt;/p&gt;
+&lt;div class="footnotes"&gt;&lt;hr /&gt;&lt;ol&gt;&lt;li id="fn:1"&gt;
+&lt;p&gt;Romualdo Pastor-Satorras and Alessandro Vespignani, Epidemic Spreading in Scale-Free Networks, &lt;a href="http://prola.aps.org/abstract/PRL/v86/i14/p3200_1"&gt;PRL 86, 3200&lt;/a&gt; (2001) &lt;a href="http://arxiv.org/abs/cond-mat/0010317"&gt;free download&lt;/a&gt; (arxiv) &lt;a href="#fnref:1" rev="footnote"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;&lt;li id="fn:2"&gt;
+&lt;p&gt;R. Guimerà, S. Mossa, A. Turtschi, and L. A. N. Amaral, The worldwide air transportation network: Anomalous centrality, community structure, and cities’ global roles, &lt;a href="http://www.pnas.org/content/102/22/7794.short"&gt;PNAS 102, 7794&lt;/a&gt; (2005) ; Vittoria Colizza, Alain Barrat, Marc Barthélemy, and Alessandro Vespignani, The role of the airline transportation network in the prediction and predictability of global epidemics, &lt;a href="http://www.pnas.org/content/103/7/2015.abstract"&gt;PNAS 103, 2015&lt;/a&gt; (2006) &lt;a href="#fnref:2" rev="footnote"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;&lt;li id="fn:3"&gt;
+&lt;p&gt;Fredrik Liljeros, Christofer R. Edling, Luís A. Nunes Amaral, H. Eugene Stanley &amp;amp; Yvonne Åberg, The web of human sexual contacts, &lt;a href="http://www.nature.com/nature/journal/v411/n6840/full/411907a0.html"&gt;Nature 411, 907&lt;/a&gt; (2001) &lt;a href="http://arxiv.org/abs/cond-mat/0106507"&gt;free download&lt;/a&gt; (arxiv) &lt;a href="#fnref:3" rev="footnote"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;&lt;li id="fn:4"&gt;
+&lt;p&gt;처음 발병한 멕시코에서는 꽤 치명적이었던 것으로 보이지만, 병이 전파됨에 따라서 독성이 감소한 것처럼 보이기 때문이다. 자세한 연구결과들을 찾아보지 않았기 때문에 &lt;a href="http://crete.pe.kr/12096"&gt;crete님이 배제한 두번째 가능성&lt;/a&gt;이 얼마나 말이 되는지는 아직 알지 못한다. &lt;a href="#fnref:4" rev="footnote"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;&lt;/ol&gt;&lt;/div&gt;&lt;img src="http://feeds.feedburner.com/~r/yyahn/~4/htRktlmV5K4" height="1" width="1"/&gt;</content>
+  </entry>
+  <entry>
+    <id>/2009/02/07/blog-watson-crick.html</id>
+    <title type="text">왓슨과 크릭, 메셀슨과 슈탈</title>
+    <link type="text/html" rel="alternate" href="/2009/02/07/blog-watson-crick.html"/>
+    <updated>2009-02-07T00:00:00+05:00</updated>
+    <published>2009-02-07T00:00:00+05:00</published>
+    <content type="html">&lt;p&gt;&lt;a href="http://heterosis.tistory.com/110"&gt;김우재:아인슈타인과 애딩턴&lt;/a&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;과학적으로는 이론과 실험 혹은 관측에 얽힌 과학의 단면을 보여준다는 면에서 중요하다. 아인슈타인의 이론은 에딩턴에 의해 증명되었을 때 주목받았다. 과학에서 증명이란 이론보다 중요한 것이다. 측정량과 이론의 관계. 이 영화는 깊이 들어간다면 그런 것도 건질 수 있게 해주는 영화다.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;이 글을 보다가 바로 어제 칼 짐머 (Carl Zimmer)의 책 &lt;em&gt;Microcosm&lt;/em&gt;에서 읽은 부분이 생각났다. 아직 조금밖에 읽지 않았지만, 최소한 &lt;em&gt;E.coli&lt;/em&gt;를 중심으로 분자생물학의 탄생 과정을 이야기해주는 앞부분은 무척 쉽고 재미있다.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href='http://books.google.com/books?id=rXw5HwAACAAJ&amp;amp;dq=microcosm&amp;amp;ei=azSNSdPnII_GlQSw1rzIBQ'&gt;&lt;img src='http://bks9.books.google.com/books?id=rXw5HwAACAAJ&amp;amp;printsec=frontcover&amp;amp;img=1&amp;amp;zoom=1' /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="http://books.google.com/books?id=rXw5HwAACAAJ&amp;amp;dq=microcosm&amp;amp;ei=azSNSdPnII_GlQSw1rzIBQ&amp;amp;client=firefox-a"&gt;Microcosm: E. Coli and the New Science of Life&lt;/a&gt; By &lt;a href="http://www.carlzimmer.com/"&gt;Carl Zimmer&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;다음 인용은 웟슨과 크릭이 밝혀낸 DNA의 구조와 DNA의 복제 기작, 그리고 이를 강력하게 뒷받침해준 실험인 메셀슨과 슈탈의 실험을 소개한 부분을 번역한 것이다. 아마 과학, 특히 생물학에 흥미가 있는 사람들은 짜릿함을 느낄 수 있을 것이다.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;그 구조는 아름답고 단순했으며, 스스로 자신이 어떻게 작동하는지를 웅변하고 있었다. 각 인산염 가닥에는 수십억 개의 염기가 한 줄로 쓰인 문서처럼 박혀있었다. 염기들의 배열에 따라 이 문서는 무한히 많은 의미를 가질 수 있었다. 이렇게, DNA는 각 종들이 각각의 단백질을 만들어내는 데 필요한 정보를 저장할 수 있었던 것이다.&lt;/p&gt;
+
+&lt;p&gt;그 구조는 자신이 어떻게 복제하는지도 알려주었다. 웟슨과 크릭은 두 개의 가닥이 분리되어 각각의 가닥에 새로운 가닥이 더해지는 모습을 상상할 수 있었다. 각 염기는 오직 다른 한 종류의 염기와 결합할 수 있으므로, 새로운 가닥을 만드는 것은 간단하다.&lt;/p&gt;
+
+&lt;p&gt;아름다운 착상이었다. 그러나 이를 뒷받침할 견고한 증거는 별로 없었다. 막스 델브뤽은 그가 “untwiddling problem”이라고 부른 문제를 고민했다. 분리된 이중 나선이 엉망진창으로 엉켜버리지 않고 두 개의 새로운 이중 나선이 되는 것이 가능할까? 델브뤽은 이 질문에 답하려 했지만 실패했다. 성공은 1957년, 캘텍의 대학원생과 포스닥이었던 매튜 메셀슨과 프랑크 슈탈에게 왔다. &lt;em&gt;E. coli&lt;/em&gt;의 도움으로, 그들은 후에 &lt;strong&gt;생물학의 가장 아름다운 실험&lt;/strong&gt;이라고 불리게 된 실험을 수행했다.&lt;/p&gt;
+
+&lt;p&gt;메셀슨과 슈탈은 &lt;em&gt;E. coli&lt;/em&gt;에게 특별한 음식을 먹임으로써 DNA의 복제과정을 추적할 수 있음을 깨달았다. &lt;em&gt;E. coli&lt;/em&gt;가 살아가려면 질소가 꼭 필요한데, 그 이유는 바로 DNA의 모든 염기에 질소가 포함되어 있기 때문이다. 보통, 질소는 14개의 양성자와 14개의 중성자를 가지지만, 이보다 더 적거나 많은 중성자를 가진, 가벼운 질소, 무거운 질소도 존재한다. 메셀슨과 슈탈은 먼저 중성자를 15개 가진 무거운 질소가 들어간 암모니아로 &lt;em&gt;E. coli&lt;/em&gt;를 키웠다. 그들은 박테리아가 오랫동안 복제를 하도록 놓아두고 나서 DNA를 추출하여 원심분리기로 돌렸다. 원심 분리기 안에서 DNA가 얼마나 멀리 움직였는지를 측정하면 DNA의 무게를 잴 수 있다. 기대했던 대로, 무거운 질소를 먹고 큰 &lt;em&gt;E. coli&lt;/em&gt;의 DNA는 보통 &lt;em&gt;E. coli&lt;/em&gt;의 DNA보다 무겁다는 사실을 확인할 수 있었다.&lt;/p&gt;
+
+&lt;p&gt;메셀슨과 슈탈은 두 번째 실험으로 넘어갔다. 그들은 무거운 질소를 먹고 큰 &lt;em&gt;E. coli&lt;/em&gt;를 다른 플라스크에 넣어 14개의 중성자를 가진 보통 질소를 섭취하도록 하였다. 정확히 &lt;em&gt;E. coli&lt;/em&gt;가 한 번 분열하는 시간을 기다리고 나서 그들은 이 &lt;em&gt;E.coli&lt;/em&gt; 를 바로 꺼내 원심분리기로 분석했다. 메셀슨과 슈탈은 만약 DNA의 복제에 대한 웟슨과 크릭의 생각이 맞았다면 무엇을 기대해야 할지 알고 있었다. 세포 안의 무거운 두 가닥은 서로에게서 분리되었을 것이고, 여기에 가벼운 질소로 만들어진 가벼운 가닥이 새로 더해졌을 것이다. 새로운 세대의 &lt;em&gt;E. coli&lt;/em&gt;가 가진 DNA는 반은 무겁고, 반은 가벼울 것이다. 그렇다면, 이 DNA는 이전의 실험에서 가벼운 가닥과 무거운 가닥이 만든 두 표식의 중간에 새로운 줄을 만들어야 한다. 이 예측은 메셀슨과 슈탈이 관찰한 결과와 정확히 일치했다.&lt;/p&gt;
+
+&lt;p&gt;웟슨과 크릭이 아름다운 모형을 만들었을지는 모르지만, 다른 과학자들이 이것을 사실로 받아들이도록 하기 위해서는 &lt;em&gt;E. coli&lt;/em&gt;를 이용한 아름다운 실험이 필요했다.&lt;/p&gt;
+
+&lt;p&gt;Carl Zimmer, &lt;em&gt;Microcosm&lt;/em&gt;, pp. 16-17&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=""&gt;참고&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://www.dnaftb.org/dnaftb/20/concept/"&gt;플래쉬로 보는 메셀슨과 슈탈의 실험&lt;/a&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;a href="http://en.wikipedia.org/wiki/Meselson-Stahl_experiment"&gt;영문위키백과:메셀슨과 슈탈의 실험&lt;/a&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;a href="http://www.nature.com/nature/dna50/watsoncrick.pdf"&gt;웟슨과 크릭의 “그 논문”&lt;/a&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;a href="http://www.pubmedcentral.nih.gov/articlerender.fcgi?tool=pubmed&amp;amp;pubmedid=16590258"&gt;메셀슨과 슈탈의 논문&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;img src="http://feeds.feedburner.com/~r/yyahn/~4/OWPKjaObMvE" height="1" width="1"/&gt;</content>
+  </entry>
+  <entry>
+    <id>/2009/01/28/blog-capcold.html</id>
+    <title type="text">캡콜드님의 블로그님</title>
+    <link type="text/html" rel="alternate" href="/2009/01/28/blog-capcold.html"/>
+    <updated>2009-01-28T00:00:00+05:00</updated>
+    <published>2009-01-28T00:00:00+05:00</published>
+    <content type="html">&lt;p&gt;세상이 어지러워지면서 사람들의 생각은 극단을 달린다. 이런 때일수록 침착하고 꼼꼼한 조사를 통해 사실과 거짓을 가려주고, &lt;a href="http://capcold.net/blog/2860"&gt;켜켜이 쌓인 문제의 층위&lt;/a&gt;들을 &lt;a href="http://capcold.net/blog/2825"&gt;하나하나 들어내며 분석&lt;/a&gt;해 주는 &lt;a href="http://capcold.net/blog/"&gt;캡콜드님의 블로그님&lt;/a&gt;이 소중하게 느껴진다.&lt;/p&gt;
+
+&lt;p&gt;세상은 복잡하고, 신과 악마는 세부에 숨어 있다. 캡콜드님의 블로그님의 좌우명 &lt;strong&gt;‘쫌 추해도 정밀하게’&lt;/strong&gt;에 대한 &lt;a href="http://capcold.net/blog/1175"&gt;설명&lt;/a&gt;은 꼭 한 번 읽어볼 이유가 있다.&lt;/p&gt;&lt;img src="http://feeds.feedburner.com/~r/yyahn/~4/CUUn3TtQwxs" height="1" width="1"/&gt;</content>
+  </entry>
+  <entry>
+    <id>/2009/01/27/blog-martin-wattenberg.html</id>
+    <title type="text">Martin Wattenberg와 Many Eyes</title>
+    <link type="text/html" rel="alternate" href="/2009/01/27/blog-martin-wattenberg.html"/>
+    <updated>2009-01-27T00:00:00+05:00</updated>
+    <published>2009-01-27T00:00:00+05:00</published>
+    <content type="html">&lt;p&gt;오늘 &lt;a href="http://manyeyes.alphaworks.ibm.com/manyeyes/"&gt;Many Eyes&lt;/a&gt;의 그룹 매니저인 &lt;a href="http://www.bewitched.com/index.html"&gt;Martin Wattenberg&lt;/a&gt;가 방문해서 세미나를 했다. &lt;a href="http://www.bewitched.com/historyflow.html"&gt;위키백과 시각화&lt;/a&gt;와 &lt;a href="http://www.bewitched.com/namevoyager.html"&gt;NameVoyager&lt;/a&gt;에서 시작하여 다양한 시각화를 보여주었고, 사람들이 데이터를 자유롭게 시각화하고 토론할 수 있는 플랫폼인 Many Eyes에 대한 설명이 있었다.&lt;/p&gt;
+
+&lt;p&gt;그가 세미나에서 반복해서 강조했던 것은 데이터 시각화는 사람들에게 설명하기 힘든 강한 영향을 미친다는 것이다. 그가 Many Eyes를 시작하게 된 것도 시각화 그 자체가 줄 수 있는 가치에 대한 느낌때문이었다고 한다. 별로 놀라운 정보를 보여주지 않아도 사람들은 시각화에 열광한다. 그가 든 한 예는 &lt;a href="http://www.nytimes.com/2008/08/31/technology/31novel.html"&gt;뉴욕타임즈에서 many-eyes를 소개한 기사&lt;/a&gt;에 실린 &lt;a href="http://www.nytimes.com/imagepages/2008/08/31/business/31novelCA02ready.html"&gt;신약성경의 사회 연결망&lt;/a&gt;이었다. 이 그림이 담고 있는 정보는 그렇게 놀라울 게 없었지만, 종교 커뮤니티에서는 상당한 반향을 불러왔다고 한다.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://www.bewitched.com/index.html"&gt;Martin Wattenberg&lt;/a&gt; - 눈에 익은 프로젝트가 많다.&lt;/li&gt;
+
+&lt;li&gt;&lt;a href="http://manyeyes.alphaworks.ibm.com/manyeyes/"&gt;Many Eyes homepage&lt;/a&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;a href="http://www.nytimes.com/2008/08/31/technology/31novel.html"&gt;뉴욕타임즈:Lines and Bubbles and Bars, Oh My! New Ways to Sift Data&lt;/a&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;a href="http://flowingdata.com/2008/10/28/new-york-times-visualization-lab-collaboration-with-many-eyes/"&gt;Flowing data:New York Times Visualization Lab - Collaboration with Many Eyes&lt;/a&gt; - Many Eyes는 현재 뉴욕타임즈의 ‘Visualization Lab’을 운영하고 있다.&lt;/li&gt;
+&lt;/ul&gt;&lt;img src="http://feeds.feedburner.com/~r/yyahn/~4/IbA-Vx06AKc" height="1" width="1"/&gt;</content>
+  </entry>
+  <entry>
+    <id>/2008/10/20/blog-information-theory-and-zipping-1.html</id>
+    <title type="text">정보이론과 압축 - 1</title>
+    <link type="text/html" rel="alternate" href="/2008/10/20/blog-information-theory-and-zipping-1.html"/>
+    <updated>2008-10-20T00:00:00+04:00</updated>
+    <published>2008-10-20T00:00:00+04:00</published>
+    <content type="html">&lt;p&gt;다음 중 어떤 문자열이 더 많은 정보를 담고 있을까? 어떤 문자열이 더 복잡할까?&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;01010101010101010101010101010&lt;/p&gt;
+
+&lt;p&gt;11000101010001001000100100010&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;‘정보’나 ‘복잡도’의 정의를 명확히 내리지 않은 상태에서도 누구나 두번째 문자열을 가리킬 것이다. 그러면 왜 첫번째 문자열은 덜 복잡하고, 적은 양의 ‘정보’를 가지고 있다고 느껴질까? 간단한 접근 방법 한가지는 우리의 일상어를 가지고 문자열을 기술해 보는 것이다. 첫번째 문자열은 매우 쉽다. “‘01’이 xx 번 반복되는 문자열”이라고 하면 된다. 이 기술을 들은 사람은 첫번째 문자열을 다시 만들어 낼 수 있다. 반면에 두번째 문자열은 간단한 기술이 어렵다. “11000, 다음에 10이 세 번 반복되고, 001이 두 번 나오고, …”와 같이 말이 길어진다.&lt;/p&gt;
+
+&lt;p&gt;자연어를 이용한 위의 접근은 너무 단순해 보이지만, 사실 정보이론의 핵심 개념 중 하나인 &lt;a href="http://en.wikipedia.org/wiki/Kolmogorov_complexity"&gt;Kolmogorov complexity&lt;/a&gt; (혹은 algorithmic entropy, 이하 KC) 를 잘 묘사하고 있다. 대강 말하자면, 주어진 문자열의 KC는 그 문자열을 만들어낼 수 있는 가장 짧은 프로그램의 길이로 정의한다. 어떤 문자열이 복잡하다거나 많은 정보를 담고 있다는 것의 의미는 곧, 그 문자열을 만들어내는데 긴 프로그램이 필요하다는 것이다. 하나마나한 소리 같을지도 모르겠다. 사실, KC는 추상적인 개념이며 &lt;a href="http://en.wikipedia.org/wiki/Halting_problem"&gt;Halting problem&lt;/a&gt;과 엮여 있어서 계산 가능하지도 않다. 하지만, 개념 자체는 매우 유용하게 쓰일 수 있다. 일례로, 우리는 매일 매일 컴퓨터에게 주어진 문자열의 KC 값 추정을 지시하고 있다. 무슨 소리냐고? 압축프로그램이 하는 일이 주어진 파일을 가능한 한 작은 크기를 가지도록 변환 – KC의 추정치를 계산 – 하는 것이기 때문이다.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="http://en.wikipedia.org/wiki/Zip_bomb"&gt;Zip bomb&lt;/a&gt;라는 것이 있다. 시스템을 감시하고 있는 백신 소프트웨어들을 무력화 시키는 용도로 주로 쓰이는 압축 파일로, 맨 처음 예로 들었던 첫 문자열 ‘01010101…’ 과 같은 것이다. 이런 문자열은 아무리 길어도 매우 짧은 프로그램으로 기술할 수 있다 (압축이 잘 된다). Zip bomb는 이걸 극단적으로 응용한 것으로, 압축 프로그램을 일종의 프로그램 실행기로 보고 이 프로그램 실행기를 통해서 어마어마한 양의 출력을 내보내도록 설계된 프로그램이다. 위키백과에 의하면 ‘42.zip’ 이라는 유명한 zip bomb의 경우 파일 크기가 42 킬로바이트 정도에 불과하지만 압축을 모두 풀면 4.5 페타바이트 (~4500 테라바이트) 에 달하는 파일을 만들어 낸다.&lt;/p&gt;
+
+&lt;p&gt;더 재미난 예는 다음 글에서&lt;/p&gt;&lt;img src="http://feeds.feedburner.com/~r/yyahn/~4/Sidxl6YuLAI" height="1" width="1"/&gt;</content>
+  </entry>
+</feed>

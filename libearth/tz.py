@@ -15,7 +15,9 @@ Almost of this module is from the official documentation of
 """
 import datetime
 
-__all__ = 'FixedOffset', 'Utc', 'now', 'utc'
+from .compat import string_type
+
+__all__ = 'FixedOffset', 'Utc', 'guess_tzinfo_by_locale', 'now', 'utc'
 
 
 class Utc(datetime.tzinfo):
@@ -93,3 +95,45 @@ def now():
 
     """
     return datetime.datetime.utcnow().replace(tzinfo=utc)
+
+
+LANGUAGE_COUNTRY_TZINFO_TABLE = {
+    'ko': {'kr': FixedOffset(9 * 60, 'Asia/Seoul')},
+    'ja': {'jp': FixedOffset(9 * 60, 'Asia/Tokyo')}
+}
+
+
+def guess_tzinfo_by_locale(language, country=None):
+    """Guess the most commonly used time zone from the given locale.
+
+    :param language: the language code e.g. ``ko``, ``JA``
+    :type language: :class:`str`
+    :param country: optional country code e.g. ``kr``, ``JP``
+    :type country: :class:`str`
+    :return: the most commonly used time zone, or :const:`None` if can't
+             guess
+    :rtype: :class:`datetime.tzinfo`
+
+    .. versionadded:: 0.3.0
+
+    """
+    if not isinstance(language, string_type):
+        raise TypeError('language must be a string, not ' + repr(language))
+    elif not (country is None or isinstance(country, string_type)):
+        raise TypeError('country must be a string, not ' + repr(country))
+    language = language.strip().lower()
+    if len(language) != 2:
+        raise ValueError(repr(language) + ' is not a valid language code')
+    if country:
+        country = country.strip().lower()
+        if len(country) != 2:
+            raise ValueError(repr(country) + ' is not a valid country code')
+    try:
+        countries = LANGUAGE_COUNTRY_TZINFO_TABLE[language]
+    except KeyError:
+        return
+    if country:
+        return countries.get(country)
+    elif len(countries) == 1:
+        for tz in countries.values():
+            return tz

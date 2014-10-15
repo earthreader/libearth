@@ -8,7 +8,7 @@
    :returns: the number of cpu cores
    :rtype: :class:`numbers.Integral`
 
-.. function:: parallel_map(pool_size, function, iterable, *iterables):
+.. function:: parallel_map(pool_size, function, iterable, *iterables)
 
    Parallel vesion of builtin :func:`map()` except of some differences:
 
@@ -29,11 +29,15 @@
    :returns: a promise iterable to future results
    :rtype: :class:`collections.Iterable`
 
+   .. versionchanged:: 0.1.1
+      Errored values are raised at the lastest.
+
 """
 import collections
 import numbers
+import sys
 
-from . import IRON_PYTHON
+from . import IRON_PYTHON, PY3
 
 __all__ = 'cpu_count', 'parallel_map'
 
@@ -44,7 +48,13 @@ if IRON_PYTHON:
     def cpu_count():
         return Environment.ProcessorCount
 else:
-    from multiprocessing import cpu_count
+    import multiprocessing
+
+    def cpu_count():
+        try:
+            return multiprocessing.cpu_count()
+        except NotImplementedError:
+            return 1
 
 
 try:
@@ -95,12 +105,15 @@ except ImportError:
                 self.results.Add(result)
 
             def __iter__(self):
+                errors = []
                 for _ in xrange(self.length):
                     value, error = self.results.Take()
                     if error is None:
                         yield value
                     else:
-                        raise error
+                        errors.append(error)
+                for error in errors:
+                    raise error
     else:
         from multiprocessing.pool import ThreadPool
 
@@ -121,13 +134,23 @@ except ImportError:
                                                         zip(*iterables))
 
             def map_function(self, args):
-                return self.function(*args)
+                try:
+                    value = self.function(*args)
+                except Exception:
+                    return False, sys.exc_info()
+                return True, value
 
             def __iter__(self):
-                for value in self.results:
-                    yield value
+                errors = []
+                for success, value in self.results:
+                    if success:
+                        yield value
+                    else:
+                        errors.append(value)
                 self.pool.close()
                 self.pool.join()
+                for error in errors:
+                    exec('raise error[1], None, error[2]')
 else:
     class parallel_map(collections.Iterable):
 
@@ -141,9 +164,27 @@ else:
             elif not iterables:
                 raise TypeError('missing iterable')
             self.pool = ThreadPoolExecutor(pool_size)
-            self.results = self.pool.map(function, *iterables)
+            self.function = function
+            self.results = self.pool.map(self.map_function, *iterables)
+
+        def map_function(self, *args):
+            try:
+                value = self.function(*args)
+            except Exception:
+                return False, sys.exc_info()
+            return True, value
 
         def __iter__(self):
-            for value in self.results:
-                yield value
+            errors = []
+            for success, value in self.results:
+                if success:
+                    yield value
+                else:
+                    errors.append(value)
             self.pool.shutdown()
+            if PY3:
+                for _, exc, tb in errors:
+                    raise exc.with_traceback(tb)
+            else:
+                for _, exc, tb in errors:
+                    exec('raise exc, None, tb')

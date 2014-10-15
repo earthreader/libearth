@@ -44,7 +44,7 @@ class Text(Element):
     #:
     #:    It currently does not support ``'xhtml'``.
     type = Attribute('type', Enum(['text', 'html']),
-                     required=True, default='text')
+                     required=True, default=lambda _: 'text')
 
     #: (:class:`str`) The content of the text.  Interpretation for this
     #: has to differ according to its :attr:`type`.  It corresponds to
@@ -168,7 +168,18 @@ class Link(Element):
 
     #: (:class:`str`) The relation type of the link.  It corresponds to
     #: ``rel`` attribute of :rfc:`4287#section-4.2.7.2` (section 4.2.7.2).
-    relation = Attribute('rel', default='alternate')
+    #:
+    #: .. seealso::
+    #:
+    #:    `Existing rel values`__ --- Microformats Wiki
+    #:        This page contains tables of known HTML ``rel`` values from
+    #:        specifications, formats, proposals, brainstorms, and non-trivial
+    #:        POSH_ usage in the wild.  In addition, dropped and rejected
+    #:        values are listed at the end for comprehensiveness.
+    #:
+    #:    __ http://microformats.org/wiki/existing-rel-values
+    #:    .. _POSH: http://microformats.org/wiki/POSH
+    relation = Attribute('rel', required=True, default=lambda _: 'alternate')
 
     #: (:class:`str`) The optional hint for the MIME media type of the linked
     #: content.  It corresponds to ``type`` attribute of
@@ -204,6 +215,21 @@ class Link(Element):
     def __hash__(self):
         return hash((self.uri, self.relation, self.mimetype, self.language,
                      self.title, self.byte_size))
+
+    @property
+    def html(self):
+        """(:class:`bool`) Whether its :attr:`mimetype` is HTML (or XHTML).
+
+        .. versionadded:: 0.2.0
+
+        """
+        if self.mimetype:
+            match = re.match(r'^\s*([^;/\s]+/[^;/\s]+)\s*(?:;\s*.*)?$',
+                             self.mimetype)
+            if match:
+                mimetype = match.group(1)
+                return mimetype in ('text/html', 'application/xhtml+xml')
+        return False
 
     def __unicode__(self):
         return self.uri
@@ -266,6 +292,40 @@ class LinkList(collections.MutableSequence):
             )
         return LinkList.list_type(l for l in self if l.mimetype == pattern)
 
+    @property
+    def permalink(self):
+        """(:class:`Link`) Find the permalink from the list.  The following
+        list shows precedence of lookup conditions:
+
+        1. :attr:`~Link.html`, and :attr:`~Link.relation` is ``'alternate'``
+        2. :attr:`~Link.html`
+        3. :attr:`~Link.relation` is ``'alternate'``
+        4. No permalink: return :const:`None`
+
+        .. versionadded:: 0.2.0
+
+        """
+        links = [(lnk, (lnk.html, lnk.relation == 'alternate')) for lnk in self]
+        filterred_links = [(l, cond) for l, cond in links if cond[0] or cond[1]]
+        try:
+            link, _ = max(filterred_links, key=lambda pair: pair[1])
+        except ValueError:
+            pass
+        else:
+            return link
+
+    @property
+    def favicon(self):
+        """(:class:`Link`) Find the link to a favicon, also known as
+        a shortcut or bookmark icon, if it exists.
+
+        .. versionadded:: 0.3.0
+
+        """
+        for link in self:
+            if 'icon' in link.relation.split():
+                return link
+
 
 # FIXME: it probably would be common for all specialized element list types
 LinkList.list_type = type('LinkList.list_type', (list, LinkList), {})
@@ -296,6 +356,14 @@ class Category(Element):
     #: end-user applications.  It corresponds to ``label`` attribute of
     #: :rfc:`4287#section-4.2.2.3` (section 4.2.2.3).
     label = Attribute('label')
+
+    def __entity_id__(self):
+        return self.term
+
+    def __merge_entities__(self, other):
+        if not self.label:
+            self.label = other.label
+        return self
 
     def __unicode__(self):
         return self.label or self.term
@@ -668,4 +736,10 @@ class Feed(MergeableDocumentElement, Source):
     #: and data associated with the entry.
     #: It corresponds to ``atom:entry`` element of :rfc:`4287#section-4.1.2`
     #: (section 4.1.2).
-    entries = Child('entry', Entry, xmlns=ATOM_XMLNS, multiple=True)
+    entries = Child(
+        'entry', Entry,
+        xmlns=ATOM_XMLNS,
+        multiple=True,
+        sort_key=lambda e: e.published_at or e.updated_at,
+        sort_reverse=True
+    )

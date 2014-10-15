@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:s="http://earthreader.org/session/" s:bases="">
+  <id>http://cartoon.media.daum.net/webtoon/rss/rewind</id>
+  <title type="text">다시, 봄</title>
+  <link rel="self" href="http://cartoon.media.daum.net/webtoon/rss/rewind"/>
+  <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net"/>
+  <updated>2012-12-03T09:21:55+09:00</updated>
+  <contributor>
+    <name>media-cs@daum.net</name>
+    <email>media-cs@daum.net</email>
+  </contributor>
+  <contributor>
+    <name>media-cs@daum.net</name>
+    <email>media-cs@daum.net</email>
+  </contributor>
+  <rights type="text">Copyright (c) Daum Communications. All rights reserved.</rights>
+  <subtitle type="text">미디어 다음 만화속 세상 다시, 봄</subtitle>
+  <generator>cartoon admin</generator>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/18935</id>
+    <title type="text">후기</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/18935"/>
+    <updated>2012-12-03T09:21:55+09:00</updated>
+    <published>2012-12-03T09:21:55+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/50BBF0850532C90001' &gt;후기</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/18831</id>
+    <title type="text">34화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/18831"/>
+    <updated>2012-11-26T09:28:03+09:00</updated>
+    <published>2012-11-26T09:28:03+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/50B2B7770371860002' &gt;34화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/18749</id>
+    <title type="text">33화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/18749"/>
+    <updated>2012-11-19T08:55:53+09:00</updated>
+    <published>2012-11-19T08:55:53+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/50A975710212B30001' &gt;33화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/18675</id>
+    <title type="text">32화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/18675"/>
+    <updated>2012-11-12T09:11:46+09:00</updated>
+    <published>2012-11-12T09:11:46+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/50A03EAC025C5C0002' &gt;32화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/18554</id>
+    <title type="text">31화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/18554"/>
+    <updated>2012-11-05T09:48:43+09:00</updated>
+    <published>2012-11-05T09:48:43+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/50970CCB063BA20002' &gt;31화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/18478</id>
+    <title type="text">30화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/18478"/>
+    <updated>2012-10-29T09:39:23+09:00</updated>
+    <published>2012-10-29T09:39:23+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/508DD0240450790001' &gt;30화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/18402</id>
+    <title type="text">29화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/18402"/>
+    <updated>2012-10-22T09:20:29+09:00</updated>
+    <published>2012-10-22T09:20:29+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/5084912C053E800001' &gt;29화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/18319</id>
+    <title type="text">28화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/18319"/>
+    <updated>2012-10-15T09:19:20+09:00</updated>
+    <published>2012-10-15T09:19:20+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/507B56670147770002' &gt;28화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/18241</id>
+    <title type="text">27화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/18241"/>
+    <updated>2012-10-08T09:22:45+09:00</updated>
+    <published>2012-10-08T09:22:45+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/50721CAE04539C0002' &gt;27화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/18107</id>
+    <title type="text">26화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/18107"/>
+    <updated>2012-09-24T09:06:14+09:00</updated>
+    <published>2012-09-24T09:06:14+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/505FA3D70439DB0001' &gt;26화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/18024</id>
+    <title type="text">25화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/18024"/>
+    <updated>2012-09-17T09:36:55+09:00</updated>
+    <published>2012-09-17T09:36:55+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/505670860173180002' &gt;25화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17950</id>
+    <title type="text">24화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17950"/>
+    <updated>2012-09-10T09:25:13+09:00</updated>
+    <published>2012-09-10T09:25:13+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/504D3348037E340001' &gt;24화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17871</id>
+    <title type="text">23화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17871"/>
+    <updated>2012-09-03T09:13:56+09:00</updated>
+    <published>2012-09-03T09:13:56+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/5043F6280202920001' &gt;23화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17799</id>
+    <title type="text">22화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17799"/>
+    <updated>2012-08-27T11:20:59+09:00</updated>
+    <published>2012-08-27T11:20:59+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/503AD9640164E60001' &gt;22화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17711</id>
+    <title type="text">21화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17711"/>
+    <updated>2012-08-20T09:15:21+09:00</updated>
+    <published>2012-08-20T09:15:21+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/503181640474670001' &gt;21화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17641</id>
+    <title type="text">2부 공지</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17641"/>
+    <updated>2012-08-13T10:59:33+09:00</updated>
+    <published>2012-08-13T10:59:33+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/50285F720231F80001' &gt;2부 공지</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17438</id>
+    <title type="text">1부 후기</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17438"/>
+    <updated>2012-07-30T09:28:48+09:00</updated>
+    <published>2012-07-30T09:28:48+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/5015D577015AA80001' &gt;1부 후기</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17378</id>
+    <title type="text">20화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17378"/>
+    <updated>2012-07-26T09:01:54+09:00</updated>
+    <published>2012-07-26T09:01:54+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/501088DB0447EA0003' &gt;20화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17295</id>
+    <title type="text">19화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17295"/>
+    <updated>2012-07-23T09:26:03+09:00</updated>
+    <published>2012-07-23T09:26:03+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/500C9A08045D6D0002' &gt;19화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17244</id>
+    <title type="text">18화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17244"/>
+    <updated>2012-07-19T09:21:05+09:00</updated>
+    <published>2012-07-19T09:21:05+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/500752DE06480A0001' &gt;18화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17205</id>
+    <title type="text">17화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17205"/>
+    <updated>2012-07-16T09:39:30+09:00</updated>
+    <published>2012-07-16T09:39:30+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/500362AA027AE20003' &gt;17화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17165</id>
+    <title type="text">16화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17165"/>
+    <updated>2012-07-12T09:27:22+09:00</updated>
+    <published>2012-07-12T09:27:22+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FFE19C7025DF50001' &gt;16화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17100</id>
+    <title type="text">15화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17100"/>
+    <updated>2012-07-09T09:41:08+09:00</updated>
+    <published>2012-07-09T09:41:08+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FFA2893057A820002' &gt;15화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17062</id>
+    <title type="text">14화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17062"/>
+    <updated>2012-07-05T09:26:25+09:00</updated>
+    <published>2012-07-05T09:26:25+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FF4DF1A044FEB0001' &gt;14화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/17023</id>
+    <title type="text">13화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/17023"/>
+    <updated>2012-07-02T09:52:26+09:00</updated>
+    <published>2012-07-02T09:52:26+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FF0F0B5062FFF0001' &gt;13화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16975</id>
+    <title type="text">12화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16975"/>
+    <updated>2012-06-28T09:34:09+09:00</updated>
+    <published>2012-06-28T09:34:09+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FEBA66E01788D0001' &gt;12화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16939</id>
+    <title type="text">11화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16939"/>
+    <updated>2012-06-25T09:56:02+09:00</updated>
+    <published>2012-06-25T09:56:02+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FE7B6F905086C0002' &gt;11화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16896</id>
+    <title type="text">10화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16896"/>
+    <updated>2012-06-21T09:44:40+09:00</updated>
+    <published>2012-06-21T09:44:40+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FE26E4E0658170001' &gt;10화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16862</id>
+    <title type="text">9화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16862"/>
+    <updated>2012-06-18T10:00:28+09:00</updated>
+    <published>2012-06-18T10:00:28+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FDE7D910324FF0001' &gt;9화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16813</id>
+    <title type="text">8화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16813"/>
+    <updated>2012-06-14T09:01:01+09:00</updated>
+    <published>2012-06-14T09:01:01+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FD9297F0515060001' &gt;8화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16778</id>
+    <title type="text">7화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16778"/>
+    <updated>2012-06-11T09:28:29+09:00</updated>
+    <published>2012-06-11T09:28:29+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FD53B94056D320001' &gt;7화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16735</id>
+    <title type="text">6화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16735"/>
+    <updated>2012-06-07T09:15:44+09:00</updated>
+    <published>2012-06-07T09:15:44+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FCFF299056AC60001' &gt;6화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16696</id>
+    <title type="text">5화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16696"/>
+    <updated>2012-06-04T08:57:53+09:00</updated>
+    <published>2012-06-04T08:57:53+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FCBF9EA020C4E0001' &gt;5화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16656</id>
+    <title type="text">4화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16656"/>
+    <updated>2012-05-31T08:54:02+09:00</updated>
+    <published>2012-05-31T08:54:02+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FC6B5CB0158D40001' &gt;4화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16624</id>
+    <title type="text">3화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16624"/>
+    <updated>2012-05-28T09:52:50+09:00</updated>
+    <published>2012-05-28T09:52:50+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FC2CC37062F830001' &gt;3화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16576</id>
+    <title type="text">2화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16576"/>
+    <updated>2012-05-24T09:05:13+09:00</updated>
+    <published>2012-05-24T09:05:13+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FBD96550365320001' &gt;2화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16539</id>
+    <title type="text">1화</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16539"/>
+    <updated>2012-05-21T09:23:22+09:00</updated>
+    <published>2012-05-21T09:23:22+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FB98ADA0260450001' &gt;1화</content>
+  </entry>
+  <entry>
+    <id>http://cartoon.media.daum.net/webtoon/viewer/16471</id>
+    <title type="text">예고</title>
+    <link type="text/html" rel="alternate" href="http://cartoon.media.daum.net/webtoon/viewer/16471"/>
+    <updated>2012-05-14T09:46:00+09:00</updated>
+    <published>2012-05-14T09:46:00+09:00</published>
+    <content type="html">&lt;img src='http://i1.cartoon.daumcdn.net/svc/image/U03/cartoon/4FB055B9024BAC0001' &gt;예고</content>
+  </entry>
+</feed>

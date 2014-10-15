@@ -1,16 +1,19 @@
 """:mod:`libearth.subscribe` --- Subscription list
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Maintain the subscription list using OPML format, which is de facto standard
+Maintain the subscription list using OPML_ format, which is de facto standard
 for the purpose.
+
+.. _OPML: http://dev.opml.org/spec2.html
 
 """
 import collections
+import datetime
 import distutils.version
 import hashlib
 
 from .codecs import Boolean, Integer, Rfc822
-from .compat import text_type
+from .compat import string_type, text_type
 from .feed import Feed, Person
 from .schema import Attribute, Child, Codec, Element, Text
 from .session import MergeableDocumentElement
@@ -79,50 +82,78 @@ class SubscriptionSet(collections.MutableSet):
         )
 
     def __len__(self):
-        return len(self.children)
+        if not self.children:
+            return 0
+        return sum(not child.deleted for child in self.children)
 
     def __iter__(self):
         categories = set()
         subscriptions = set()
-        for i, outline in enumerate(self.children):
-            if outline.type == 'rss' or outline.feed_uri or \
-               isinstance(outline, Subscription):
+        for outline in self.children:
+            if outline.deleted:
+                continue
+            elif (outline.type == 'rss' or outline.feed_uri or
+                  isinstance(outline, Subscription)):
                 if outline.feed_uri in subscriptions:
                     continue
                 subscriptions.add(outline.feed_uri)
-                if isinstance(outline, Subscription):
-                    yield outline
-                    continue
-                outline = Subscription(
-                    feed_id=(outline.feed_id or
-                             hashlib.sha1(outline.feed_uri.encode('utf-8'))
-                                    .hexdigest()),
-                    label=outline.label,
-                    _title=outline.label,
-                    feed_uri=outline.feed_uri,
-                    alternate_uri=outline.alternate_uri,
-                    created_at=outline.created_at
-                )
-                self.children[i] = outline
+                if not isinstance(outline, Subscription):
+                    if not outline.feed_id:
+                        outline.feed_id = hashlib.sha1(
+                            outline.feed_uri.encode('utf-8')
+                        ).hexdigest()
+                    outline.__class__ = Subscription
+                    outline._title = outline.label
                 yield outline
             elif outline.label in categories:
                 continue
             else:
                 categories.add(outline.label)
-                if isinstance(outline, Category):
-                    yield outline
-                else:
-                    outline = Category(
-                        label=outline.label,
-                        _title=outline.label,
-                        children=outline.children,
-                        created_at=outline.created_at
-                    )
-                    self.children[i] = outline
-                    yield outline
+                if not isinstance(outline, Category):
+                    outline.__class__ = Category
+                    outline._title = outline.label
+                yield outline
+
+    def contains(self, outline, recursively=False):
+        """Determine whether the set contains the given ``outline``.
+        If ``recursively`` is :const:`False` (which is by default)
+        it works in the same way to :keyword:`in` operator.
+
+        :param outline: the subscription or category to find
+        :type outline: :class:`Outline`
+        :param recursively: if it's :const:`True` find the ``outline``
+                            in the whole tree, or if :const:`False` find
+                            it in only its direct children.
+                            :const:`False` by default
+        :type recursively: :class:`bool`
+        :returns: :const:`True` if the set (or tree) contains the given
+                  ``outline``, or :const:`False`
+        :rtype: :class:`bool`
+
+        .. versionadded:: 0.2.0
+
+        """
+        if not isinstance(outline, Outline):
+            raise TypeError('expected an instance of {0.__module__}.'
+                            '{0.__name__}, not {1!r}'.format(Outline, outline))
+        for child in self.children:
+            if outline == child:
+                if recursively:
+                    return not child.deleted
+                elif not child.deleted:
+                    return True
+        if recursively:
+            for subcategory in self:
+                if isinstance(subcategory, SubscriptionSet) and \
+                   subcategory.contains(outline, recursively=True):
+                    return True
+        return False
 
     def __contains__(self, outline):
-        return isinstance(outline, Outline) and outline in self.children
+        try:
+            return self.contains(outline, recursively=False)
+        except TypeError:
+            return False
 
     def add(self, value):
         if not isinstance(value, Outline):
@@ -135,6 +166,7 @@ class SubscriptionSet(collections.MutableSet):
                         isinstance(outline, Subscription)):
                     continue
                 if outline.feed_uri == value.feed_uri:
+                    outline.created_at = now()
                     return
         else:
             value.type = 'category'
@@ -143,6 +175,7 @@ class SubscriptionSet(collections.MutableSet):
                         isinstance(outline, Category)):
                     continue
                 if outline.label == value.label:
+                    outline.created_at = now()
                     return
         value.created_at = now()
         self.children.append(value)
@@ -151,28 +184,45 @@ class SubscriptionSet(collections.MutableSet):
         if not isinstance(outline, Outline):
             raise TypeError('expected {0.__module__}.{0.__name__}, not '
                             '{1!r}'.format(Outline, outline))
-        children = self.children
-        while True:
-            try:
-                children.remove(outline)
-            except ValueError:
-                break
+        deleted_at = now()
+        if deleted_at <= outline.created_at:
+            deleted_at = (outline.created_at +
+                          datetime.timedelta(microseconds=1))  # FIXME
+        for child in self.children:
+            if child == outline:
+                child.deleted_at = deleted_at
+                assert child.deleted
 
-    def subscribe(self, feed):
+    def subscribe(self, feed, icon_uri=None):
         """Add a subscription from :class:`~libearth.feed.Feed` instance.
         Prefer this method over :meth:`add()` method.
 
         :param feed: feed to subscribe
         :type feed: :class:`~libearth.feed.Feed`
+        :param icon_uri: optional favicon url of the ``feed``
+        :type icon_uri: :class:`str`
+        :returns: the created subscription object
+        :rtype: :class:`Subscription`
+
+        .. versionadded:: 0.3.0
+           Optional ``icon_url`` parameter was added.
 
         """
         if not isinstance(feed, Feed):
             raise TypeError('feed must be an instance of {0.__module__}.'
                             '{0.__name__}, not {1!r}'.format(Feed, feed))
+        elif icon_uri is None:
+            favicon = feed.links.favicon
+            if favicon is not None:
+                icon_uri = favicon.uri
+        elif not isinstance(icon_uri, string_type):
+            raise TypeError('icon_uri must be a string, not ' +
+                            repr(icon_uri))
         sub = Subscription(
             feed_id=hashlib.sha1(feed.id.encode('utf-8')).hexdigest(),
-            label=str(feed.title),
-            _title=str(feed.title),
+            icon_uri=icon_uri,
+            label=text_type(feed.title),
+            _title=text_type(feed.title),
             feed_uri=next(l.uri for l in feed.links if l.relation == 'self'),
             alternate_uri=next(
                 (l.uri for l in feed.links
@@ -181,7 +231,10 @@ class SubscriptionSet(collections.MutableSet):
             ),
             created_at=now()
         )
-        self.add(sub)
+        for child in self.children:
+            if child == sub:
+                self.children.remove(child)
+        self.children.append(sub)
         return sub
 
     @property
@@ -214,6 +267,31 @@ class SubscriptionSet(collections.MutableSet):
                 subscriptions.update(child.recursive_subscriptions)
         return subscriptions
 
+    def __merge_entities__(self, other):
+        for outline in other.children:
+            for child in self.children:
+                if child == outline:
+                    if type(child) is Outline:
+                        child.__class__ = (Subscription
+                                           if child.type == 'rss'
+                                           else Category)
+                        outline._title = outline.label
+                    child.created_at = max(child.created_at,
+                                           outline.created_at)
+                    if not child.deleted_at:
+                        child.deleted_at = outline.deleted_at
+                    elif outline.deleted_at:
+                        child.deleted_at = max(child.deleted_at,
+                                               outline.deleted_at)
+                    if child.children and child.deleted:
+                        del child.children[:]
+                    if child.children or outline.children:
+                        SubscriptionSet.__merge_entities__(child, outline)
+                    break
+            else:
+                self.add(outline)
+        return self
+
 
 class Outline(Element):
     """Represent ``outline`` element of OPML document."""
@@ -225,7 +303,20 @@ class Outline(Element):
     type = Attribute('type')
 
     #: (:class:`datetime.datetime`) The created time.
-    created_at = Attribute('created', Rfc822)
+    created_at = Attribute('created', Rfc822(microseconds=True))
+
+    #: (:class:`datetime.datetime`) The archived time, if deleted ever.
+    #: It could be :const:`None` as well if it's never deleted.
+    #: Note that it doesn't have enough information about whether
+    #: it's actually deleted or not.  For that you have to use
+    #: :attr:`deleted` property instead.
+    #:
+    #: .. versionadded:: 0.3.0
+    deleted_at = Attribute(
+        'deleted',
+        Rfc822(microseconds=True),
+        xmlns=METADATA_XMLNS
+    )
 
     feed_uri = Attribute('xmlUrl')
     alternate_uri = Attribute('htmlUrl')
@@ -235,6 +326,15 @@ class Outline(Element):
     _title = Attribute('title')
     _category = Attribute('category', CommaSeparatedList)
     _breakpoint = Attribute('isBreakpoint', Boolean)
+
+    @property
+    def deleted(self):
+        """(:class:`bool`) Whether it is deleted (archived) or not.
+
+        .. versionadded:: 0.3.0
+
+        """
+        return bool(self.deleted_at and self.deleted_at > self.created_at)
 
     def __eq__(self, other):
         if isinstance(other, Outline):
@@ -251,6 +351,12 @@ class Outline(Element):
             return hash(self.feed_uri)
         return hash(self.label)
 
+    def __repr__(self):
+        return '<{0.__module__}.{0.__name__} type={1} label={2}{3}>'.format(
+            type(self), repr(self.type), repr(self.label),
+            ' [deleted]' if self.deleted else ''
+        )
+
 
 class Category(Outline, SubscriptionSet):
     """Category which groups :class:`Subscription` objects or other
@@ -264,11 +370,11 @@ class Category(Outline, SubscriptionSet):
 
     """
 
-    type = Attribute('type', default='category')
+    type = Attribute('type', default=lambda _: 'category')
 
     def __repr__(self):
-        return '<{0.__module__}.{0.__name__} {1!r}>'.format(
-            type(self), self.label
+        return '<{0.__module__}.{0.__name__} {1!r}{2}>'.format(
+            type(self), self.label, ' [deleted]' if self.deleted else ''
         )
 
 
@@ -291,11 +397,17 @@ class Subscription(Outline):
 
     """
 
-    type = Attribute('type', default='rss')
+    type = Attribute('type', default=lambda _: 'rss')
+
+    #: (:class:`str`) Optional favicon url.
+    #:
+    #: .. versionadded:: 0.3.0
+    icon_uri = Attribute('icon', xmlns=METADATA_XMLNS, default=lambda _: None)
 
     def __repr__(self):
-        return '<{0.__module__}.{0.__name__} {1} {2!r} ({3!r})>'.format(
-            type(self), self.feed_id, self.label, self.feed_uri
+        return '<{0.__module__}.{0.__name__} {1} {2!r} ({3!r}){4}>'.format(
+            type(self), self.feed_id, self.label, self.feed_uri,
+            ' [deleted]' if self.deleted else ''
         )
 
 
@@ -345,10 +457,12 @@ class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
     body = Child('body', Body)
 
     #: (:class:`distutils.version.StrictVersion`) The OPML version number.
-    version = Attribute('version',
-                        encoder=str,
-                        decoder=distutils.version.StrictVersion,
-                        default=distutils.version.StrictVersion('2.0'))
+    version = Attribute(
+        'version',
+        encoder=str,
+        decoder=distutils.version.StrictVersion,
+        default=lambda _: distutils.version.StrictVersion('2.0')
+    )
 
     @property
     def children(self):
@@ -403,8 +517,10 @@ class SubscriptionList(MergeableDocumentElement, SubscriptionSet):
         head.owner_uri = owner.uri
 
     def __merge_entities__(self, other):
-        self.body.update(other.body)
-        return self
+        subs = SubscriptionSet.__merge_entities__(self, other)
+        doc = MergeableDocumentElement.__merge_entities__(self, other)
+        doc.body = subs.body
+        return doc
 
     def __repr__(self):
         head = self.head

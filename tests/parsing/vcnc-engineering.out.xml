@@ -1,0 +1,1427 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:s="http://earthreader.org/session/" s:bases="">
+  <id>http://engineering.vcnc.co.kr</id>
+  <title type="text">VCNC Engineering Blog</title>
+  <link rel="self" href="http://engineering.vcnc.co.kr/atom.xml"/>
+  <link rel="alternate" href="http://engineering.vcnc.co.kr/"/>
+  <updated>2014-05-07T10:15:28+09:00</updated>
+  <author>
+    <name>VCNC Engineering Blog</name>
+    <email>dev@vcnc.co.kr</email>
+  </author>
+  <entry>
+    <id>http://http://engineering.vcnc.co.kr/2014/05/hbase-schema-in-between</id>
+    <title type="text">비트윈의 HBase 스키마 해부</title>
+    <link rel="alternate" href="http://engineering.vcnc.co.kr/2014/05/hbase-schema-in-between/"/>
+    <updated>2014-05-07T10:00:00+09:00</updated>
+    <content type="html">&lt;p&gt;&lt;img class="left" style="width:100px;" src="http://engineering.vcnc.co.kr/images/2014/05/database.png"/&gt;
+&lt;a href="http://between.us/"&gt;비트윈&lt;/a&gt;에서는 &lt;a href="https://hbase.apache.org/"&gt;HBase&lt;/a&gt;를 메인 데이터베이스로 이용하고 있습니다.
+유저 및 커플에 대한 정보와 커플들이 주고받은 메시지, 업로드한 사진 정보, 메모, 기념일, 캘린더 등 서비스에서 만들어지는 다양한 데이터를 HBase에 저장합니다.
+HBase는 일반적인 NoSQL과 마찬가지로 스키마를 미리 정의하지 않습니다. 대신 주어진 API를 이용해 데이터를 넣기만 하면 그대로 저장되는 성질을 가지고 있습니다.
+이런 점은 데이터의 구조가 바뀔 때 별다른 스키마 변경이 필요 없다는 등의 장점으로 설명되곤 하지만, 개발을 쉽게 하기 위해서는 데이터를 저장하는데 어느 정도의 규칙이 필요합니다.
+이 글에서는 비트윈이 데이터를 어떤 구조로 HBase에 저장하고 있는지에 대해서 이야기해 보고자 합니다.&lt;/p&gt;
+
+&lt;h2&gt;&lt;span id="hbase-schema-summary"&gt;비트윈에서 HBase에 데이터를 저장하는 방법&lt;/span&gt;&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;a href="http://thrift.apache.org/"&gt;Thrift&lt;/a&gt;를 이용해 데이터 저장&lt;/strong&gt;: Apache Thrift는 자체적으로 정의된 문법을 통해 데이터 구조를 정의하고 이를 직렬화/역직렬화 시킬 수 있는 기능을 제공합니다.
+비트윈에서는 서버와 클라이언트가 통신하기 위해 Thrift를 이용할 뿐만 아니라 HBase에 저장할 데이터를 정의하고 데이터 저장 시 직렬화를 위해 Thrift를 이용합니다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;하나의 Row에 여러 Column을 트리 형태로 저장&lt;/strong&gt;: HBase는 Column-Oriented NoSQL로 분류되며 하나의 Row에 많은 수의 Column을 저장할 수 있습니다.
+비트윈에서는 Column Qualifier를 잘 정의하여 한 Row에 여러 Column을 논리적으로 트리 형태로 저장하고 있습니다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;추상화된 라이브러리를 통해 데이터에 접근&lt;/strong&gt;: 비트윈에서는 HBase 클라이언트 라이브러리를 직접 사용하는 것이 아니라
+이를 래핑한 Datastore라는 라이브러리를 구현하여 이를 이용해 HBase의 데이터에 접근합니다.
+&lt;a href="https://developers.google.com/appengine/"&gt;GAE&lt;/a&gt;의 &lt;a href="https://developers.google.com/appengine/articles/storage_breakdown"&gt;Datastore&lt;/a&gt;와 인터페이스가 유사하며 실제 저장된 데이터들을 부모-자식 관계로 접근할 수 있게 해줍니다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;트랜잭션을 걸고 데이터에 접근&lt;/strong&gt;: HBase는 일반적인 NoSQL과 마찬가지로 트랜잭션을 제공하지 않지만
+비트윈에서는 자체적으로 제작한 트랜잭션 라이브러리인 &lt;a href="https://github.com/vcnc/haeinsa"&gt;Haeinsa&lt;/a&gt;를 이용하여 Multi-Row ACID 트랜잭션을 걸고 있습니다.
+Haeinsa 덕분에 성능 하락 없이도 데이터 무결성을 유지하고 있습니다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Secondary Index를 직접 구현&lt;/strong&gt;: HBase에서는 데이터를 Row Key와 Column Qualifier를
+사전식 순서(lexicographical order)로 정렬하여 저장하며 정렬 순서대로 Scan을 하거나 바로 임의 접근할 수 있습니다.
+하지만 비트윈의 어떤 데이터들은 하나의 Key로 정렬되는 것으로는 충분하지 않고 Secondary Index가 필요한 경우가 있는데, HBase는 이런 기능을 제공하지 않고 있습니다.
+비트윈에서는 Datastore 라이브러리에 구현한 Trigger을 이용하여 매우 간단한 형태의 Secondary Index를 만들었습니다.&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;h2&gt;&lt;span id="anatomy-of-schema"&gt;비트윈 HBase 데이터 구조 해부&lt;/span&gt;&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href="https://www.facebook.com/note.php?note_id=10150162742108920"&gt;페이스북의  메시징 시스템&lt;/a&gt;에 관해 소개된 글이나,
+GAE의 &lt;a href="https://developers.google.com/appengine/articles/storage_breakdown"&gt;Datastore에 저장되는 구조&lt;/a&gt;를 설명한 글을 통해 HBase에 어떤 구조로 데이터를 저장할지 아이디어를 얻을 수 있습니다.
+비트윈에서는 이 글과는 약간 다른 방법으로 HBase에 데이터를 저장합니다. 이에 대해 자세히 알아보겠습니다.&lt;/p&gt;
+
+&lt;h3&gt;&lt;span id="data-schema-overview"&gt;전반적인 구조&lt;/span&gt;&lt;/h3&gt;
+
+&lt;p&gt;비트윈에서는 &lt;strong&gt;데이터를 종류별로 테이블에 나누어 저장&lt;/strong&gt;하고 있습니다.
+커플과 관련된 정보는 커플 테이블에, 유저에 대한 정보는 유저 테이블에 나누어 저장합니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2014/05/hbase-schema-table.png" width="600" alt="각 객체는 각각의 HBase테이블에 저장된다" /&gt;
+&lt;figcaption&gt;각 객체와 관련된 정보는 각각의 HBase 테이블에 저장됩니다.&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;또한, &lt;strong&gt;관련된 데이터를 하나의 Row에 모아 저장&lt;/strong&gt;합니다.
+특정 커플과 관련된 사진, 메모, 사진과 메모에 달린 댓글, 기념일 등의 데이터는 해당 커플과 관련된 하나의 Row에 저장됩니다.
+Haeinsa를 위한 Lock Column Family를 제외하면, &lt;strong&gt;데이터를 저장하기 위한 용도로는 단 하나의 Column Family만 만들어 사용&lt;/strong&gt;하고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2014/05/hbase-schema-row.png" alt="각 객체의 정보와 자식 객체들은 같은 Row에 저장됩니다." /&gt;
+&lt;figcaption&gt;각 객체의 정보와 자식 객체들은 같은 Row에 저장됩니다.&lt;br&gt;
+또한, 데이터는 기본적으로 하나의 Column Family에 저장됩니다.&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;이렇게 &lt;strong&gt;한 테이블에 같은 종류의 데이터를 모아 저장하게 되면 &lt;a href="http://hortonworks.com/blog/apache-hbase-region-splitting-and-merging/"&gt;Region Split&lt;/a&gt;하는 것이 쉬워&lt;/strong&gt;집니다.
+HBase는 특정 테이블을 연속된 Row들의 집합인 &lt;a href="https://hbase.apache.org/book/regions.arch.html"&gt;Region&lt;/a&gt;으로 나누고 이 Region들을 여러 Region 서버에 할당하는 방식으로 부하를 분산합니다.
+테이블을 Region으로 나눌 때 각 Region이 받는 부하를 고려해야 하므로 각 Row가 받는 부하가 전체적으로 공평해야 Region Split 정책을 세우기가 쉽습니다.
+비트윈의 경우 커플과 관련된 데이터인 사진이나 메모를 올리는 것보다는 유저와 관련된 데이터인 메시지를 추가하는 트래픽이 훨씬 많은데,
+한 테이블에 커플 Row와 유저 Row가 섞여 있다면 각 Row가 받는 부하가 천차만별이 되어 Region Split 정책을 세우기가 복잡해집니다.
+&lt;a href="http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/regionserver/RegionSplitPolicy.html"&gt;RegionSplitPolicy&lt;/a&gt;를 구현하여 Region Split 정책을 잘 정의한다면 가능은 하지만 좀 더 쉬운 방법을 택했습니다.&lt;/p&gt;
+
+&lt;p&gt;또한, &lt;strong&gt;한 Row에 관련된 정보를 모아서 저장하면 성능상 이점&lt;/strong&gt;이 있습니다.
+기본적으로 한 커플에 대한 데이터들은 하나의 클라이언트 요청을 처리하는 동안 함께 접근되는 경우가 많습니다.
+HBase는 같은 Row에 대한 연산을 묶어 한 번에 실행시킬 수 있으므로 이 점을 잘 이용하면 성능상 이득을 얻을 수 있습니다.
+비트윈의 데이터 구조처럼 특정 Row에 수많은 Column이 저장되고 같은 Row의 Column들에 함께 접근하는 경우가 많도록 설계되어 있다면 성능 향상을 기대할 수 있습니다.
+특히 Haeinsa는 한 트랜잭션에 같은 Row에 대한 연산은 커밋시 한 번의 RPC로 묶어 처리하므로 RPC에 드는 비용을 최소화합니다.
+실제 비트윈에서 가장 많이 일어나는 연산인 메시지 추가 연산은 그냥 HBase API를 이용하여 구현하는 것보다 Haeinsa Transaction API를 이용해 구현하는 것이 오히려 성능이 좋습니다.&lt;/p&gt;
+
+&lt;h3&gt;&lt;span id="column-qualifier-structure"&gt;Column Qualifier의 구조&lt;/span&gt;&lt;/h3&gt;
+
+&lt;p&gt;비트윈은 커플들이 올린 사진 정보들을 저장하며, 또 사진들에 달리는 댓글 정보들도 저장합니다.
+한 커플을 Root라고 생각하고 커플 밑에 달린 사진들을 커플의 자식 데이터, 또 사진 밑에 달린 댓글들을 사진의 자식 데이터라고 생각한다면,
+비트윈의 데이터들을 논리적으로 트리 형태로 생각할 수 있습니다.
+비트윈 개발팀은 &lt;strong&gt;Column Qualifier를 잘 정의하여 실제로 HBase에 저장할 때에도 데이터가 트리 형태로 저장되도록 설계&lt;/strong&gt;하였습니다.
+이렇게 트리 형태로 저장하기 위한 Key구조에 대해 자세히 알아보겠습니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2014/05/column-qualifier-design.png" width="600" alt="Column Qualifier 디자인" /&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;Column Qualifier를 설계할 때 성능을 위해 몇 가지 사항들을 고려해야 합니다.
+HBase에서는 한 Row에 여러 Column이 들어갈 수 있으며 Column들은 Column Qualifier로 정렬되어 저장됩니다.
+&lt;a href="https://hbase.apache.org/0.94/apidocs/org/apache/hadoop/hbase/filter/ColumnRangeFilter.html"&gt;ColumnRangeFilter&lt;/a&gt;를 이용하면 Column에 대해 정렬 순서로 Scan연산이 가능합니다.
+이 때 원하는 데이터를 순서대로 읽어야 하는 경우가 있는데 &lt;strong&gt;이를 위해 Scan시, 최대한 Sequential Read를 할 수 있도록 설계&lt;/strong&gt;해야 합니다.
+또한, HBase에서 데이터를 읽어올 때, 실제로 데이터를 읽어오는 단위인 Block에 대해 캐시를 하는데 이를 &lt;a href="http://hortonworks.com/blog/hbase-blockcache-101/"&gt;Block Cache&lt;/a&gt;라고 합니다.
+실제로 같이 접근하는 경우가 빈번한 데이터들이 &lt;strong&gt;최대한 근접한 곳에 저장되도록 설계해야 Block Cache의 도움&lt;/strong&gt;을 받을 수 있습니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src="http://engineering.vcnc.co.kr/images/2014/05/column-qualifier-example.png" alt="HBase에 저장되는 데이터들의 Column Qualifier 예시" /&gt;&lt;/p&gt;
+
+&lt;p&gt;비트윈에서는 특정 커플의 사진이나 이벤트를 가져오는 등의 특정 타입으로 자식 데이터를 Scan해야하는 경우가 많습니다.
+따라서 &lt;strong&gt;특정 타입의 데이터를 연속하게 저장하여 최대한 Sequential Read가 일어나도록&lt;/strong&gt; 해야 합니다.
+이 때문에 Column Qualifier가 가리키는 데이터의 타입을 맨 앞에 배치하여 같은 타입의 자식 데이터들끼리 연속하여 저장되도록 하였습니다.
+만약 가리키는 데이터의 타입과 아이디가 Parent 정보 이후에 붙게 되면 사진 사이사이에 각 사진의 댓글 데이터가 끼어 저장됩니다.
+이렇게 되면 사진들에 대한 데이터를 Scan시, 중간중간 저장된 댓글 데이터들 때문에 완벽한 Sequential Read가 일어나지 않게 되어 비효율적입니다.&lt;/p&gt;
+
+&lt;p&gt;이렇게 특정 타입의 자식들을 연속하게 모아 저장하는 묶음을 컬렉션이라고 합니다.
+컬렉션에는 컬렉션에 저장된 자식들의 개수나 새로운 자식을 추가할 때 발급할 아이디 등을 저장하는 Metadata가 있습니다.
+이 Metadata도 특정 Column에 저장되므로 Metadata를 위한 Column Qualifier가 존재합니다.
+이를 위해 Column Qualifier에는 Column Qualifier가 자칭하는 데이터가 Metadata인지 표현하는 필드가 있는데, 특이하게도 메타데이터임을 나타내는 값이 1이 아니라 0입니다.
+이는 Metadata가 컬렉션의 맨 앞쪽에 위치하도록 하기 위함입니다.
+컬렉션을 읽을 때 보통 맨 앞에서부터 읽는 경우가 많고, 동시에 Metadata에도 접근하는 경우가 많은데,
+이 &lt;strong&gt;데이터가 인접하게 저장되어 있도록 하여 Block Cache 적중이 최대한 일어나도록&lt;/strong&gt; 한 것입니다.&lt;/p&gt;
+
+&lt;h3&gt;&lt;span id="datastore-interface"&gt;Datastore 인터페이스&lt;/span&gt;&lt;/h3&gt;
+
+&lt;p&gt;비트윈에서는 이와 같은 데이터 구조에 접근하기 위해 Datastore라는 라이브러리를 구현하여 이를 이용하고 있습니다.
+HBase API를 그대로 이용하는 것보다 좀 더 쉽게 데이터에 접근할 수 있습니다.
+&lt;a href="https://developers.google.com/appengine/"&gt;GAE&lt;/a&gt;의 &lt;a href="https://developers.google.com/appengine/articles/storage_breakdown"&gt;Datastore&lt;/a&gt;와 같은 이름인데, 실제 인터페이스도 매우 유사합니다. 이 라이브러리의 인터페이스에 대해 간단히 알아보겠습니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;code&gt;Key&lt;/code&gt;는 Datastore에서 HBase에 저장된 특정 데이터를 지칭하기 위한 클래스&lt;/strong&gt;입니다.
+논리적으로 트리 형태로 저장된 데이터 구조를 위해 부모 자식 관계를 이용하여 만들어 집니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Key parentKey = new Key(MType.T_RELATIONSHIP, relId);
+Key photoKey = new Key(parentKey, MType.T_PHOTO, photoId); // 특정 커플 밑에 달린 사진에 대한 키
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Datastore는 &lt;code&gt;Key&lt;/code&gt;를 이용해 Row Key와 Column Qualifier를 만들어 낼 수 있습니다.
+Datastore는 이 정보를 바탕으로 &lt;strong&gt;HBase에 새로운 데이터를 저장하거나 저장된 데이터에 접근&lt;/strong&gt;할 수 있는 메서드를 제공합니다.
+아래 코드에서 &lt;code&gt;MUser&lt;/code&gt; 클래스는 Thrift로 정의하여 자동 생성된 클래스이며, Datastore에서는 이 객체를 직렬화 하여 HBase에 저장합니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;MUser user = new MUser();
+user.setNickname("Alice");
+user.setGender(Gender.FEMALE);
+user.setStatus("Hello World!");
+
+Key userKey = new Key(MType.T_USER, userId);
+getDatastore().put(userKey, user);
+user = getDatastore().get(userKey);
+getDatastore().delete(userKey);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;또한, Datastore는  &lt;strong&gt;&lt;code&gt;Key&lt;/code&gt;를 범위로 하여 Scan연산이 할 수 있도록 인터페이스를 제공&lt;/strong&gt;합니다.
+Java에서 제공하는 &lt;a href="http://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html"&gt;Try-with-resource&lt;/a&gt;문을 이용하여 &lt;a href="https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/ResultScanner.html"&gt;ResultScanner&lt;/a&gt;를 반드시 닫을 수 있도록 하고 있습니다.
+내부적으로 일단 특정 크기만큼 배치로 가져오고 더 필요한 경우 더 가져오는 식으로 구현되어 있습니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;try (CloseableIterable&amp;lt;KeyValue&amp;lt;Key, MPhoto&amp;gt;&amp;gt; entries = 
+        getDatastore().subSibling(fromKey, fromInclusive, toKey, toInclusive)) {
+    for (KeyValue&amp;lt;Key, MPhoto&amp;gt; entry : entries) {
+        // do something
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;&lt;span id="secondary-index"&gt;Secondary Index 구현 방법&lt;/span&gt;&lt;/h3&gt;
+
+&lt;p&gt;HBase는 데이터를 Row Key나 Column Qualifier로 정렬하여 저장합니다.
+이 순서로만 Sequential Read를 할 수 있으며 Key값을 통해 특정 데이터를 바로 임의 접근할 수 있습니다.
+비트윈에서는 특정 달에 해당하는 이벤트들을 읽어오거나 특정 날짜의 사진들의 리스트를 조회하는 등 id 순서가 아니라 특정 값을 가지는 데이터를 순서대로 접근해야 하는 경우가 있습니다.
+이럴 때에도 효율적으로 데이터에 접근하기 위해서는 id로 정렬된 것 외에 특정 값으로 데이터를 정렬할 수 있어야 합니다.
+하지만 HBase에서는 이와 같은 Secondary Index 같은 기능을 제공하지 않습니다.
+비트윈 개발팀은 이에 굴하지 않고 &lt;strong&gt;Secondary Index를 간단한 방법으로 구현하여 사용&lt;/strong&gt;하고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;구현을 간단히 하기 위해 &lt;strong&gt;Secondary Index를 다른 데이터들과 마찬가지로 특정 타입의 데이터로 취급하여 구현&lt;/strong&gt;하였습니다.
+따라서 Index에 대해서도 Column Qualifier가 발급되며, 이때, Index에 해당하는 id를 잘 정의하여 원하는 순서의 Index를 만듭니다.
+이런 식으로 원하는 순서로 데이터를 정렬하여 저장할 수 있으며 이 인덱스를 통해 특정 필드의 값의 순서대로 데이터를 조회하거나 특정 값을 가지는 데이터에 바로 임의 접근할 수 있습니다.
+또한, Index에 실제 데이터를 그대로 복사하여 저장하여 &lt;a href="http://en.wikipedia.org/wiki/Database_index#Clustered"&gt;Clustered Index&lt;/a&gt;처럼 동작하도록 하거나, Reference만 저장하여 &lt;a href="http://en.wikipedia.org/wiki/Database_index#Non-clustered"&gt;Non-Clustered Index&lt;/a&gt;와 같이 동작하게 할 수도 있습니다.
+Datastore 라이브러리에는 특정 데이터가 추가, 삭제, 수정할 때 특정 코드를 실행할 수 있도록 Trigger 기능이 구현되어 있는데, 이를 통해 Index를 업데이트합니다.
+&lt;strong&gt;데이터의 변경하는 연산과 Index를 업데이트하는 연산이 하나의 Haeinsa 트랜잭션을 통해 원자적으로 일어나므로 데이터의 무결성이 보장&lt;/strong&gt;됩니다.&lt;/p&gt;
+
+&lt;h2&gt;&lt;span id="some-more-things"&gt;못다 한 이야기&lt;/span&gt;&lt;/h2&gt;
+
+&lt;p&gt;각 테이블의 특정 Row의 Column들에 대한 Column Qualifier외에도 Row에 대한 Row Key를 정의 해야 합니다.
+비트윈에서는  각 Row가 표현하는 Root객체에 대한 아이디를 그대로 Row Key로 이용합니다.
+새로운 Root객체가 추가될 때 발급되는 &lt;strong&gt;아이디는 랜덤하게 생성하여 객체가 여러 Region 서버에 잘 분산&lt;/strong&gt;될 수 있도록 하였습니다.
+만약 Row Key를 연속하게 발급한다면 특정 Region 서버로 연산이 몰리게 되어 성능 확장에 어려움이 생길 수 있습니다.&lt;/p&gt;
+
+&lt;p&gt;데이터를 저장할 때 Thrift를 이용하고 있는데, Thrift 때문에 생기는 문제가 있습니다.
+비트윈에서 서버를 업데이트할 때 서비스 중지 시간을 최소화하기 위해 &lt;a href="https://speakerdeck.com/vcnc/biteuwin-seobeo-akitegceowa-geue-ddareun-baepo-bangbeob"&gt;롤링 업데이트&lt;/a&gt;를 합니다.
+Thrift 객체에 새로운 필드가 생기는 경우, 롤링 업데이트 중간에는 일부 서버에만 새로운 Thift가 적용되어 있을 수 있습니다.
+업데이트된 서버가 새로운 필드에 값을 넣어 저장했는데, &lt;strong&gt;아직 업데이트가 안 된 서버가 이 데이터를 읽은 후 데이터를 다시 저장한다면 새로운 필드에 저장된 값이 사라지게&lt;/strong&gt; 됩니다.
+Google &lt;a href="https://code.google.com/p/protobuf/"&gt;Protocol Buffer&lt;/a&gt;의 경우, 다시 직렬화 할 때 &lt;a href="https://developers.google.com/protocol-buffers/docs/proto#updating"&gt;정의되지 않은 필드도 처리&lt;/a&gt;해주기 때문에 문제가 없지만, Thrift의 경우에는 그렇지 않습니다.
+비트윈에서는 새로운 Thrift를 적용한 과거 버전의 서버를 먼저 배포한 후, 업데이트된 서버를 다시 롤링 업데이트를 하는 식으로 이 문제를 해결하고 있습니다.&lt;/p&gt;
+
+&lt;!--앞서 언급한 것과 같이, [ColumnRangeFilter]를 이용하여 Column들을 Scan합니다.
+하지만 비트윈 개발 초기에는 [HBase에서 이 필터를 제공해 주지 않고][HBASE-3684] 있었습니다.
+그래서 **처음에는 [직접 구현][CustomColumnRangeFilter]하여 사용**하였고, 지금은 HBase에서 제공하는 ColumnRangeFilter를 사용합니다.
+공교롭게도 비트윈에서 구현한 클래스의 이름은 나중에 HBase에 추가된 클래스와 이름이 똑같습니다.--&gt;
+
+
+
+</content>
+  </entry>
+  <entry>
+    <id>http://http://engineering.vcnc.co.kr/2014/01/engineering-blogging-in-vcnc</id>
+    <title type="text">블로그 운영 방법에서 엿보는 VCNC의 개발문화</title>
+    <link rel="alternate" href="http://engineering.vcnc.co.kr/2014/01/engineering-blogging-in-vcnc/"/>
+    <updated>2014-01-20T10:00:00+09:00</updated>
+    <content type="html">&lt;p&gt;&lt;img class="left" style="width:100px;" src="http://engineering.vcnc.co.kr/images/2014/01/rocket.jpg"/&gt;
+VCNC에서 &lt;a href="http://engineering.vcnc.co.kr/2013/04/hello-world/"&gt;엔지니어링 블로그를 시작&lt;/a&gt;하고 벌써 새로운 해를 맞이하였습니다.
+그동안 여러 글을 통해 VCNC 개발팀의 이야기를 들려드렸습니다. 이번에는 엔지니어링 블로그 자체를 주제로 글을 적어보고자 합니다.
+저희는 &lt;a href="http://wordpress.org/"&gt;워드프레스&lt;/a&gt;나 &lt;a href="https://www.tumblr.com/"&gt;텀블러&lt;/a&gt;와 같은 일반적인 블로깅 도구나 서비스를 사용하지 않고
+조금은 개발자스럽다고 할 수 있는 특이한 방법으로 엔지니어링 블로그를 운영하고 있습니다.
+이 글에서는 VCNC 개발팀이 엔지니어링 블로그를 운영하기 위해 이용하는 방법들을 소개하고자 합니다.
+그리고 블로그를 운영하기 위해 방법을 다루는 중간중간에 개발팀의 문화와 일하는 방식들에 대해서도 간략하게나마 이야기해보고자 합니다.&lt;/p&gt;
+
+&lt;h2&gt;블로그에 사용하는 기술들&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="https://github.com/mojombo/jekyll"&gt;Jekyll&lt;/a&gt;&lt;/strong&gt;: Jekyll은 블로그에 특화된 정적 사이트 생성기입니다.
+&lt;a href="https://github.com"&gt;GitHub&lt;/a&gt;의 Co-founder 중 한 명인 &lt;a href="https://www.linkedin.com/pub/tom-preston-werner/4/122/382"&gt;Tom Preston-Werner&lt;/a&gt;가 만들었으며 Ruby로 작성되어 있습니다.
+&lt;a href="http://daringfireball.net/projects/markdown/"&gt;Markdown&lt;/a&gt;을 이용하여 글을 작성하면 &lt;a href="https://github.com/Shopify/liquid"&gt;Liquid&lt;/a&gt; 템플릿 엔진을 통해 정적인 HTML 파일들을 만들어 줍니다.
+VCNC 엔지니어링 블로그는 워드프레스같은 블로깅 도구를 사용하지 않고 Jekyll을 사용하고 있습니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://getbootstrap.com/"&gt;Bootstrap&lt;/a&gt;&lt;/strong&gt;: 블로그 테마는 트위터에서 만든 프론트엔드 프레임워크인 Bootstrap을 이용하여 직접 작성되었습니다.
+Bootstrap에서 제공하는 다양한 기능들을 가져다 써서 블로그를 쉽게 만들기 위해 이용하였습니다.
+덕분에 큰 공을 들이지 않고도 &lt;a href="http://en.wikipedia.org/wiki/Responsive_web_design"&gt;Responsive Web Design&lt;/a&gt;을 적용할 수 있었습니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://aws.amazon.com/s3/"&gt;S3&lt;/a&gt;&lt;/strong&gt;: S3는 AWS에서 제공되는 클라우드 스토리지 서비스로서 높은 가용성을 보장합니다.
+일반적으로 파일을 저장하는 데 사용되지만, &lt;a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/WebsiteHosting.html"&gt;정적인 HTML을 업로드하여 사이트를 호스팅&lt;/a&gt;하는데 사용할 수도 있습니다.
+아마존의 CTO인 Werner Vogels 또한 &lt;a href="http://www.allthingsdistributed.com/"&gt;자신의 블로그&lt;/a&gt;를 S3에서 호스팅하고 있습니다.
+VCNC Engineering Blog도 Jekyll로 만들어진 HTML 파일들을 아마존의 S3에 업로드 하여 운영됩니다.
+일단 S3에 올려두면 운영적인 부분에 대한 부담이 많이 사라지기 때문에 S3에 올리기로 하였습니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://aws.amazon.com/cloudfront/"&gt;CloudFront&lt;/a&gt;&lt;/strong&gt;: 브라우저에서 웹페이지가 보이는 속도를 빠르게 하려고 아마존의 CDN서비스인 CloudFront를 이용합니다.
+CDN을 이용하면 HTML파일들이 전 세계 곳곳에 있는 Edge 서버에 캐싱 되어 방문자들이 가장 가까운 Edge를 통해 사이트를 로딩하도록 할 수 있습니다.
+특히 CloudFront에 한국 Edge가 생긴 이후에는 한국에서의 응답속도가 매우 좋아졌습니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://s3tools.org/s3cmd"&gt;s3cmd&lt;/a&gt;&lt;/strong&gt;: s3cmd는 S3를 위한 커맨드 라인 도구입니다. 파일들을 업로드하거나 다운로드 받는 등 S3를 위해 다양한 명령어를 제공합니다.
+저희는 블로그 글을 s3로 업로드하여 배포하기 위해 s3cmd를 사용합니다.
+배포 스크립트를 실행하는 것만으로 s3업로드와 CloudFront invalidation이 자동으로 이루어지므로 배포 비용을 크게 줄일 수 있었습니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="https://code.google.com/p/htmlcompressor/"&gt;htmlcompressor&lt;/a&gt;&lt;/strong&gt;: 정적 파일들이나 블로그 글 페이지들을 s3에 배포할 때에는 whitespace 등을 제거하기 위해 htmlcompressor를 사용합니다.
+또한 Google &lt;a href="https://developers.google.com/closure/compiler/"&gt;Closure Compiler&lt;/a&gt;를 이용하여 javascript의 길이도 줄이고 있습니다.
+실제로 서버가 내려줘야 할 데이터의 크기가 줄어들게  되므로 로딩속도를 조금 더 빠르게 할 수 있습니다.&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;h2&gt;블로그 관리 방법&lt;/h2&gt;
+
+&lt;p&gt;앞서 소개해 드린 기술들 외에도 블로그 글을 관리하기 위해 다소 독특한 방법을 사용합니다.
+개발팀의 여러 팀원이 블로그에 올릴 주제를 결정하고 서로의 의견을 교환하기 위해 여러 가지 도구를 이용하는데 이를 소개하고자 합니다.
+이 도구들은 개발팀이 일할 때에도 활용되고 있습니다.&lt;/p&gt;
+
+&lt;h3&gt;글감 관리를 위해 JIRA를 사용하다.&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;a href="https://www.atlassian.com/software/jira"&gt;JIRA&lt;/a&gt;&lt;/strong&gt;는 &lt;a href="https://www.atlassian.com/"&gt;Atlassian&lt;/a&gt;에서 만든 이슈 관리 및 프로젝트 관리 도구입니다.
+VCNC 개발팀에서는 비트윈과 관련된 다양한 프로젝트들의 이슈 관리를 위해 JIRA를 적극적으로 활용하고 있습니다.
+제품에 대한 요구사항이 생기면 일단 백로그에 넣어 두고, 3주에 한 번씩 있는 스프린트 회의에서 요구사항에 대한 우선순위를 결정합니다.
+그 후 개발자가 직접 개발 기간을 산정한 후에, 스프린트에 포함할지를 결정합니다.
+이렇게 개발팀이 &lt;strong&gt;개발에 집중할 수 있는 환경을 가질 수 있도록 하며,
+제품의 전체적인 방향성을 잃지 않고 모두가 같은 방향을 향해 달릴 수 있도록&lt;/strong&gt; 하고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2014/01/blog-jira-graph.jpg" title="JIRA에서 이슈에 대한 해결 차트" alt="JiraResolveChart" /&gt;
+&lt;figcaption&gt;VCNC 개발팀이 스프린트에 등록된 이슈를 얼마나 빨리 해결해 나가고 있는지 보여주는 JIRA의 차트.&lt;br&gt;
+조금만 생각해보시면 어느 부분이 스프린트의 시작이고 어느 부분이 끝 부분인지 아실 수 있습니다.&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;위와 같은 프로젝트 관리를 위한 일반적인 용도 외에도 &lt;strong&gt;엔지니어링 블로그 글 관리를 위해 JIRA를 사용&lt;/strong&gt;하고 있습니다.
+JIRA에 엔지니어링 블로그 글감을 위한 프로젝트를 만들어 두고 블로그 글에 대한 아이디어가 생각나면 이슈로 등록할 수 있게 하고 있습니다.
+누구나 글감 이슈를 등록할 수 있으며 필요한 경우에는 다른 사람에게 글감 이슈를 할당할 수도 있습니다.
+일단 글감이 등록되면 엔지니어링 블로그에 쓰면 좋을지 어떤 내용이 포함되면 좋을지 댓글을 통해 토론하기도 합니다.
+글을 작성하기 시작하면 해당 이슈를 진행 중으로 바꾸고, 리뷰 후, 글이 발행되면 이슈를 해결한 것으로 표시하는 식으로 JIRA를 이용합니다.
+누구나 글감을 제안할 수 있게 하고, 이에 대해 팀원들과 토론을 하여 더 좋은 글을 쓸 수 있도록 돕기 위해 JIRA를 활용하고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2014/01/blog-post-issues.png" title="JIRA에 등록된 블로그 포스트 이슈들" alt="BlogPostIssues" /&gt;
+&lt;figcaption&gt;JIRA에 등록된 블로그 글 주제들 중 아직 쓰여지지 않은 것들을 보여주는 이슈들.&lt;br&gt;
+아직 제안 단계인 것도 있지만, 많은 주제들이 블로그 글로 발행되길 기다리고 있습니다.&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;h3&gt;글 리뷰를 위해 Pull-request를 이용하다.&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;a href="https://www.atlassian.com/software/stash/overview"&gt;Stash&lt;/a&gt;&lt;/strong&gt;는 Attlassian에서 만든 &lt;a href="http://www.git-scm.com/"&gt;Git&lt;/a&gt;저장소 관리 도구입니다. &lt;a href="https://enterprise.github.com/"&gt;GitHub Enterprise&lt;/a&gt;와 유사한 기능들을 제공합니다.
+Jekyll로 블로그를 운영하는 경우 이미지를 제외한 대부분 콘텐츠는 평문(Plain text)으로 관리 할 수 있게 됩니다.
+따라서 VCNC 개발팀이 가장 자주 사용하는 도구 중 하나인 Git을 이용하면 별다른 시스템의 도움 없이도 모든 변경 내역과 누가 변경을 했는지 이력을 완벽하게 보존할 수 있습니다.
+저희는 이런 이유로 &lt;strong&gt;Git을 이용하여 작성된 글에 대한 변경 이력을 관리&lt;/strong&gt;하고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;또한 Stash에서는 GitHub와 같은 Pull request 기능을 제공합니다.
+Pull request는 자신이 작성한 코드를 다른 사람에게 리뷰하고 메인 브랜치에 머지해 달라고 요청할 수 있는 기능입니다.
+저희는 Pull request를 활용하여 상호간 코드 리뷰를 하고 있습니다.
+코드 리뷰를 통해 실수를 줄이고 개발자 간 의견 교환을 통해 더 좋은 코드를 작성하며 서로 간 코드에 대해 더 잘 이해하도록 노력하고 있습니다.
+새로운 개발자가 코드를 상세히 모른다 해도 좀 더 적극적으로 코드를 짤 수 있고, 업무에 더 빨리 적응하는데에도 도움이 됩니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2014/01/blog-code-review.png" title="블로그 글에 대한 리뷰를 위한 코멘트" alt="BlogCodeReview" /&gt;
+&lt;figcaption&gt;어떤 블로그 글에 대해 리뷰를 하면서 코멘트로 의견을 교환하고 있습니다.&lt;br&gt;
+코드 리뷰 또한 비슷한 방법을 통해 이루어지고 있습니다.&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;업무상 코드 리뷰 뿐만 아니라 &lt;strong&gt;새로운 블로그 글을 리뷰하기 위해 Pull request를 활용&lt;/strong&gt;하고 있습니다.
+어떤 개발자가 글을 작성하기 위해서 가장 먼저 하는 것은 블로그를 관리하는 Git 리포지터리에서 새로운 브랜치를 따는 것입니다.
+해당 브랜치에서 글을 작성하고 작성한 후에는 새로운 글 내용을 push한 후 master 브랜치로 Pull request를 날립니다.
+이때 리뷰어로 등록된 사람과 그 외 개발자들은 내용에 대한 의견이나 첨삭을 댓글로 달 수 있습니다.
+충분한 리뷰를 통해 발행이 확정된 글은 블로그 관리자에 의해 master 브랜치에 머지 되고 비로소 발행 준비가 끝납니다.&lt;/p&gt;
+
+&lt;h3&gt;스크립트를 통한 블로그 글 발행 자동화와 보안&lt;/h3&gt;
+
+&lt;p&gt;준비가 끝난 새로운 블로그 글을 발행하기 위해서는 일련의 작업이 필요합니다.
+Jekyll을 이용해 정적 파일들을 만든 후, &lt;a href="https://code.google.com/p/htmlcompressor/"&gt;htmlcompressor&lt;/a&gt; 통해 정적 파일들을 압축해야 합니다.
+이렇게 압축된 정적 파일들을 S3에 업로드 하고, CloudFront에 Invalidation 요청을 날리고, 구글 웹 마스터 도구에 핑을 날립니다.
+이런 과정들을 s3cmd와 Rakefile을 이용하여 스크립트를 실행하는 것만으로 자동으로 이루어지도록 하였습니다.
+&lt;strong&gt;VCNC 개발팀은 여러 가지 업무 들을 자동화시키기 위해 노력&lt;/strong&gt;하고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;또한, s3에 사용하는 AWS Credential은 IAM을 이용하여 블로그를 호스팅하는 s3 버킷과 CloudFront에 대한 접근 권한만 있는 키를 발급하여 사용하고 있습니다.
+비트윈은 특히 커플들이 사용하는 서비스라 보안에 민감합니다. 실제 비트윈을 개발하는데에도 &lt;strong&gt;보안에 많은 신경을 쓰고 있으며, 이런 점은 엔지니어링 블로그 운영하는데에도 묻어나오고&lt;/strong&gt; 있습니다.&lt;/p&gt;
+
+&lt;h2&gt;맺음말&lt;/h2&gt;
+
+&lt;p&gt;VCNC 개발팀은 엔지니어링 블로그를 관리하고 운영하기 위해 다소 독특한 방법을 사용합니다. 이 방법은 개발팀이 일하는 방법과 문화에서 큰 영향을 받았습니다.
+JIRA를 통한 이슈 관리 및 스프린트, Pull request를 이용한 상호간 코드 리뷰 등은 이제 VCNC 개발팀의 문화에 녹아들어 가장 효율적으로 일할 수 있는 방법이 되었습니다.
+개발팀을 꾸려나가면서 여러가지 시행 착오를 겪어 왔지만, 시행 착오에 대한 반성과 여러가지 개선 시도를 통해 계속해서 더 좋은 방법을 찾아나가며 지금과 같은 개발 문화가 만들어졌습니다.
+그동안 그래 왔듯이 앞으로 더 많은 개선을 통해 꾸준히 좋은 방법을 찾아 나갈 것입니다.&lt;/p&gt;
+
+&lt;p&gt;네 그렇습니다. 결론은 저희와 함께 고민하면서 더 좋은 개발문화를 만들어나갈 개발자를 구하고 있다는 것입니다.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <id>http://http://engineering.vcnc.co.kr/2013/11/hbase-meetup-presentation</id>
+    <title type="text">HBase Meetup - 비트윈에서 HBase를 사용하는 방법</title>
+    <link rel="alternate" href="http://engineering.vcnc.co.kr/2013/11/hbase-meetup-presentation/"/>
+    <updated>2013-11-21T10:00:00+09:00</updated>
+    <content type="html">&lt;p&gt;&lt;img class="left" style="width:200px;" src="http://engineering.vcnc.co.kr/images/2013/11/hbase.png"/&gt;
+&lt;a href="http://between.us/"&gt;비트윈&lt;/a&gt;에서는 서비스 초기부터 HBase를 주요 데이터베이스로 사용하였으며 &lt;a href="http://engineering.vcnc.co.kr/2013/05/analyzing-user-data/"&gt;사용자 로그를 분석&lt;/a&gt;하는 데에도 HBase를 사용하고 있습니다.
+지난 주 금요일(11월 15일)에 HBase를 만든 &lt;a href="https://www.linkedin.com/pub/michael-stack/1/587/110"&gt;Michael Stack&lt;/a&gt; 씨가 한국을 방문하게 되어 &lt;a href="http://www.zdnet.co.kr/"&gt;ZDNet&lt;/a&gt; 송경석 팀장님의 주최 하에 HBase Meetup Seoul 모임을 가졌습니다.
+그 자리에서 VCNC에서 비트윈을 운영하면서 HBase를 사용했던 경험들이나 HBase 트랜잭션 라이브러리인 &lt;a href="https://github.com/vcnc/haeinsa"&gt;Haeinsa&lt;/a&gt;에 대해 간단히 소개해 드리는 발표 기회를 가질 수 있었습니다.
+이 글에서 발표한 내용에 대해 간단히 소개하고자 합니다.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;비트윈 서비스에 HBase를 사용하는 이유&lt;/strong&gt;&lt;br/&gt;
+비트윈에서 가장 많이 사용되는 기능 중 하나가 채팅이며, 채팅은 상대적으로 복잡한 데이터 구조나 연산이 필요하지 않기 때문에 HBase 의 단순한 schema 구조가 큰 문제가 되지 않습니다.
+특히 쓰기 연산이 다른 기능보다 많이 일어나기 때문에 높은 쓰기 연산 성능이 필요합니다.
+그래서 메세징이 중심이 되는 서비스는 높은 확장성(Scalability)과 쓰기 성능을 가진 HBase가 유리하며 비슷한 이유로 &lt;a href="http://tech.naver.jp/blog/?p=1420"&gt;라인&lt;/a&gt;이나 &lt;a href="http://www.slideshare.net/brizzzdotcom/facebook-messages-hbase"&gt;페이스북 메신저&lt;/a&gt;에서도 HBase를 사용하는 것이라고 짐작할 수 있습니다.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;로그 분석에도 HBase를 사용합니다&lt;/strong&gt;&lt;br/&gt;
+비트윈은 사용자 로그 분석을 통해서 좀 더 나은 비트윈이 되기 위해서 노력하고 있습니다.
+비트윈 사용자가 남기는 로그의 양이 하루에 3억건이 넘기 때문에 RDBMS에 저장하여 쿼리로 분석하기는 힘듭니다.
+그래서 로그 분석을 위해 분산 데이터 처리 프레임워크인 Hadoop MapReduce를 이용하며 로그들은  MapReduce와 호환성이 좋은 HBase에 저장하고 있습니다.
+또한 이렇게 MapReduce 작업들을 통해 정제된 분석 결과를 MySQL에 저장한 후에 다양한 쿼리와 시각화 도구들로 custom dashboard를 만들어 운영하고 있습니다.
+이를 바탕으로 저희 Biz development팀(사업개발팀)이나 Data-driven팀(데이터 분석팀)이 손쉽게 insight를 얻어낼 수 있도록 돕고 있습니다.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;HBase를 사용하면서 삽질 했던 경험&lt;/strong&gt;&lt;br/&gt;
+HBase를 사용하면서 처음에는 잘못 사용하고 있었던 점이 많았고 차근차근 고쳐나갔습니다.
+Region Split과 Major Compaction을 수동으로 직접 하는 등 다양한 최적화를 통해 처음보다 훨씬 잘 쓰고 있습니다.
+HBase 설정 최적화에 대한 이야기는 &lt;a href="http://engineering.vcnc.co.kr/2013/04/hbase-configuration/"&gt;이전에 올렸던 블로그 글&lt;/a&gt;에서도 간단히 소개한 적이 있으니 확인해보시기 바랍니다.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;HBase 트랜잭션 라이브러리 해인사&lt;/strong&gt;&lt;br/&gt;
+&lt;strong&gt;Haeinsa는 HBase에서 Multi-Row 트랜잭션을 제공하기 위한 라이브러리&lt;/strong&gt;입니다.
+&lt;a href="https://github.com/vcnc/haeinsa"&gt;오픈소스로 공개&lt;/a&gt;되어 있으며 &lt;a href="https://speakerdeck.com/vcnc/haeinsa-hbase-transaction-library"&gt;Deview에서도 발표&lt;/a&gt;를 했었습니다.
+HBase에 아무런 변형도 가하지 않았기 때문에 기존에 사용하던 HBase 클러스터에 쉽게 적용할 수 있습니다.
+비트윈에 실제로 적용되어 하루 3억 건 이상의 트랜잭션을 처리하고 있으며 다른 많은 NoSQL 기반 트랜잭션 라이브러리보다 높은 확장성과 좋은 성능을 가지고 있습니다.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;p&gt;발표에서 사용했던 슬라이드를 첨부하였으니 도움이 되었으면 합니다.&lt;/p&gt;
+
+&lt;script async class="speakerdeck-embed" data-id="2b8092b02ff90131ef414aa7d272d735" data-ratio="1.33333333333333" src="http://engineering.vcnc.co.kr//speakerdeck.com/assets/embed.js"&gt;&lt;/script&gt;
+
+
+
+</content>
+  </entry>
+  <entry>
+    <id>http://http://engineering.vcnc.co.kr/2013/10/announcing-haeinsa</id>
+    <title type="text">HBase상 트랜잭션 라이브러리 Haeinsa를 소개합니다</title>
+    <link rel="alternate" href="http://engineering.vcnc.co.kr/2013/10/announcing-haeinsa/"/>
+    <updated>2013-10-10T10:00:00+09:00</updated>
+    <content type="html">&lt;p&gt;&lt;img class="left" style="width:100px;" src="http://engineering.vcnc.co.kr/images/2013/04/hbase.jpg"/&gt;
+&lt;a href="http://between.us/"&gt;비트윈&lt;/a&gt;에서는 서비스 초기부터 HBase를 주요 데이터베이스로 사용하였습니다. HBase에서도 일반적인 다른 NoSQL처럼 트랜잭션을 제공하지 않습니다.
+&lt;a href="http://hbase.apache.org/"&gt;HBase&lt;/a&gt;, &lt;a href="http://cassandra.apache.org/"&gt;Cassandra&lt;/a&gt;와 &lt;a href="http://www.mongodb.org/"&gt;MongoDB&lt;/a&gt;는 하나의 행 혹은 하나의 Document에 대한 원자적 연산만 제공합니다.
+하지만 여러 행에 대한 연산들을 원자적으로 실행할 수 있게 해주는 추상화된 트랜잭션 기능이 없다면 보통의 서비스 개발에 어려움을 겪게 됩니다.
+비트윈 개발팀은 이런 문제를 해결하기 위해 노력했으며, 결국 HBase에서 트랜잭션을 제공해주는 라이브러리인 Haeinsa를 구현하여
+실제 서비스에 적용하여 성공적으로 운영하고 있습니다.
+VCNC에서는 Haeinsa를 &lt;a href="https://github.com/vcnc/haeinsa/"&gt;오픈소스&lt;/a&gt;로 공개하고 이번 글에서 이를 소개하고자 합니다.&lt;/p&gt;
+
+&lt;h2&gt;&lt;a href="https://github.com/vcnc/haeinsa/"&gt;Haeinsa&lt;/a&gt;란 무엇인가?&lt;/h2&gt;
+
+&lt;p&gt;Haeinsa는 &lt;a href="http://research.google.com/pubs/pub36726.html"&gt;Percolator&lt;/a&gt;에서 영감을 받아 만들어진 트랜잭션 라이브러리입니다.
+&lt;a href="http://staltz.blogspot.kr/2012/10/hacid-multi-row-transactions-in-hbase.html"&gt;HAcid&lt;/a&gt;, &lt;a href="http://www.scpe.org/index.php/scpe/article/view/715"&gt;HBaseSI&lt;/a&gt; 등 HBase상에서 구현된 트랜잭션 프로젝트는 몇 개 있었지만, 성능상 큰 문제가 있었습니다.
+실제로 서비스에 적용할 수 없었기 때문에 Haeinsa를 구현하게 되었습니다.
+Haeinsa를 이용하면 다음과 같은 코드를 통해 여러 행에 대한 트랜잭션을 쉽게 사용할 수 있습니다.
+아래 예시에는 Put연산만 나와 있지만, 해인사는 Put외에도 Get, Delete, Scan 등 HBase에서 제공하는 일반적인 연산들을 모두 제공합니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;HaeinsaTransaction tx = tm.begin();
+
+HaeinsaPut put1 = new HaeinsaPut(rowKey1);
+put1.add(family, qualifier, value1);
+table.put(tx, put1);
+
+HaeinsaPut put2 = new HaeinsaPut(rowKey2);
+put2.add(family, qualifier, value2);
+table.put(tx, put2);
+
+tx.commit();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2&gt;Haeinsa의 특징&lt;/h2&gt;
+
+&lt;p&gt;Haeinsa의 특징을 간략하게 정리하면 다음과 같습니다. 좀 더 자세한 사항들은 &lt;a href="https://github.com/vcnc/haeinsa/wiki"&gt;Haeinsa 위키&lt;/a&gt;를 참고해 주시기 바랍니다.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;ACID&lt;/strong&gt;: Multi-Row, Multi-Table에 대해 ACID 속성을 모두 만족하는 트랜잭션을 제공합니다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Linear Scalability&lt;/strong&gt;: 트래픽이 늘어나더라도 HBase 노드들만 늘려주면 처리량을 늘릴 수 있습니다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Serializability&lt;/strong&gt;: &lt;a href="http://en.wikipedia.org/wiki/Snapshot_isolation"&gt;Snapshot Isolation&lt;/a&gt;보다 강력한 &lt;a href="http://en.wikipedia.org/wiki/Isolation_(database_systems)#Isolation_levels"&gt;Isolation Level&lt;/a&gt;인 Serializability를 제공합니다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Low Overhead&lt;/strong&gt;: NoSQL상에서의 트랜잭션을 위한 다른 프로젝트에 비해 오버헤드가 적습니다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Fault Tolerant&lt;/strong&gt;: 서버나 클라이언트가 갑자기 죽더라도 트렌젝션의 무결성에는 아무 영향을 미치지 않습니다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Easy Migration&lt;/strong&gt;: Haeinsa는 HBase를 전혀 건드리지 않고 클라이언트 라이브러리만 이용하여 트랜잭션을 구현합니다.
+각 테이블에 Haeinsa 내부적으로 사용하는 Lock Column Family만 추가해주면 기존에 사용하던 HBase 클러스터에도 Haeinsa를 쉽게 적용할 수 있습니다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Used in practice&lt;/strong&gt;: &lt;a href="http://between.us/"&gt;비트윈&lt;/a&gt;에서는 Haeinsa를 이용하여 하루에 3억 건 이상의 트랜잭션을 처리하고 있습니다.&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;p&gt;Haeinsa는 &lt;strong&gt;오픈소스&lt;/strong&gt;입니다. 고칠 점이 있다면 언제든지 GitHub에 &lt;a href="https://github.com/vcnc/haeinsa/"&gt;리포지터리&lt;/a&gt;에서 개선에  참여하실 수 있습니다.&lt;/p&gt;
+
+&lt;h2&gt;Haeinsa의 성능&lt;/h2&gt;
+
+&lt;p&gt;Haeinsa는 같은 수의 연산을 처리하는 트랜잭션이라도 소수의 Row에 연산이 여러 번 일어나는 경우가 성능상 유리합니다.
+다음 몇 가지 성능 테스트 그래프를 통해 Haeinsa의 성능에 대해 알아보겠습니다.&lt;/p&gt;
+
+&lt;p&gt;아래 그래프는 3개의 Row에 총 6개의 Write, 3개의 Read연산을 수행한 트랜잭션의 테스트 결과입니다.
+두 개의 Row에 3Write, 1Read 연산을 하고, 한 개의 Row에 1Read 연산을 한 것으로, 비트윈에서 가장 많이 일어나는 요청인 메시지 전송에 대해 시뮬레이션한 것입니다.
+실제 서비스에서  &lt;strong&gt;가장 많이 일어나는 종류의 트랜잭션&lt;/strong&gt;이라고 생각할 수 있습니다.
+그런데 그냥 HBase를 사용하는 것보다 &lt;strong&gt;Haeinsa를 이용하는 것이 더 오히려 좋은 성능&lt;/strong&gt;을 내는 것을 알 수 있습니다.
+이는 Haeinsa에서는 커밋 시에만 모든 변경사항을 묶어서 한 번에 반영하기 때문에, 매번 RPC가 일어나는 일반 HBase보다 더 좋은 성능을 내는 것입니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2013/10/haeinsa_performance_graph_practical_linearscalability.png" alt="PracticalLinearScalablility" /&gt;
+&lt;figcaption&gt;HBase 클러스터가 커질수록 트랜잭션 처리량이 늘어납니다. HBase와 마찬가지입니다.&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2013/10/haeinsa_performance_graph_practical_latency.png" alt="PracticalLatency" /&gt;
+&lt;figcaption&gt;HBase 클러스터의 크기에 따른 응답시간 입니다. HBase와 다르지 않습니다..&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;아래 그래프는 2개의 Row에 각각 한 개의 Write, 나머지 한 개의 Row에는 한 개의 Read 연산을 하는 트랜잭션에 대해 테스트한 것입니다.
+각 Row에 하나의 연산만이 일어나기 때문에 최악의 경우라고 할 수 있습니다. 처리량과 응답시간 모두 그냥 HBase를 사용하는 것보다 2배에서 3배 정도 좋지 않은 것을 알 수 있습니다.
+하지만 이 수치는 &lt;a href="http://aws.typepad.com/aws/2013/07/dynamodb-transaction-library.html"&gt;DynamoDB 상의 트랜잭션&lt;/a&gt;과 같은 &lt;strong&gt;다른 트랜잭션 라이브러리와 비교한다면 상당히 좋은 수준&lt;/strong&gt;입니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2013/10/haeinsa_performance_graph_worst_linearscalability.png" alt="WorstcaseLinearScalablility" /&gt;
+&lt;figcaption&gt;HBase보다 처리량이 떨어지긴 하지만, 클러스터가 커질수록 처리량이 늘어납니다.&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2013/10/haeinsa_performance_graph_worst_latency.png" alt="WorstcaseLatency" /&gt;
+&lt;figcaption&gt;HBase보다 응답시간이 크긴 하지만 클러스터 크기에 따른 변화가 HBase와 크게 다르지 않습니다.&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;h2&gt;프리젠테이션&lt;/h2&gt;
+
+&lt;p&gt;Haeinsa에 대한 전반적인 동작 원리와 성능을 소개하는 프리젠테이션입니다.
+좀 더 자세히 알고 싶으시다면 아래 프리젠테이션이나 &lt;a href="https://github.com/vcnc/haeinsa/wiki"&gt;Haeinsa 위키&lt;/a&gt;를 참고해주세요.&lt;/p&gt;
+
+&lt;script async class="speakerdeck-embed" data-id="2d4b2bd00fc201314ae312fe4cd13937" data-ratio="1.33333333333333" src="http://engineering.vcnc.co.kr//speakerdeck.com/assets/embed.js"&gt;&lt;/script&gt;
+
+
+
+</content>
+  </entry>
+  <entry>
+    <id>http://http://engineering.vcnc.co.kr/2013/07/replacing-reflection-to-apt-in-android</id>
+    <title type="text">안드로이드 클라이언트 Reflection 극복기</title>
+    <link rel="alternate" href="http://engineering.vcnc.co.kr/2013/07/replacing-reflection-to-apt-in-android/"/>
+    <updated>2013-07-31T10:00:00+09:00</updated>
+    <content type="html">&lt;p&gt;&lt;img class="left" style="width:85px; margin:10px;" src="http://engineering.vcnc.co.kr/images/2013/07/android-reflection-to-codegen-speed-up.jpg"/&gt;
+비트윈 팀은 비트윈 안드로이드 클라이언트(이하 안드로이드 클라이언트)를 가볍고 반응성 좋은 애플리케이션으로 만들기 위해 노력하고 있습니다.
+이 글에서는 간결하고 유지보수하기 쉬운 코드를 작성하기 위해 Reflection을 사용했었고 그로 인해 성능 이슈가 발생했던 것을 소개합니다.
+또한 그 과정에서 발생한 Reflection 성능저하를 해결하기 위해 시도했던 여러 방법을 공유하도록 하겠습니다.&lt;/p&gt;
+
+&lt;h2&gt;다양한 형태의 데이터&lt;/h2&gt;
+
+&lt;p&gt;Java를 이용해 서비스를 개발하는 경우 &lt;a href="http://en.wikipedia.org/wiki/Plain_Old_Java_Object" title="POJO"&gt;POJO&lt;/a&gt;로 서비스에 필요한 다양한 모델 클래스들을 만들어 사용하곤 합니다. 안드로이드 클라이언트 역시 모델을 클래스 정의해 사용하고 있습니다.
+하지만 서비스 내에서 데이터는 정의된 클래스 이외에도 다양한 형태로 존재합니다. 안드로이드 클라이언트에서 하나의 데이터는 아래와 같은 형태로 존재합니다.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;JSON: 비트윈 서비스에서 HTTP API는 JSON 형태로 요청과 응답을 주고 받고 있습니다.&lt;/li&gt;
+&lt;li&gt;Thrift: TCP를 이용한 채팅 API는 Thrift를 이용하여 프로토콜을 정의해 서버와 통신을 합니다.&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://developer.android.com/reference/android/content/ContentValues.html" title="ContentValues"&gt;ContentValues&lt;/a&gt;: 안드로이드에서는 Database 에 데이터를 저장할 때, 해당 정보는 ContentValues 형태로 변환돼야 합니다.&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://developer.android.com/reference/android/database/Cursor.html" title="Cursor"&gt;Cursor&lt;/a&gt;: Database에 저장된 정보는 Cursor 형태로 접근가능 합니다.&lt;/li&gt;
+&lt;li&gt;POJO: 변수와 Getter/Setter로 구성된 클래스 입니다. 비지니스 로직에서 사용됩니다.&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;p&gt;코드 전반에서 다양한 형태의 데이터가 주는 혼란을 줄이기 위해 항상 POJO로 변환한 뒤 코드를 작성하기로 했습니다.&lt;/p&gt;
+
+&lt;h3&gt;다양한 데이터를 어떻게 상호 변환할 것 인가?&lt;/h3&gt;
+
+&lt;p&gt;JSON 같은 경우는 Parsing 후 Object로 변환해 주는 라이브러리(&lt;a href="https://code.google.com/p/google-gson/" title="Gson"&gt;Gson&lt;/a&gt;, &lt;a href="http://jackson.codehaus.org/" title="Jackson JSON"&gt;Jackson JSON&lt;/a&gt;)가 존재하지만 다른 형태(Thrift, Cursor..)들은 만족스러운 라이브러리가 존재하지 않았습니다.
+그렇다고 모든 형태에 대해 변환하는 코드를 직접 작성하면 필요한 경우 아래와 같은 코드를 매번 작성해줘야 합니다.
+이와 같이 작성하는 경우 Cursor에서 원하는 데이터를 일일이 가져와야 합니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;@Override
+public void bindView(View view, Context context, Cursor cursor) {
+    final ViewHolder holder = getViewHolder(view);
+
+    final String author = cursor.getString("author");
+    final String content = cursor.getString("content");
+    final Long timeMills = cursor.getLong("time");
+    final ReadStatus readStatus = ReadStatus.fromValue(cursor.getString("readStatus"));
+    final CAttachment attachment = JSONUtils.parseAttachment(cursor.getLong("createdTime"));
+
+    holder.authorTextView.setText(author);
+    holder.contentTextView.setText(content);
+    holder.readStatusView.setReadStatus(readStatus);
+    ...
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;하지만 각 형태의 필드명(Key)이 서로 같도록 맞춰주면 각각의 Getter와 Setter를 호출해 형태를 변환해주는 Utility Class를 제작할 수 있습니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;@Override
+public void bindView(View view, Context context, Cursor cursor) {
+    final ViewHolder holder = getViewHolder(view);
+
+    Message message = ReflectionUtils.fromCursor(cursor, Message.class);
+
+    holder.authorTextView.setText(message.getAuthor());
+    holder.contentTextView.setText(message.getContent());
+    holder.readStatusView.setReadStatus(message.getReadStatus());
+    ...
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;이런 식으로 코드를 작성하면 이해하기 쉽고, 모델이 변경되는 경우에도 유지보수가 비교적 편하다는 장점이 있습니다.
+따라서 필요한 데이터를 POJO로 작성하고 다양한 형태의 데이터를 POJO로 변환하기로 했습니다.
+서버로부터 받은 JSON 혹은 Thrift객체는 자동으로 POJO로 변환되고 POJO는 다시 ContentValues 형태로 DB에 저장됩니다.
+DB에 있는 데이터를 화면에 보여줄때는 Cursor로부터 데이터를 가져와서 POJO로 변환 후 적절한 가공을 하여 View에 보여주게 됩니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2013/07/android-reflection-to-codegen-data_convert.png" title="데이터 형태 변환" alt="DataConvert" /&gt;
+&lt;figcaption&gt;POJO 형태로 여러 데이터 변환필요&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;h2&gt;Reflection 사용과 성능저하&lt;/h2&gt;
+
+&lt;p&gt;처음에는 &lt;a href="http://en.wikipedia.org/wiki/Reflection_(computer_programming)" title="Reflection"&gt;Reflection&lt;/a&gt;을 이용해 여러 데이터를 POJO로 만들거나 POJO를 다른 형태로 변환하도록 구현했습니다.
+대상 Class의 newInstance/getMethod/invoke 함수를 이용해 객체 인스턴스를 생성하고 Getter/Setter를 호출하여 값을 세팅하거나 가져오도록 했습니다.
+앞서 설명한 &lt;code&gt;ReflectionUtils.fromCursor(cursor, Message.class)&lt;/code&gt;를 예를 들면 아래와 같습니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;public T fromCursor(Cursor cursor, Class clazz) {
+    T instance = (T) clazz.newInstance();
+    for (int i=0; i&amp;lt;cursor.getColumnCount(); i++) {
+        final String columnName = cursor.getColumnName(i);
+        final Class&amp;lt;?&amp;gt; type = clazz.getField(columnName).getType();
+        final Object value = getValueFromCursor(cursor, type);
+
+        final Class&amp;lt;?&amp;gt;[] parameterType = { type };
+        final Object[] parameter = { value };
+
+        Method m = clazz.getMethod(toSetterName(columnName), parameterType);
+        m.invoke(instance, value);
+    }
+    return instance;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Reflection을 이용하면 동적으로 Class의 정보(필드, 메서드)를 조회하고 호출할 수 있기 때문에 코드를 손쉽게 작성할 수 있습니다.
+하지만 Reflection은 &lt;a href="http://docs.oracle.com/javase/tutorial/reflect/" title="Java Reflection Tutorial"&gt;튜토리얼 문서&lt;/a&gt;에서 설명된 것처럼 성능저하 문제가 있습니다.
+한두 번의 Relfection 호출로 인한 성능저하는 무시할 수 있다고 해도,
+필드가 많거나 필드로 Collection을 가진 클래스의 경우에는 수십 번이 넘는 Reflection이 호출될 수 있습니다.
+실제로 이 때문에 안드로이드 클라이언트에서 종종 반응성이 떨어지는 경우가 발생했습니다.
+특히 CursorAdapter에서 Cursor를 POJO로 변환하는 코드 때문에 ListView에서의 스크롤이 버벅이기도 했습니다.&lt;/p&gt;
+
+&lt;h2&gt;Bytecode 생성&lt;/h2&gt;
+
+&lt;p&gt;Reflection 성능저하를 해결하려고 처음으로 선택한 방식은 Bytecode 생성입니다.
+&lt;a href="https://code.google.com/p/google-guice/"&gt;Google Guice&lt;/a&gt; 등의 다양한 자바 프로젝트에서도 Bytecode를 생성하는 방식으로 성능 문제를 해결합니다.
+다만 안드로이드의 Dalvik VM의 경우 일반적인 JVM의 Bytecode와는 스펙이 다릅니다.
+이 때문에 기존의 자바 프로젝트에서 Bytecode 생성에 사용되는 &lt;a href="http://cglib.sourceforge.net/" title="CGLib"&gt;CGLib&lt;/a&gt; 같은 라이브러리 대신 &lt;a href="https://code.google.com/p/dexmaker/" title="Dexmaker"&gt;Dexmaker&lt;/a&gt;를 이용하여야 했습니다.&lt;/p&gt;
+
+&lt;h3&gt;CGLib&lt;/h3&gt;
+
+&lt;p&gt;CGLib는 Bytecode를 직접 생성하는 대신 &lt;code&gt;FastClass&lt;/code&gt;, &lt;code&gt;FastMethod&lt;/code&gt; 등 펀리한 클래스를 이용할 수 있습니다.
+&lt;code&gt;FastClass&lt;/code&gt;나 &lt;code&gt;FastMethod&lt;/code&gt;를 이용하면 내부적으로 알맞게 Bytecode를 만들거나
+이미 생성된 Bytecode를 이용해 비교적 빠른 속도로 객체를 만들거나 함수를 호출 할 수 있습니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;public T create() {
+    return (T) fastClazz.newInstance();
+}
+
+public Object get(Object target) {
+    result = fastMethod.invoke(target, (Object[]) null);
+}
+
+public void set(Object target, Object value) {
+    Object[] params = { value };
+    fastMethod.invoke(target, params);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Dexmaker&lt;/h3&gt;
+
+&lt;p&gt;하지만 Dexmaker는 Bytecode 생성 자체에 초점이 맞춰진 라이브러리라서 &lt;code&gt;FastClass&lt;/code&gt;나 &lt;code&gt;FastMethod&lt;/code&gt; 같은 편리한 클래스가 존재하지 않습니다.
+결국, 다음과 같이 Bytecode 생성하는 코드를 직접 한땀 한땀 작성해야 합니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;public DexMethod generateClasses(Class&amp;lt;?&amp;gt; clazz, String clazzName){
+    dexMaker.declare(declaringType, ..., Modifier.PUBLIC, TypeId.OBJECT, ...);
+    TypeId&amp;lt;?&amp;gt; targetClassTypeId = TypeId.get(clazz);
+    MethodId invokeId = declaringType.getMethod(TypeId.OBJECT, "invoke", TypeId.OBJECT, TypeId.OBJECT);
+    Code code = dexMaker.declare(invokeId, Modifier.PUBLIC);
+
+    if (isGetter == true) {
+        Local&amp;lt;Object&amp;gt; insertedInstance = code.getParameter(0, TypeId.OBJECT);
+        Local instance = code.newLocal(targetClassTypeId);
+        Local returnValue = code.newLocal(TypeId.get(method.getReturnType()));
+        Local value = code.newLocal(TypeId.OBJECT);
+        code.cast(instance, insertedInstance);
+        MethodId executeId = ...
+        code.invokeVirtual(executeId, returnValue, instance);
+        code.cast(value, returnValue);
+        code.returnValue(value);
+    } else {
+        ...
+    }
+
+    // constructor
+    Code constructor = dexMaker.declare(declaringType.getConstructor(), Modifier.PUBLIC);
+    Local&amp;lt;?&amp;gt; thisRef = constructor.getThis(declaringType);
+    constructor.invokeDirect(TypeId.OBJECT.getConstructor(), null, thisRef);
+    constructor.returnVoid();
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dexmaker를 이용한 방식을 구현하여 동작까지 확인했으나, 다음과 같은 이유로 실제 적용은 하지 못했습니다.&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt; Bytecode를 메모리에 저장하는 경우, 프로세스가 종료된 이후 실행 시 Bytecode를 다시 생성해 애플리케이션의 처음 실행성능이 떨어진다.&lt;/li&gt;
+&lt;li&gt; Bytecode를 스토리지에 저장하는 경우, 원본 클래스가 변경됐는지를 매번 검사하거나 업데이트마다 해당 스토리지를 지워야 한다.&lt;/li&gt;
+&lt;li&gt; 더 좋은 방법이 생각났다.&lt;/li&gt;
+&lt;/ol&gt;
+
+
+&lt;h2&gt;Annotation Processor&lt;/h2&gt;
+
+&lt;p&gt;최종적으로 저희가 선택한 방식은 컴파일 시점에 형태변환 코드를 자동으로 생성하는 것입니다.
+Reflection으로 접근하지 않아 속도도 빠르고, Java코드가 미리 작성돼 관리하기도 편하기 때문입니다.
+POJO 클래스에 알맞은 Annotation을 달아두고, &lt;a href="http://docs.oracle.com/javase/1.5.0/docs/guide/apt/GettingStarted.html" title="APT"&gt;APT&lt;/a&gt;를 이용해 Annotation이 달린 모델 클래스에 대해 형태변환 코드를 자동으로 생성했습니다.&lt;/p&gt;
+
+&lt;p&gt;형태 변환이 필요한 클래스에 Annotation(&lt;code&gt;@GenerateAccessor&lt;/code&gt;)을 표시합니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;@GenerateAccessor
+public class Message {
+    private Integer id;
+    private String content;
+
+    public Integer getId() {
+        return id;
+    }
+    ...
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;javac에서 APT 사용 옵션과 &lt;a href="http://docs.oracle.com/javase/6/docs/api/javax/annotation/processing/Processor.html" title="Processor"&gt;Processor&lt;/a&gt;를 지정합니다. 그러면 Annotation이 표시된 클래스에 대해 Processor의 작업이 수행됩니다.
+Processor에서 코드를 생성할 때에는 StringBuilder 등으로 실제 코드를 일일이 작성하는 것이 아니라
+&lt;a href="http://velocity.apache.org/" title="Velocity"&gt;Velocity&lt;/a&gt;라는 template 라이브러리를 이용합니다.
+Processor는 아래와 같은 소스코드를 생성합니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;public class Message$$Accessor implements Accessor&amp;lt;kr.co.vcnc.binding.performance.Message&amp;gt; {
+
+    public kr.co.vcnc.binding.performance.Message create() {
+        return new kr.co.vcnc.binding.performance.Message();
+    }
+
+    public Object get(Object target, String fieldName) throws IllegalArgumentException {
+        kr.co.vcnc.binding.performance.Message source = (kr.co.vcnc.binding.performance.Message) target;
+        switch(fieldName.hashCode()) {
+        case 3355: {
+            return source.getId();
+        }
+        case -1724546052: {
+            return source.getContent();
+        }
+        ...
+        default:
+            throw new IllegalArgumentException(...);
+        }
+    }
+
+    public void set(Object target, String fieldName, Object value) throws IllegalArgumentException {
+        kr.co.vcnc.binding.performance.Message source = (kr.co.vcnc.binding.performance.Message) target;
+        switch(fieldName.hashCode()) {
+        case 3355: {
+            source.setId( (java.lang.Integer) value);
+            return;
+        }
+        case -1724546052: {
+            source.setContent( (java.lang.String) value);
+            return;
+        }
+        ...
+        default:
+            throw new IllegalArgumentException(...);
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;여기서 저희가 정의한 Accessor는 객체를 만들거나 특정 필드의 값을 가져오거나 세팅하는 인터페이스로, 객체의 형태를 변환할 때 이용됩니다.
+get,set 메서드는 필드 이름의 hashCode 값을 이용해 해당하는 getter,setter를 호출합니다.
+hashCode를 이용해 switch-case문을 사용한 이유는 Map을 이용하는 것보다 성능상 이득이 있기 때문입니다.
+단순 메모리 접근이 Java에서 제공하는 HashMap과 같은 자료구조 사용보다 훨씬 빠릅니다.
+APT를 이용해 변환코드를 자동으로 생성하면 여러 장점이 있습니다.&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt; Reflection을 사용하지 않고 Method를 직접 수행해서 빠르다.&lt;/li&gt;
+&lt;li&gt; Bytecode 생성과 달리 애플리케이션 처음 실행될 때 코드 생성이 필요 없고 만들어진 코드가 APK에 포함된다.&lt;/li&gt;
+&lt;li&gt; Compile 시점에 코드가 생성돼서 Model 변화가 바로 반영된다.&lt;/li&gt;
+&lt;/ol&gt;
+
+
+&lt;p&gt;APT를 이용한 Code생성으로 Reflection 속도저하를 해결할 수 있습니다.
+이 방식은 애플리케이션 반응성이 중요하고 상대적으로 Reflection 속도저하가 큰 안드로이드 라이브러리에서 최근 많이 사용하고 있습니다. (&lt;a href="http://androidannotations.org/" title="AndroidAnnotations"&gt;AndroidAnnotations&lt;/a&gt;, &lt;a href="http://jakewharton.github.io/butterknife/" title="ButterKnife"&gt;ButterKnife&lt;/a&gt;, &lt;a href="http://square.github.io/dagger/" title="Dagger"&gt;Dagger&lt;/a&gt;)&lt;/p&gt;
+
+&lt;h2&gt;성능 비교&lt;/h2&gt;
+
+&lt;p&gt;다음은 Reflection, Dexmaker, Code Generating(APT)를 이용해 JSONObject를 Object로 변환하는 작업을 50번 수행한 결과입니다.
+&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2013/07/android-reflection-to-codegen-performance_chart.png" title="성능차트" alt="PerformanceChart" /&gt;
+&lt;figcaption&gt;성능 비교 결과&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;이처럼 최신 OS 버전일수록 Reflection의 성능저하가 다른 방법에 비해 상대적으로 더 큽니다.
+반대로 Dexmaker의 생성 속도는 빨라져 APT 방식과의 성능격차는 점점 작아집니다.
+하지만 역시 &lt;strong&gt;APT를 통한 Code 생성이 모든 환경에서 가장 좋은 성능을 보입니다.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2&gt;마치며&lt;/h2&gt;
+
+&lt;p&gt;서비스 모델을 반복적으로 정의하지 않으면서 변환하는 방법을 알아봤습니다.
+그 과정에서 Reflection 의 속도저하, Dexmaker 의 단점도 설명해 드렸고 결국 APT가 좋은 해결책이라고 판단했습니다.
+저희는 이 글에서 설명해 드린 방식을 추상화해 Binding이라는 라이브러리를 만들어 사용하고 있습니다.
+Binding은 POJO를 다양한 JSON, Cursor, ContentValues등 다양한 형태로 변환해주는 라이브러리입니다.
+뛰어난 확장성으로 다양한 형태의 데이터로 변경하는 플러그인을 만들어서 사용할 수 있습니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Message message = Bindings.for(Message.class).bind().from(AndroidSources.cursor(cursor));
+Message message = Bindings.for(Message.class).bind().from(JSONSources.jsonString(jsonString));
+String jsonString = Bindings.for(Message.class).bind(message).to(JSONTargets.jsonString());
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;위와 같이 Java상에 존재할 수 있는 다양한 타입의 객체에 대해 일종의 데이터 Binding 기능을 수행합니다.
+Binding 라이브러리도 기회가 되면 소개해드리겠습니다. 윗글에서 궁금하신 점이 있으시거나 잘못된 부분이 있으면 답글을 달아주시기 바랍니다.
+감사합니다.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <id>http://http://engineering.vcnc.co.kr/2013/06/architecture-of-sticker-system</id>
+    <title type="text">비트윈의 스티커 시스템 구현 이야기</title>
+    <link rel="alternate" href="http://engineering.vcnc.co.kr/2013/06/architecture-of-sticker-system/"/>
+    <updated>2013-06-24T10:00:00+09:00</updated>
+    <content type="html">&lt;p&gt;&lt;img class="left" style="width:100px;" src="http://engineering.vcnc.co.kr/images/2013/06/architecture-of-sticker-system-sticker-mintberry.png"/&gt;
+비트윈에는 커플들이 서로에게 감정을 더욱 잘 표현할 수 있도록 스티커를 전송할 수 있는 기능이 있습니다.
+이를 위해 스티커 스토어에서 다양한 종류의 스티커를 제공하고 있으며 사용자들은 구매한 스티커를 메시지의 첨부파일 형태로 전송을 할 수 있습니다.
+저희가 스티커 시스템을 구현하면서 맞딱드린 문제와 이를 해결한 방법, 그리고 프로젝트를 진행하면서 배운 것들에 대해 소개해 보고자 합니다.&lt;/p&gt;
+
+&lt;h2&gt;스티커 시스템 아키텍처&lt;/h2&gt;
+
+&lt;p&gt;비트윈에서 스티커 기능을 제공하기 위해 다양한 구성 요소들이 있습니다. 전체적인 구성은 다음과 같습니다.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://engineering.vcnc.co.kr/2013/04/between-system-architecture/"&gt;비트윈 서버&lt;/a&gt;&lt;/strong&gt;: &lt;a href="http://engineering.vcnc.co.kr/2013/04/between-system-architecture/"&gt;이전에 소개드렸었던 비트윈의 서버&lt;/a&gt;입니다. 비트윈의 채팅, 사진, 기념일 공유 등 제품내의 핵심이 되는 기능을 위해 운영됩니다.
+스티커 스토어에서 구매한 스티커는 비트윈 서버를 통해 상대방에게 전송할 수 있습니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;스티커 스토어 서버&lt;/strong&gt;: 스티커를 구매할 수 있는 스토어를 서비스합니다.
+스티커 스토어는 &lt;strong&gt;웹페이지로 작성&lt;/strong&gt;되어 있고 아이폰, 안드로이드 클라이언트와 &lt;strong&gt;유기적으로 연동&lt;/strong&gt;되어 구매 요청 등을 처리합니다.
+처음에는 &lt;a href="http://www.python.org/"&gt;Python&lt;/a&gt;과 &lt;a href="http://flask.pocoo.org/"&gt;Flask&lt;/a&gt;를 이용하여 구현하려 하였으나 결국엔 &lt;strong&gt;서버 개발자들이 좀 더 익숙한 자바로 구현&lt;/strong&gt;하기로 결정하였습니다.
+&lt;a href="http://www.eclipse.org/jetty/"&gt;Jetty&lt;/a&gt;와 &lt;a href="https://jersey.java.net/"&gt;Jersey&lt;/a&gt;를 사용하였고, HTML을 랜더링하기 위한 템플릿 엔진으로는 &lt;a href="https://developers.google.com/closure/templates/"&gt;Closure Template&lt;/a&gt;을 이용하였습니다.
+ORM으로는 &lt;a href="http://www.hibernate.org/"&gt;Hibernate&lt;/a&gt;/&lt;a href="http://en.wikipedia.org/wiki/Java_Persistence_API"&gt;JPA&lt;/a&gt;, 클라이언트와 웹페이지간 연동을 위해서 &lt;a href="http://cordova.apache.org/"&gt;Cordova&lt;/a&gt;를 이용하였습니다.
+&lt;a href="http://aws.amazon.com/ec2/"&gt;EC2&lt;/a&gt;에서 운영하고 있으며 데이터베이스로는 &lt;a href="http://aws.amazon.com/rds/"&gt;RDS&lt;/a&gt;에서 제공하는 MySQL을 사용합니다.
+&lt;strong&gt;이미 존재하는 솔루션들을 잘 활용&lt;/strong&gt;하여 최대한 빨리 개발 할 수 있도록 노력을 기울였습니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;스티커 다운로드 서버&lt;/strong&gt;: 스티커는 비트윈에서 정의한 특수한 포맷의 파일 형태로 제공됩니다. 기본적으로 수 많은 사용자가 같은 스티커 파일을 다운로드 받습니다.
+따라서 &lt;a href="http://aws.amazon.com/"&gt;AWS&lt;/a&gt;에서 제공하는 &lt;a href="https://en.wikipedia.org/wiki/Content_delivery_network"&gt;CDN&lt;/a&gt;인 &lt;a href="http://aws.amazon.com/cloudfront/"&gt;CloudFront&lt;/a&gt;을 이용하며, 실제 스티커 파일들은 &lt;a href="http://aws.amazon.com/s3/"&gt;S3&lt;/a&gt;에서 호스팅합니다.
+그런데  스티커 파일들은 디바이스의 해상도(&lt;a href="http://en.wikipedia.org/wiki/Dots_per_inch"&gt;DPI&lt;/a&gt;)에 따라 최적화된 파일들을 내려줘야하는 이슈가 있었습니다.
+이를 위해 CloudFront와 S3사이의 파일 전송에 &lt;a href="https://developers.google.com/appengine/"&gt;GAE&lt;/a&gt;에서 운영중인 간단한 어플리케이션이 관여합니다.
+이에 대해서는 뒷편에서 좀 더 자세히 설명하도록 하겠습니다.&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;h2&gt;구현상 문제들과 해결 방법들&lt;/h2&gt;
+
+&lt;h3&gt;적정 기술에 대해 고민하다&lt;/h3&gt;
+
+&lt;p&gt;스티커 스토어 서버를 처음 설계할때 &lt;a href="http://flask.pocoo.org/"&gt;Flask&lt;/a&gt;와 &lt;a href="http://www.sqlalchemy.org/"&gt;SQLAlchemy&lt;/a&gt;를 이용하여 구현하고자 하였습니다.
+개발팀 내부적으로 웹서버를 만들때 앞으로 Python과 Flask를 이용해야겠다는 생각이 있었기 때문이며,
+일반적으로 Java보다는 &lt;a href="http://www.python.org/"&gt;Python&lt;/a&gt;으로 짜는 것이 개발 효율이 더 좋다는 것은  잘 알려진 사실이기도 합니다.
+하지만 Java에 익숙한 서버 개발자들이 Python의 일반적인 스타일에 익숙하지 않아 Python다운 코드를 짜기 어려웠고, 오히려 개발하는데 비용이 더 많이 들어갔습니다.
+그래서 개발 중에 다시 웹 서버는 자바로 짜게 되었고, 여러가지 스크립트들만 Python으로 짜고 있습니다.
+실제 개발에 있어서 &lt;strong&gt;적절한 기술의 선택은 실제 프로젝트에 참여하는 개발자들의 능력에 따라 달라져야&lt;/strong&gt;한다는 것을 알게되었습니다.&lt;/p&gt;
+
+&lt;h3&gt;스티커 파일 용량과 변환 시간을 고려하다&lt;/h3&gt;
+
+&lt;p&gt;사용자는 스티커 스토어에서 여러개의 스티커가 하나로 묶인 스티커 묶음을 구매하게 됩니다. 구매 완료시 여러개의 스티커가 하나의 파일로 압축되어 있는 zip파일을 다운로드 받게 됩니다.
+zip파일내의 각 스티커 파일에는 스티커를 재생하기 위한 스티커의 이미지 프레임들과 메타데이터에 대한 정보들이 담겨 있습니다. 메타데이터는 &lt;a href="http://thrift.apache.org/"&gt;Thrift&lt;/a&gt;를 이용하여 정의하였습니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2013/06/architecture-of-sticker-system-sticker-format.png" title="스티커 파일의 포맷" alt="StickerFormat" /&gt;
+&lt;figcaption&gt;스티커 zip파일 안에는 여러개의  스티커 파일이 들어가 있으며, 스티커 파일은 다양한 정보를 포함합니다&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;카카오톡의 스티커의 경우 애니메이션이 있는 것은 배경이 불투명하고 배경이 투명한 경우에는 애니메이션이 없습니다.
+하지만 비트윈 스티커는 &lt;strong&gt;배경이 투명하고 고해상도의 애니메이션&lt;/strong&gt;을 보여줄 수 있어야 했습니다.
+배경이 투명한 여러 장의 고해상도 이미지를 움직이게 만드는 것은 비교적 어려운 점이 많습니다.
+여러 프레임의 이미지들의 배경을 투명하게 하기 위해 &lt;a href="http://en.wikipedia.org/wiki/Portable_Network_Graphics"&gt;PNG&lt;/a&gt;를 사용하면 &lt;a href="https://en.wikipedia.org/wiki/JPEG"&gt;JPEG&lt;/a&gt;에 비해  스티커 파일의 크기가 너무 커집니다.
+파일 크기가 너무 커지면 당시 3G 환경에서 다운로드가 너무 오래 걸려 사용성이 크게 떨어지기 때문에 무작정 PNG를 사용할 수는 없었습니다.
+이에 대한 해결책으로 &lt;strong&gt;투명 기능을 제공하면서도 파일 크기도 비교적 작은 &lt;a href="https://developers.google.com/speed/webp/"&gt;WebP&lt;/a&gt;&lt;/strong&gt;를 이용하였습니다.
+WebP는 구글이 공개한 이미지 포맷으로 화질 저하를 최소화 하면서도 이미지 파일 크기가 작다는 장점이 있습니다.
+각 클라이언트에서 스티커를 다운 받을때는 WebP로 다운 받지만, 다운 받은 이후에는 이미지 로딩 속도를 위해 로컬에 PNG로 변환한 스티커 프레임들을 캐싱합니다.&lt;/p&gt;
+
+&lt;p&gt;그런데 출시 된지 오래된 안드로이드나 iPhone 3Gs와 같이 CPU성능이 좋지 않은 단말에서 WebP 디코딩이 지나치게 오래 걸리는 문제가 있었습니다.
+이런 단말들은 공통적으로 해상도가 낮은 디바이스였고, 이 경우에는 특별히 PNG로 스티커 파일을 만들어 내려줬습니다.
+이미지의 &lt;strong&gt;해상도가 낮기 때문에 파일 크기가 크지 않았고&lt;/strong&gt;, 다운로드 속도 문제가 없었기 때문입니다.&lt;/p&gt;
+
+&lt;h3&gt;좀 더 나은 주소 포맷을 위해 GAE를 활용하다&lt;/h3&gt;
+
+&lt;p&gt;기본적으로 스티커는 여러 사용자가 같은 스티커 파일을 다운받아 사용하기 때문에 &lt;a href="https://en.wikipedia.org/wiki/Content_delivery_network"&gt;CDN&lt;/a&gt;을 이용하여 배포하는 것이 좋습니다.
+CDN을 이용하면 스티커 파일이 전 세계 곳곳에 있는 엣지 서버에 캐싱되어 사용자들이 가장 최적의 경로로 파일을 다운로드 받을 수 있습니다.
+그래서 &lt;a href="http://aws.amazon.com/"&gt;AWS&lt;/a&gt;의 &lt;a href="http://aws.amazon.com/s3/"&gt;S3&lt;/a&gt;와 &lt;a href="http://aws.amazon.com/cloudfront/"&gt;CloudFront&lt;/a&gt;를 사용하여 스티커 파일을 배포하려고 했습니다. 또한, &lt;strong&gt;여러 해상도의 디바이스에서 최적의 스티커&lt;/strong&gt;를 보여줘야 했습니다.
+이 때문에 다양한 해상도로 만들어진 스티커 파일들을 S3에 올려야 했는데 클라이어트에서 스티커 파일을 다운로드시 주소 포맷을 어떻게 가져가야 할지가 어려웠습니다.
+S3에 올리는 경우 파일와 디렉터리 구조 형태로 저장되기 때문에 아래와 같은 방법으로 저장이 가능합니다.&lt;/p&gt;
+
+&lt;blockquote&gt;&lt;p&gt;  http://dl.sticker.vcnc.co.kr/[dpi_of_sticker]/[sticker_id].sticker&lt;/p&gt;&lt;/blockquote&gt;
+
+&lt;p&gt;하지만, 이렇게 주소를 가져가는 경우 &lt;strong&gt;클라이언트가 자신의 해상도에 맞는 적절한 스티커의 해상도를 계산하여 요청&lt;/strong&gt;해야 합니다.
+이것은 클라이언트에서 서버에서 제공하는 스티커 해상도 리스트를 알고 있어야 한다는 의미이며, &lt;strong&gt;이러한 정보들은 최대한 클라이언트에 가려 놓는 것이 유지보수에 좋습니다&lt;/strong&gt;.
+클라이언트는 그냥 자신의 디스플레이 해상도를 전달하기만 하고, 서버에서 적절히 계산하여 알맞은 해상도의 스티커 파일을 내려주는 것이 가장 좋습니다.
+이를 위해 스티커 다운로드 URL을 아래와 같은 형태로 디자인하고자 하였습니다.&lt;/p&gt;
+
+&lt;blockquote&gt;&lt;p&gt;  http://dl.sticker.vcnc.co.kr/[sticker_id].sticker?density=[dpi_of_device]&lt;/p&gt;&lt;/blockquote&gt;
+
+&lt;p&gt;하지만 S3와 CloudFront 조합으로만 위와 같은 URL 제공은 불가능하며 따로 다운로드 서버를 운영해야 합니다.
+그렇다고 EC2에 따로 서버를 운영하는 것은 &lt;strong&gt;안정적인 서비스 운영을 위해 신경써야할 포인트들이 늘어나는 것&lt;/strong&gt;이어서 부담이 너무 컸습니다.
+그래서, 아래와 같이 &lt;a href="https://developers.google.com/appengine/"&gt;GAE&lt;/a&gt;를 사용하기로 하였습니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src="http://engineering.vcnc.co.kr/images/2013/06/architecture-of-sticker-system-sticker-download-server.png" title="스티커 다운로드 서버 구성" alt="StickerDownloadServer" /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://developers.google.com/appengine/"&gt;GAE&lt;/a&gt;는 구글에서 일종의 클라우드 서비스(&lt;a href="http://en.wikipedia.org/wiki/Platform_as_a_service"&gt;PaaS&lt;/a&gt;)로 구글 인프라에서 웹 어플리케이션을 실행시켜 줍니다.
+GAE에 클라이언트에서 요청한 URL을 적절한 S3 URL로 변환&lt;strong&gt;해주는 어플리케이션을 만들어 올렸습니다. 일종의 &lt;/strong&gt;&lt;a href="http://en.wikipedia.org/wiki/Rewrite_engine"&gt;Rewrite Engine&lt;/a&gt; 역할을 하는 것입니다.
+서비스의 안정성은 GAE가 보장해주고, S3와 CloudFront의 안정성은 AWS에서 보장해주기 때문에 크게 신경쓰지 않아도 장애 없는 서비스 운영이 가능합니다.
+또한 CloudFront에서 스티커 파일을 최대한 캐싱 하며 따라서 GAE를 통해 새로 요청을 하는 경우는 거의 없기 때문에 GAE 사용 비용은 거의 발생하지 않습니다.
+GAE에는 클라이언트에서 보내주는 해상도를 보고 적당한 해상도의 스티커 파일을 내려주는 아주 간단한 어플리케이션만 작성하면 되기 때문에 개발 비용도 거의 들지 않았습니다.&lt;/p&gt;
+
+&lt;h3&gt;토큰을 이용해 보안 문제를 해결하다&lt;/h3&gt;
+
+&lt;p&gt;실제 스티커를 구매한 사용자만 스티커를 사용할 수 있어야 합니다. 스티커 토큰을 이용해 실제 구매한 사용자만 스티커를 전송할 수 있도록 구현하였습니다.
+사용자가 스티커 스토어에서 스티커를 구매하게 되면 각 스티커에 대한 토큰을 얻을 수 있습니다. 스티커 토큰은 다음과 같이 구성됩니다.&lt;/p&gt;
+
+&lt;blockquote&gt;&lt;p&gt;  토큰 버전, 스티커 아이디, 사용자 아이디, 유효기간, 서버의 서명&lt;/p&gt;&lt;/blockquote&gt;
+
+&lt;p&gt;서버의 서명은 앞의 네 가지 정보를 바탕으로 만들어지며 서버의 서명과 서명을 만드는 비밀키는 충분히 길어서 실제 비밀키를 알지 못하면 서명을 위조할 수 없습니다.
+사용자가 자신이 가지고 있는 스티커 토큰과 그에 해당하는 스티커를 비트윈 서버로 보내게 되면, 비트윈 서버에서는 서명이 유효한지 아닌지를 검사합니다.
+서명이 유효하다면 스티커를 전송이 성공하며, 만약 토큰이 유효하지 않다면 스티커의 전송을 허가하지 않습니다.&lt;/p&gt;
+
+&lt;h2&gt;못다 한 이야기&lt;/h2&gt;
+
+&lt;p&gt;비트윈 개발팀에게 스티커 기능은 개발하면서 우여곡절이 참 많았던 프로젝트 중에 하나 입니다. 여러 가지 시도를 하면서 실패도 많이 했었고 덕분에 배운 것도 참 많았습니다.
+기술적으로 크게 틀리지 않다면, 빠른 개발을 위해서 가장 익숙한 것으로 개발하는 것이 가장 좋은 선택이라는 알게 되어 스티커 스토어를 Python 대신 Java로 구현하게 되었습니다.
+현재 비트윈 개발팀에서 일부 웹사이트와 스크립트 작성 용도로 Python을 사용하고 있지만 Python을 잘하는 개발자가 있다면 다양한 프로젝트들를 Python으로 진행할 수 있다고 생각합니다.
+팀내에 경험을 공유할 수 있는 사람이 있다면 피드백을 통해 좋은 코드를 빠른 시간안에 짤 수 있고 뛰어난 개발자는 언어와 상관없이 컴퓨터에 대한 깊이 있는 지식을 가지고 있을 것이기 때문입니다.&lt;/p&gt;
+
+&lt;p&gt;네 그렇습니다. 결론은 Python 개발자를 모신다는 것입니다.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <id>http://http://engineering.vcnc.co.kr/2013/05/analyzing-user-data</id>
+    <title type="text">비트윈이 사용자를 분석하는 방법</title>
+    <link rel="alternate" href="http://engineering.vcnc.co.kr/2013/05/analyzing-user-data/"/>
+    <updated>2013-05-14T10:00:00+09:00</updated>
+    <content type="html">&lt;p&gt;&lt;img class="left" style="width:100px;" src="http://engineering.vcnc.co.kr/images/2013/05/analyzing-user-data.jpg"/&gt;
+빅데이터분석이 최근 이슈가 되면서 관심이 많으실 것 같습니다. 비트윈팀도 데이터 분석 참 좋아하는데요, 저희도 한번 해보았습니다. 이번 포스팅에서는 비트윈팀의 데이터 분석 노하우를 아낌없이 공유해드립니다.&lt;/p&gt;
+
+&lt;h2&gt;왜 사용자의 데이터를 분석해야하는가요?&lt;/h2&gt;
+
+&lt;p&gt;비트윈같은 서비스는 초기 단계에는 앱을 기획하고 만들어낸 팀에 아이디어에 의해 계속해서 발전하고, 유지됩니다.
+하지만 기능이 점점 다양해지고 사용자가 점점 많아지면서 사용자들의 앱 사용패턴을 점점 예측하기 어려워집니다.
+게다가 비트윈은 해외 진출을 구상 중이었는데, 개인 혹은 팀의 아이디어만으로 해외에서의 사용패턴을 정확히 알기는 어려웠습니다.&lt;/p&gt;
+
+&lt;p&gt;이런 시점에 필요한 것이 사용자 분석입니다.&lt;/p&gt;
+
+&lt;p&gt;사용자들의 사용패턴을 분석해 보는 방법은 여러 가지가 있습니다. 초기에 해볼 수 있는 가장 직관적이고 쉬운 것은 비트윈을 사용하는 자기 자신의 사용 패턴을 돌아보고 분석해보는 것입니다.
+또 친구들이나 익명 사용자들의 사용패턴을 물어보거나, 관찰하는 방법들이 있습니다. 이런 방법은 매우 효과적이고 많은 아이디어를 주지만 여러 가지 한계점이 있습니다. 지역적, 시간적인 한계 등이 그것입니다.&lt;/p&gt;
+
+&lt;p&gt;그래서 택할 수 있는 방법이 실제로 사용자들의 행동을 컴퓨터로 수집해서 분석하는 것입니다. 말 그대로 '데이터 분석'을 하게 되는 것입니다.&lt;/p&gt;
+
+&lt;h2&gt;무엇을 분석할지 알아야 합니다&lt;/h2&gt;
+
+&lt;p&gt;데이터로 분석할 수 있는 것은 무궁무진합니다만, 먼저 데이터가 있어야합니다. 비트윈과 같이 서버와 통신하는 앱은 사용자들이 서버에 요청을 할 때마다 엑세스 로그를 남기게 됩니다.
+이 엑세스 로그는 사용자들의 사용패턴을 고스란히 담고 있어, 소중한 데이터가 됩니다.&lt;/p&gt;
+
+&lt;p&gt;엑세스 로그 분석은 전혀 어렵지 않습니다. 엑세스 로그에서 특정 행동에 해당하는 내용을 세는 것만으로도 여러 가지 유의미한 값을 얻어낼 수 있습니다.
+하루 동안의 로그를 한줄씩 읽어서 메시지에 관련된 로그를 카운트하면 그날의 메시지 전송 건수를 얻을 수 있는 것입니다. (참 쉽죠?)&lt;/p&gt;
+
+&lt;p&gt;엑세스로그에서 가입, 메시지, 사진, 메모 등 기본적인 내용에 해당하는 것들을 카운트하는 것만으로도 꽤 자세하게 앱 전체 사용자들의 전반적인 사용통계를 얻어낼 수 있습니다.
+이제 해당 데이터를 엑셀에 넣어서 차트를 그려보면, 사용 통계에 대한 그럴싸한 차트가 그려집니다.&lt;/p&gt;
+
+&lt;p&gt;엑세스 로그 분석에 성공했다면 좀 더 다양한 분석을 해볼 수 있을 텐데요, 사용자별 행동패턴 분석이나, 나라별, 혹은 아이폰, 안드로이드 디바이스별 분석 등 다양한 분석을 시도해볼 수 있습니다.
+분석을 하기 전에 중요한 것은 무엇이 궁금한지, 어떻게 궁금한 데이터를 모을지 아이디어를 먼저 내는 것입니다. 여러 예제들을 찾아보며 공부해보면, 금방 좋은 아이디어를 얻으실 수 있을 겁니다.&lt;/p&gt;
+
+&lt;p&gt;물론 여기서 중요한것은 개인정보나 사생활의 보호입니다. 로그가 유출되었을때의 보안 문제 뿐 아니라, 데이터 분석팀에게조차 개인정보가 노출된다면 곤란합니다.
+이 문제에 저희가 어떻게 대처하고 있는지는 글 뒷부분에 자세히 알려드리겠습니다.&lt;/p&gt;
+
+&lt;h2&gt;특정 기술에 구애받지 말고 다양하게 구현해봅시다&lt;/h2&gt;
+
+&lt;p&gt;처음에는 로그 파일을 돌며 간단한 string을 검사하는 스크립트와 엑셀로도 충분했지만, 점점 복잡한 분석을 할수록 다양한 기술이 필요해집니다.
+비트윈 사용자 분석도 점점 다양해지고 복잡해지면서 여러 가지 기술들을 사용하고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;비트윈 사용자 분석은 처음에는 6줄짜리 간단한 shell script에서 시작되었습니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;cat 2011-10-31.log | grep /messages | grep POST | wc -l
+cat 2011-10-31.log | grep /photos | grep POST | wc -l
+cat 2011-10-31.log | grep /memos | grep POST | wc -l
+cat 2011-10-31.log | grep /like | grep POST | wc -l
+cat 2011-10-31.log | grep SIGN | wc -l
+cat 2011-10-31.log | grep REL | grep POST | wc -l
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;이런 스크립트를 만들어서 결과를 이메일로 공유하거나, 엑셀로 만들어 놓곤 했습니다.&lt;/p&gt;
+
+&lt;p&gt;여기에 비트윈 분석은 조금 더 발전하여, 로그파일을 쿼리하여 Map Reduce 작업이 가능한 Hive를 사용하고, PHP로 통계 웹사이트를 만들어 차트를 그리기 시작했습니다.
+이 방식은 처음에는 매우 편리했지만 차츰 쿼리만으로 원하는 결과를 얻기가 힘든 다소 복잡한 분석이 필요해지기 시작했습니다.&lt;/p&gt;
+
+&lt;p&gt;현재는 모든 로그를 분산 데이터베이스인 HBase에 Date Key와 User Key로 넣고, 코드 생산성이 좋은 Scala로 직접 Map Reduce코드를 작성해서 데이터들을 분석하고 있습니다.
+그래서 충분히 scalable하면서도 꽤 편리하게 이용할 수 있는 데이터베이스를 활용하고, Scala의 좋은 expression을 활용하여 짧고 유지보수나 확장이 쉬운 코드로 분석을 수행하면서도 Java와 호환되는 Scala의 특성을 이용하여 Map Reduce 코드 작성을 효과적으로 하고 있습니다.
+이렇게 분석한 데이터는 MySQL에 넣어서 2차로 가공하고, Scala Web Framework인 Play Framework을 이용하여 분석 사이트를 구축하고 D3 Chart를 이용해서 Visualize하고 있습니다.
+이렇게 함으로써 편리한 MySQL 쿼리 사용의 장점을 취하고 멋진 차트를 효과적으로 그려낼 수 있습니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2013/05/analyzing-user-data-sample-graph.png" alt="screenshot" /&gt;
+&lt;figcaption&gt; 좋은 Visualization은 멋질 뿐만 아니라 손쉽게 아이디어를 공유할 수 있게 해줍니다. &lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;앞으로는 더 빠른 성능을 위해 Hive를 더 잘 사용해보거나, Elastic Search같은 index engine들을 사용해 볼 계획도 가지고 있습니다.
+또한 End point들에서 직접 성능을 측정하여 중앙으로 모아서 분석해보려는 생각도 가지고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;기술을 선택함에 있어서 정답은 없는 거 같습니다. 널리쓰이는 MySQL같이 scalability가 좀 떨어지지만, 다양한 쿼리로 높은 생산성을 낼 수 있는 데이터베이스도 있고,
+HBase같이 scalability가 좋지만, 데이터를 저장하는 형태에 제한이 있어 생산성이 조금 떨어지는 데이터베이스도 있습니다. 저희는 앞서 소개드렸듯이 이 두 가지를 모두 혼용하여 사용하고 있습니다.
+각자가 마주한 상황에 맞게, 또 각자가 익숙한 기술에 맞게 설계하고, 사용해보면 됩니다.&lt;/p&gt;
+
+&lt;h2&gt;개인정보 보호는 철저하게&lt;/h2&gt;
+
+&lt;p&gt;빅데이터 분석이 개인정보를 침해하는 빅 브라더가 될 수 있다는 우려들이 나오고 있습니다.
+300만이 넘는 커플들의 비밀스러운 일기를 담고 있는 비트윈 서비스는 당연하게도 모든 업무를 진행하는 데 있어 보안과 개인정보를 최우선으로 하고 있습니다.
+데이터 분석에서도 분석할 수 있는 내용을 상당히 제한받더라도, 예외 없이 그 원칙을 지키고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;비트윈의 API서버는 AWS클라우드에서 운영되고 있는데, 사용료가 상당히 비싸기 때문에 큰 컴퓨팅 파워를 사용해야 하는 데이터분석까지 AWS에서 하기엔 좀 부담이 되었습니다.
+그래서 PC급 컴퓨터 여러 대를 구입하여 사무실 구석에 쌓아놓고 사용하고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;하지만 문제는 보안이었습니다. AWS의 비트윈 API서버는 다중으로 보안이 유지되고 있지만, 사무실에 있는 서버에 사용자들의 개인정보를 담아둘 수는 없는 일이었습니다.
+SECO*이 사무실을 지켜주고 있긴 하지만 보안회사에 고객들의 소중한 개인정보를 맡기고 안심할 수는 없으니까요.
+그리고 설사 보안 문제가 잘 해결된다고 해도, 분석을 수행하는 비트윈 데이터분석팀원에 개인정보 혹은 사생활이 노출된다면 그 또한 문제라고 생각하였습니다.&lt;/p&gt;
+
+&lt;p&gt;그래서 저희가 생각해낸 방법은 '익명화'입니다. Access Log들을 저장할 때 사용자의 아이디를 전부 단방향 &lt;a href="http://en.wikipedia.org/wiki/Salt_(cryptography)"&gt;salted-hash&lt;/a&gt;하여 누구인지 알 수 없게 만들었습니다. (물론 salt key는 데이터 분석팀은 알 수 없습니다.)
+그리고 애초에 Access Log에는 '어떤 사람'이 '50글자짜리 메시지를 보냈다' 라던가, '사진을 올렸다' 정도만 기록이 되기 때문에, 이를 통계적으로 분석하는 것은 유의미하지만, 사적인 정보를 담고 있지는 않습니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2013/05/analyzing-user-data-anonymous.png" alt="anonymous" /&gt;
+&lt;figcaption&gt;익명화되어 처리되고 있는 로그는 개인정보는 거의 담고 있지 않으면서도, 유익한 분석 결과를 만들어줍니다.&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;이런식으로 운영을 한다면 데이터 분석팀에서도 사적인 정보(예: 메시지 내용)에 대해서는 접근할 수 없기 때문에, 회원들의 소중한 개인정보와 사생활을 지킬 수 있습니다.
+어떤 분석을 수행할 때 언제나 비트윈팀은 언제나 보안과 사생활 보호의 원칙을 지킬 수 있는 범위에서만 진행하고 있습니다.&lt;/p&gt;
+
+&lt;h2&gt;아이디어의 공유, 그리고 액션아이템이 무엇보다도 중요합니다&lt;/h2&gt;
+
+&lt;p&gt;데이터 분석의 목표가 무엇인지, 왜 해야 하는지 생각해보면, 무엇을 해야 하는지 알 수 있습니다. 바로 분석으로부터 얻은 아이디어를 공유하고 액션아이템을 정하고 실천하는 것입니다.&lt;/p&gt;
+
+&lt;p&gt;데이터를 visualization하는것이 중요한 이유가 여기에 있습니다. 보기 좋은 떡이 먹기도 좋다는 말이 있듯이, 데이터도 먹기 좋아야 합니다.
+여러 사람이 쉽게 이해할 수 있어야 아이디어를 공유하고 의사결정을 내리기가 수월하기 때문입니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;figure&gt;
+&lt;img src="http://engineering.vcnc.co.kr/images/2013/05/analyzing-user-data-sticker.png" alt="sticker" /&gt;
+&lt;figcaption&gt;민트&amp;amp;베리 사용량 분석. 연인들이 쓰는 앱이라 사랑표현이 인기가 많군요. 디자인팀이 이런 자료를 참고하여 이후 디자인 아이디어를 내는 데 도움이 되면 좋겠죠?&lt;/figcaption&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;비트윈팀은 매번 데이터 분석 미팅을 진행하고 나면 액션아이템을 정하고 실천합니다.
+저희가 어떤 식으로 의사결정을 내리고 행동하는지에 대해서는 비트윈 팀블로그의 &lt;a href="http://blog.vcnc.co.kr/134"&gt;VCNC는 데이터분석에 기반해 어떤 결정을 내렸나 포스팅&lt;/a&gt;을 보시면 도움이 되실 것 같네요.&lt;/p&gt;
+
+&lt;h2&gt;맺으며&lt;/h2&gt;
+
+&lt;p&gt;이번 포스팅에서는 비트윈팀이 어떻게 무엇을 분석하는지 간단하게 다뤄봤습니다. 의견이나 참견 모두 환영이니 댓글 많이 남겨주세요!
+다음번 포스팅엔 기술적인 부분에 대해 좀 더 자세하게 다뤄보도록 하겠습니다.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <id>http://http://engineering.vcnc.co.kr/2013/04/hbase-configuration</id>
+    <title type="text">HBase 설정 최적화하기</title>
+    <link rel="alternate" href="http://engineering.vcnc.co.kr/2013/04/hbase-configuration/"/>
+    <updated>2013-04-23T10:00:00+09:00</updated>
+    <content type="html">&lt;p&gt;&lt;img class="left" style="width:100px;" src="http://engineering.vcnc.co.kr/images/2013/04/hbase.jpg"/&gt;
+&lt;a href="http://between.us/"&gt;커플 필수 앱 비트윈&lt;/a&gt;은 여러 종류의 오픈 소스를 기반으로 이루어져 있습니다.
+그 중 하나는 &lt;a href="http://hbase.apache.org/"&gt;HBase&lt;/a&gt;라는 NoSQL 데이터베이스입니다.
+&lt;a href="http://between.us/team/"&gt;VCNC&lt;/a&gt;에서는 HBase를 비트윈 서비스의 메인 데이터베이스로써 사용하고 있으며, 또한 데이터 분석을 위한 DW 서버로도 사용하고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;그동안 두 개의 HBase Cluster 모두 최적화를 위해서 여러 가지 설정을 테스트했고 노하우를 공유해 보고자 합니다.
+아랫은 저희가 HBase를 실제로 저희 서비스에 적용하여 운영하면서 최적화한 시스템 구성과 설정들을 정리한 것입니다.
+HBase를 &lt;a href="http://en.wikipedia.org/wiki/Online_transaction_processing"&gt;OLTP&lt;/a&gt;/&lt;a href="http://en.wikipedia.org/wiki/Online_analytical_processing"&gt;OLAP&lt;/a&gt; 목적으로 사용하고자 하는 분들에게 도움이 되었으면 좋겠습니다.
+아래 구성을 최적화하기 위해서 했던 오랜 기간의 삽질기는 언젠가 따로 포스팅 하도록 하겠습니다.&lt;/p&gt;
+
+&lt;h2&gt;HBase&lt;/h2&gt;
+
+&lt;p&gt;HBase는 Google이 2006년에 발표한 &lt;a href="http://research.google.com/archive/bigtable.html"&gt;BigTable&lt;/a&gt;이라는 NoSQL 데이터베이스의 아키텍처를 그대로 따르고 있습니다.
+HBase는 뛰어난 Horizontal Scalability를 가지는 Distributed DB로써, Column-oriented store model을 가지고 있습니다.
+사용량이 늘어남에 따라서 Regionserver만 추가해주면 자연스럽게 Scale-out이 되는 구조를 가지고 있습니다.
+또한, Hadoop 특유의 Sequential read/write를 최대한 활용해서 Random access를 줄임으로 Disk를
+효율적으로 사용한다는 점을 특징으로 합니다. 이 때문에 HBase는 보통의 RDBMS와는 다르게 Disk IO가 병목이 되기보다는
+CPU나 RAM 용량이 병목이 되는 경우가 많습니다.&lt;/p&gt;
+
+&lt;p&gt;HBase는 많은 회사가 데이터 분석을 하는 데 활용하고 있으며,
+&lt;a href="http://tech.naver.jp/blog/?p=1420"&gt;NHN Line&lt;/a&gt;과 &lt;a href="http://highscalability.com/blog/2010/11/16/facebooks-new-real-time-messaging-system-hbase-to-store-135.html"&gt;Facebook messenger&lt;/a&gt; 등의 메신저 서비스에서 Storage로 사용하고 있습니다.&lt;/p&gt;
+
+&lt;h2&gt;시스템 구성&lt;/h2&gt;
+
+&lt;p&gt;저희는 &lt;a href="http://www.cloudera.com/content/cloudera/en/home.html"&gt;Cloudera&lt;/a&gt;에서 제공하는 HBase 0.92.1-cdh4.1.2 release를 사용하고 있으며,
+Storage layer로 Hadoop 2.0.0-cdh4.1.2를 사용하고 있습니다.
+또한, Between의 데이터베이스로 사용하기 위해서 여러 대의 &lt;a href="http://aws.amazon.com/ko/ec2/instance-types/"&gt;AWS EC2&lt;/a&gt;의 m2.4xlarge 인스턴스에
+HDFS Datanode / HBase Regionserver를 deploy 하였습니다.
+이는 m2.4xlarge의 큰 메모리(68.4GB)를 최대한 활용해서 Disk IO를 회피하고 많은 Cache hit이 나게 하기 위함입니다.&lt;/p&gt;
+
+&lt;p&gt;또한 Highly-Available를 위해서 &lt;a href="http://blog.cloudera.com/blog/2012/10/quorum-based-journaling-in-cdh4-1/"&gt;Quorum Journaling node&lt;/a&gt;를 활용한 Active-standby namenode를 구성했으며,
+Zookeeper Cluster와 HBase Master도 여러 대로 구성하여 Datastore layer에서 &lt;a href="http://en.wikipedia.org/wiki/Single_point_of_failure"&gt;SPOF&lt;/a&gt;를 전부 제거하였습니다.
+HA cluster를 구성하는 과정도 후에 포스팅 하도록 하겠습니다.&lt;/p&gt;
+
+&lt;h2&gt;HDFS 최적화 설정&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;dfs.datanode.handler.count
+
+&lt;ul&gt;
+&lt;li&gt;HDFS에서 외부 요청을 처리하는 데 사용할 Thread의 개수를 정하기 위한 설정입니다. 기본값은 3인데 저희는 100으로 해 놓고 사용하고 있습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;dfs.replication
+
+&lt;ul&gt;
+&lt;li&gt;HDFS 레벨에서 각각의 데이터가 몇 개의 독립된 인스턴스에 복사될 것 인가를 나타내는 값입니다.
+저희는 이 값을 기본값인 3으로 해 놓고 있습니다.
+이 값을 높이면 Redundancy가 높아져서 데이터 손실에 대해서 더 안전해지지만, Write 속도가 떨어지게 됩니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;dfs.datanode.max.transfer.threads&lt;/strong&gt;
+
+&lt;ul&gt;
+&lt;li&gt;하나의 Datanode에서 동시에 서비스 가능한 block 개수 제한을 나타냅니다.&lt;/li&gt;
+&lt;li&gt;과거에는 dfs.datanode.max.xcievers라는 이름의 설정이었습니다.&lt;/li&gt;
+&lt;li&gt;기본값은 256인데, 저희는 4096으로 바꿨습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ipc.server.tcpnodelay / ipc.client.tcpnodelay&lt;/strong&gt;
+
+&lt;ul&gt;
+&lt;li&gt;tcpnodelay 설정입니다.
+tcp no delay 설정은 TCP/IP network에서 작은 크기의 패킷들을 모아서 보냄으로써
+TCP 패킷의 overhead를 절약하고자 하는 &lt;a href="http://en.wikipedia.org/wiki/Nagle's_algorithm"&gt;Nagle's algorithm&lt;/a&gt;을 끄는 것을 의미합니다.
+기본으로 두 값이 모두 false로 설정되어 있어 Nagle's algorithm이 활성화되어 있습니다.
+Latency가 중요한 OLTP 용도로 HBase를 사용하시면 true로 바꿔서 tcpnodelay 설정을 켜는 것이 유리합니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;h2&gt;HBase 최적화 설정&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;hbase.regionserver.handler.count&lt;/strong&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Regionserver에서 외부로부터 오는 요청을 처리하기 위해서 사용할 Thread의 개수를 정의하기 위한 설정입니다.
+기본값은 10인데 보통 너무 작은 값입니다.    &lt;a href="http://hbase.apache.org/book/important_configurations.html"&gt;HBase 설정 사이트&lt;/a&gt;에서는 너무 큰 값이면 좋지 않다고 얘기하고 있지만,
+테스트 결과 m2.4xlarge (26ECU) 에서 200개 Thread까지는 성능 하락이 없는 것으로 나타났습니다. (더 큰 값에 관해서 확인해 보지는 않았습니다.)&lt;/li&gt;
+&lt;li&gt;저희는 이 값을 10에서 100으로 올린 후에 약 2배의 Throughput 향상을 얻을 수 있었습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;hfile.block.cache.size&lt;/strong&gt;
+
+&lt;ul&gt;
+&lt;li&gt;HBase 의 block 들을 cache 하는데 전체 Heap 영역의 얼마를 할당한 것인지를 나타냅니다.
+저희 서비스는 Read가 Write보다 훨씬 많아서 (Write가 전체의 약 3%) Cache hit ratio가 전체 성능에 큰 영향을 미칩니다.&lt;/li&gt;
+&lt;li&gt;HBase 에서는 5분에 한 번 log 파일에 LruBlockCache (HBase 의 Read Cache) 가 얼마 만큼의 메모리를 사용하고 있고,
+Cache hit ratio가 얼마인지 표시를 해줍니다. 이 값을 참조하셔서 최적화에 사용하실 수 있습니다.&lt;/li&gt;
+&lt;li&gt;저희는 이 값을 0.5로 설정해 놓고 사용하고 있습니다. (50%)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;hbase.regionserver.global.memstore.lowerLimit / hbase.regionserver.global.memstore.upperLimit&lt;/strong&gt;
+
+&lt;ul&gt;
+&lt;li&gt;이 두 개의 설정은 HBase에서 Write 한 값들을 메모리에 캐쉬하고 있는 memstore가 Heap 영역의 얼마만큼을 할당받을지를 나타냅니다.
+이 값이 너무 작으면 메모리에 들고 있을 수 있는 Write의 양이 한정되기 때문에 디스크로 잦은 flush가 일어나게 됩니다.
+반대로 너무 크면 GC에 문제가 있을 수 있으며 Read Cache로 할당할 수 있는 메모리를 낭비하는 것이기 때문에 좋지 않습니다.&lt;/li&gt;
+&lt;li&gt;lowerLimit와 upperLimit의 두 가지 설정이 있는데, 두 개의 설정이 약간 다른 뜻입니다.
+
+&lt;ul&gt;
+&lt;li&gt;만약 memstore 크기의 합이 lowerLimit에 도달하게 되면, Regionserver에서는 memstore들에 대해서 'soft'하게 flush 명령을 내리게 됩니다.
+크기가 큰 memstore 부터 디스크에 쓰이게 되며, 이 작업이 일어나는 동안 새로운 Write가 memstore에 쓰일 수 있습니다.&lt;/li&gt;
+&lt;li&gt;하지만 memstore 크기의 합이 upperLimit에 도달하게 되면, Regionserver는 memstore들에 대한 추가적인 Write를 막는 'hard'한
+flush 명령을 내리게 됩니다. 즉, 해당 Regionserver이 잠시 동안 Write 요청을 거부하게 되는 것입니다.
+보통 lowerLimit에 도달하면 memstore의 크기가 줄어들기 때문에 upperLimit까지 도달하는 경우는 잘 없지만,
+write-heavy 환경에서 Regionserver가 OOM으로 죽는 경우를 방지하기 위해서 hard limit가 존재하는 것으로 보입니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;hfile.block.cache.size와 hbase.regionserver.global.memstore.upperLimit의 합이 0.8 (80%)를 넘을 수 없게 되어 있습니다.
+이는 아마 read cache 와 memstore의 크기의 합이 전체 Heap 영역 중 대부분을 차지해 버리면
+HBase의 다른 구성 요소들이 충분한 메모리를 할당받을 수 없기 때문인 듯합니다.&lt;/li&gt;
+&lt;li&gt;저희는 이 두 개의 설정 값을 각각 0.2, 0.3으로 해 놓았습니다. (20%, 30%)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ipc.client.tcpnodelay / ipc.server.tcpnodelay / hbase.ipc.client.tcpnodelay&lt;/strong&gt;
+
+&lt;ul&gt;
+&lt;li&gt;HDFS의 tcpnodelay 와 비슷한 설정입니다. 기본값은 전부 false입니다.&lt;/li&gt;
+&lt;li&gt;이 설정을 true로 하기 전에는 Get/Put 99%, 99.9% Latency가 40ms 와 80ms 근처에 모이는 현상을 발견할 수 있었습니다.
+전체 요청의 매우 작은 부분이었지만, 평균 Get Latency가 1~2ms 내외이기 때문에 99%, 99.9% tail이 평균 Latency에 큰 영향을 미쳤습니다.&lt;/li&gt;
+&lt;li&gt;이 설정을 전부 true로 바꾼 후에 평균 Latency가 절반으로 하락했습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Heap memory / GC 설정&lt;/strong&gt;
+
+&lt;ul&gt;
+&lt;li&gt;저희는 m2.4xlarge가 제공하는 메모리 (68.4GB)의 상당 부분을 HBase의 Read/Write cache에 할당하였습니다.
+이는 보통 사용하는 Java Heap 공간보다 훨씬 큰 크기이며 심각한 Stop-the-world GC 문제를 일으킬 수 있기 때문에,
+저희는 이 문제를 피하고자 여러 가지 설정을 실험하였습니다.&lt;/li&gt;
+&lt;li&gt;STW GC time을 줄이기 위해서 &lt;a href="http://helloworld.naver.com/helloworld/1329"&gt;Concurrent-Mark-and-sweep GC&lt;/a&gt;를 사용했습니다.&lt;/li&gt;
+&lt;li&gt;HBase 0.92에서부터 기본값으로 설정된 &lt;a href="http://blog.cloudera.com/blog/2011/02/avoiding-full-gcs-in-hbase-with-memstore-local-allocation-buffers-part-1/"&gt;Memstore-Local Allocation Buffer (MSLAB)&lt;/a&gt; 을 사용했습니다.
+  &lt;pre&gt;
+hbase.hregion.memstore.mslab.enabled = true #(default)&lt;/pre&gt;&lt;/li&gt;
+&lt;li&gt;hbase-env.sh 파일을 다음과 같이 설정했습니다.
+&lt;pre&gt;
+HBASE_HEAPSIZE = 61440 #(60GB)
+HBASE_OPTS = "-XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=70 -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps"&lt;/pre&gt;&lt;/li&gt;
+&lt;li&gt;GC log를 Python script로 Parsing해서 STW GC 시간을 관찰하고 있습니다. 지금까지 0.2초 이상의 STW GC는 한 번도 발생하지 않았습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;h2&gt;그 밖에 도움이 될 만한 설정들&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;hbase.hregion.majorcompaction
+
+&lt;ul&gt;
+&lt;li&gt;HBase는 하나의 Region에 대해서 여러 개의 StoreFile을 가질 수 있습니다.
+그리고 주기적으로 성능 향상을 위해서 이 파일들을 모아서 하나의 더 큰 파일로 합치는 과정을 진행하게 됩니다.
+그리고 이 과정은 많은 CPU usage와 Disk IO를 동반합니다. 그리고 이때 반응 속도가 다소 떨어지게 됩니다.
+따라서 반응 속도가 중요한 경우에는, 이 Major compaction을 off-peak 시간대를 정해서 manual 하게 진행하시는 것이 좋습니다.&lt;/li&gt;
+&lt;li&gt;저희는 사용자의 수가 상대적으로 적은 새벽 시간대에 crontab 이 실행시키는 script가 돌면서
+전체 Region에 대해서 하나하나 Major Compaction이 진행되도록 하였습니다.&lt;/li&gt;
+&lt;li&gt;기본값은 86,400,000 (ms)로 되어 있는데, 이 값을 0으로 바꾸시면 주기적인 Major Compaction이 돌지 않게 할 수 있습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;hbase.hregion.max.filesize
+
+&lt;ul&gt;
+&lt;li&gt;HBase는 하나의 Region이 크기가 특정 값 이상이 되면 자동으로 2개의 Region으로 split을 시킵니다.
+Region의 개수가 많지 않을 때는 큰 문제가 없지만, 계속해서 데이터가 쌓이게 되면 필요 이상으로 Region 수가 많아지는 문제를 나을 수 있습니다.
+Region 수가 너무 많아지면 지나친 Disk IO가 생기는 문제를 비롯한 여러 가지 안 좋은 점이 있을 수 있기 때문에, split 역시 manual 하게 하는 것이 좋습니다.
+그렇다고 Table의 Region 수가 너무 적으면 Write 속도가 떨어지거나 Hot Region 문제가 생길 수 있기 때문에 좋지 않습니다.&lt;/li&gt;
+&lt;li&gt;HBase 0.92.1 에서는 기본값이 1073741824(1GB)로 되어 있는데,
+저희는 이 값을 10737418240(10GB)로 늘인 후에 manual 하게 split을 하여 Region의 개수를 조정하고 있습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;hbase.hregion.memstore.block.multiplier
+
+&lt;ul&gt;
+&lt;li&gt;memstore의 전체 크기가 multiplier * flush size보다 크면 추가적인 Write를 막고 flush가 끝날때까지 해당 memstore는 block 됩니다.&lt;/li&gt;
+&lt;li&gt;기본값은 2인데, 저희는 8로 늘려놓고 사용하고 있습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;dfs.datanode.balance.bandwidthPerSec
+
+&lt;ul&gt;
+&lt;li&gt;부수적인 설정이지만, HDFS의 Datanode간의 load balancing이 일어나는 속도를 제한하는 설정입니다.
+기본값은 1MB/sec로 되어 있지만, 계속해서 Datanode를 추가하거나 제거하는 경우에는 기본값으로는 너무 느릴 때가 있습니다.
+저희는 10MB/sec 정도로 늘려서 사용하고 있습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;dfs.namenode.heartbeat.recheck-interval
+
+&lt;ul&gt;
+&lt;li&gt;HDFS namenode에만 해당되는 설정입니다.&lt;/li&gt;
+&lt;li&gt;Datanode가 응답이 없는 경우에 얼마 후에 Hadoop cluster로부터 제거할 것인지를 나타내는 값입니다.&lt;/li&gt;
+&lt;li&gt;실제로 응답이 없는 Datanode가 떨어져 나가기까지는 10번의 heartbeat가 연속해서 실패하고 2번의 recheck역시 실패해야 합니다.
+Heartbeat interval이 기본값인 3초라고 하면, 30초 + 2 * recheck-interval 후에 문제가 있는 Datanode가 제거되는 것입니다.&lt;/li&gt;
+&lt;li&gt;기본값이 5분으로 되어 있는데, fail-over가 늦어지기 때문에 사용하기에는 너무 큰 값입니다.
+저희는 문제가 있는 Datanode가 1분 후에 떨어져 나갈 수 있도록 이 값을 15,000 (ms) 으로 잡았습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Read short-circuit
+
+&lt;ul&gt;
+&lt;li&gt;RegionServer가 로컬 Datanode로부터 block을 읽어올 때 Datanode를 통하지 않고 Disk로부터 바로 읽어올 수 있게 하는 설정입니다.&lt;/li&gt;
+&lt;li&gt;데이터의 양이 많아서 Cache hit이 낮아 데이터 대부분을 디스크에서 읽어와야 할 때 효율적입니다.
+Cache hit에 실패하는 Read의 Throughput이 대략 2배로 좋아지는 것을 확인할 수 있습니다.
+OLAP용 HBase에는 매우 중요한 설정이 될 수 있습니다.&lt;/li&gt;
+&lt;li&gt;하지만 HBase 0.92.1-cdh4.0.1까지는 일부 Region이 checksum에 실패하면서 Major compaction이 되지 않는 버그가 있었습니다.
+현재 이 문제가 해결되었는지 확실하지 않기 때문에 확인되기 전에는 쓰는 것을 추천하지는 않습니다.&lt;/li&gt;
+&lt;li&gt;설정하는 방법은 다음과 같습니다.
+  &lt;pre&gt;
+  dfs.client.read.shortcircuit = true #(hdfs-site.xml)
+  dfs.block.local-path-access.user = hbase #(hdfs-site.xml)
+  dfs.datanode.data.dir.perm = 775 #(hdfs-site.xml)
+  dfs.client.read.shortcircuit = true #(hbase-site.xml)&lt;/pre&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://en.wikipedia.org/wiki/Bloom_filter"&gt;Bloom filter&lt;/a&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://www.jasondavies.com/bloomfilter/"&gt;Bloom filter의 작동방식에 대해 시각적으로 잘 표현된 데모 페이지&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;HBase는 &lt;a href="http://en.wikipedia.org/wiki/Log-structured_merge-tree"&gt;Log-structured-merge tree&lt;/a&gt;를 사용하는데, 하나의 Region에 대해서 여러 개의 파일에 서로 다른 version의 값들이 저장되어 있을 수 있습니다.
+Bloom filter는 이때 모든 파일을 디스크에서 읽어들이지 않고 원하는 값이 저장된 파일만 읽어들일 수 있게 함으로써 Read 속도를 빠르게 만들 수 있습니다.&lt;/li&gt;
+&lt;li&gt;Table 단위로 Bloom filter를 설정해줄 수 있습니다.&lt;/li&gt;
+&lt;li&gt;ROW와 ROWCOL의 두 가지 옵션이 있는데, 전자는 Row key로만 filter를 만드는 것이고, 후자는 Row+Column key로 filter를 만드는 것입니다.
+Table Schema에 따라 더 적합한 설정이 다를 수 있습니다.&lt;/li&gt;
+&lt;li&gt;저희는 데이터 대부분이 메모리에 Cache 되고 하나의 Region에 대해서 여러 개의 StoreFile이 생기기 전에
+compaction을 통해서 하나의 큰 파일로 합치는 작업을 진행하기 때문에, 해당 설정을 사용하지 않고 있습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;h2&gt;결론&lt;/h2&gt;
+
+&lt;p&gt;지금까지 저희가 비트윈을 운영하면서 얻은 경험을 토대로 HBase 최적화 설정법을 정리하였습니다.
+하지만 위의 구성은 어디까지나 비트윈 서비스에 최적화되어 있는 설정이며, HBase의 사용 목적에 따라서 달라질 수 있음을 말씀드리고 싶습니다.
+그래서 단순히 설정값을 나열하기보다는 해당 설정이 어떤 기능을 하는 것인지 저희가 아는 한도 내에서 설명드리려고 하였습니다.
+위의 글에서 궁금한 점이나 잘못된 부분이 있으면 언제든지 답글로 달아주시길 바랍니다. 감사합니다.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <id>http://http://engineering.vcnc.co.kr/2013/04/between-system-architecture</id>
+    <title type="text">비트윈 시스템 아키텍처</title>
+    <link rel="alternate" href="http://engineering.vcnc.co.kr/2013/04/between-system-architecture/"/>
+    <updated>2013-04-18T10:00:00+09:00</updated>
+    <content type="html">&lt;p&gt;&lt;img class="left" style="width:100px;" src="http://engineering.vcnc.co.kr/images/2014/01/between_icon.png"/&gt;
+&lt;a href="http://between.us/team/"&gt;VCNC&lt;/a&gt;는 커플을 위한 모바일 앱 &lt;a href="http://between.us/"&gt;비트윈&lt;/a&gt;을 서비스하고 있습니다.
+비트윈은 사진, 메모, 채팅, 기념일 등 다양한 기능을 제공하며, 오픈 베타 테스트를 시작한 2011년 11월부터 현재까지 연인 간의 소통을 돕고 있습니다.
+그동안 비트윈 시스템 아키텍처에는 많은 변화가 있었으며 다양한 결정을 하였습니다.
+비트윈 아키텍처를 발전시키면서 배우게 된 여러 가지 노하우를 정리하여 공유해보고자 합니다.
+그리고 저희가 앞으로 나아갈 방향을 소개하려 합니다.&lt;/p&gt;
+
+&lt;h2&gt;소프트웨어 스택&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt; &lt;strong&gt;Java&lt;/strong&gt;: 비트윈 API서버는 Java로 작성되어 있습니다.
+이는 처음 비트윈 서버를 만들기 시작할 때, 서버 개발자가 가장 빨리 개발해낼 수 있는 언어로 프로그래밍을 시작했기 때문입니다.
+지금도 자바를 가장 잘 다루는 서버 개발자가 많으므로 여전히 유효한 선택입니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://netty.io/"&gt;Netty&lt;/a&gt;&lt;/strong&gt;: 대부분의 API는 HTTP로 호출되며, 채팅은 모바일 네트워크상에서의 전송 속도를 위해 TCP상에서 프로토콜을 구현했습니다.
+두 가지 모두 Netty를 통해 사용자 요청을 처리합니다.
+Netty를 선택한 것은 뛰어난 성능과 서비스 구현 시 Thrift 서비스를 통해 HTTP와 TCP 프로토콜을 한 번에 구현하기 쉽다는 점 때문이었습니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://thrift.apache.org/"&gt;Thrift&lt;/a&gt;&lt;/strong&gt;: API서버의 모든 서비스는 Thrift 서비스로 구현됩니다.
+따라서 TCP뿐만 아니라 HTTP 또한 Thrift 인터페이스를 사용합니다.
+*HTTP를 굳이 Thrift서비스로 구현한 이유는, TCP로 메세징 전송 시 똑같은 서비스를 그대로 사용하기 위함*이었습니다.
+덕분에 빠른 채팅 구현 시, 이미 구현된 서비스들을 그대로 사용할 수 있었습니다.
+또한, 채팅 패킷들은 *패킷 경량화를 위해 &lt;strong&gt;&lt;a href="https://code.google.com/p/snappy/"&gt;snappy&lt;/a&gt;&lt;/strong&gt;로 압축*하여 송수신합니다.
+모바일 네트워크상에서는 패킷이 작아질수록 속도 향상에 크게 도움이 됩니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://hbase.apache.org/"&gt;HBase&lt;/a&gt;&lt;/strong&gt;: 비트윈의 대부분 트랜젝션은 채팅에서 일어납니다.
+수많은 메시지 트랜젝션을 처리하기 위해 HBase를 선택했으며, 당시 서버 개발자가 가장 익숙한 데이터베이스가 HBase였습니다.
+서비스 초기부터 확장성을 고려했어야 했는데, RDBMS에서 확장성에 대해 생각하는 것보다는
+당장 익숙한 HBase를 선택하고 운영하면서 나오는 문제들은 차차 해결하였습니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://zookeeper.apache.org/"&gt;ZooKeeper&lt;/a&gt;&lt;/strong&gt;: 커플들을 여러 서버에 밸런싱하고 이 정보를 여러 서버에서 공유하기 위해 ZooKeeper를 이용합니다.
+Netflix에서 공개한 오픈 소스인 &lt;strong&gt;&lt;a href="https://github.com/Netflix/curator/"&gt;Curator&lt;/a&gt;&lt;/strong&gt;를 이용하여 접근합니다.&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;h2&gt;AWS&lt;/h2&gt;
+
+&lt;p&gt;비트윈은 AWS의 Tokyo리전에서 운영되고 있습니다.
+처음에는 네트워크 및 성능상의 이유로 국내 IDC를 고려하기도 했으나
+개발자들이 IDC 운영 경험이 거의 없는 것과, IDC의 실질적인 &lt;a href="http://en.wikipedia.org/wiki/Total_cost_of_ownership"&gt;TCO&lt;/a&gt;가 높다는 문제로 클라우드 서비스를 이용하기로 하였습니다.
+당시 클라우드 서비스 중에 가장 안정적이라고 생각했던 AWS 를 사용하기로 결정했었고, 지금도 계속 사용하고 있습니다.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://aws.amazon.com/ec2/"&gt;EC2&lt;/a&gt;&lt;/strong&gt;: 비트윈의 여러 부가적인 서비스를 위해 다양한 종류의 인스턴스를 사용 중이지만,
+메인 서비스를 운용하기 위해서는 c1.xlarge와 m2.4xlarge 인스턴스를 여러 대 사용하고 있습니다.
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;API 서버&lt;/strong&gt;: HTTP 파싱이나 이미지 리시아징등의 연산이 이 서버에서 일어납니다.
+이 연산들은 CPU 가 가장 중요한 리소스이기 때문에, c1.xlarge를 사용하기로 했습니다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Database 서버&lt;/strong&gt;:  HDFS 데이터 노드와 HBase 리전 서버들이 떠있습니다.
+여러 번의 *테스트를 통해 IO가 병목임을 확인하였고, 따라서 모든 데이터를 최대한 메모리에 올리는 것이 가장 저렴한 설정이라는 것을 확인*하였습니다.
+이런 이유 때문에 68.4GB의 메모리를 가진 m2.4xlarge를 Database 서버로 사용하고 있습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://aws.amazon.com/ebs/"&gt;EBS&lt;/a&gt;&lt;/strong&gt;: 처음에는 HBase상 데이터를 모두 EBS에 저장하였습니다.
+하지만 일정 시간 동안 EBS의 Latency가 갑자기 증가하는 등의 불안정한 경우가 자주 발생하여 개선 방법이 필요했는데,
+데이터를 ephemeral storage에만 저장하기에는 안정성이 확인되지 않은 상태였습니다.
+위의 두 가지 문제를 동시에 해결하기 위해서 HDFS multiple-rack 설정을 통해서 두 개의 복제본은 ephemeral storage에 저장하고
+다른 하나의 복제본은 PIOPS EBS에 저장되도록 구성하여 EBS의 문제점들로부터의 영향을 최소화하였습니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://aws.amazon.com/s3/"&gt;S3&lt;/a&gt;&lt;/strong&gt;: 사용자들이 올리는 사진들은 s3에 저장됩니다.
+사진의 s3키는 추측이 불가능하도록 랜덤하게 만들어집니다.
+어차피 하나의 사진은 두 명밖에 받아가지 않고 클라이언트 로컬에 캐싱되기 때문에 CloudFront를 사용하지는 않습니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://aws.amazon.com/elasticloadbalancing/"&gt;ELB&lt;/a&gt;&lt;/strong&gt;: HTTP는 사용자 요청의 분산과 SSL적용을 위해 ELB를 사용합니다. TCP는 TLS를 위해 ELB를 사용합니다.
+*SSL/TLS 부분은 모두 AWS의 ELB를 이용*하는데, 이는 API서버의 SSL/TLS처리에 대한 부담을 덜어주기 위함입니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://aws.amazon.com/cloudwatch/"&gt;CloudWatch&lt;/a&gt;&lt;/strong&gt;: 각 통신사와 리전에서 비트윈 서버로의 네트워크 상태와 서버 내의 요청 처리 시간 등의 메트릭을 CloudWatch로 모니터링 하고 있습니다.
+따라서 네트워크 상태나 서버에 문제가 생긴 경우, 이메일 등을 통해 즉각 알게 되어, 문제 상황에 바로 대응하고 있습니다.
+Netflix의 &lt;strong&gt;&lt;a href="https://github.com/Netflix/servo/"&gt;Servo&lt;/a&gt;&lt;/strong&gt;를 이용하여 모니터링 됩니다.&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;h2&gt;현재의 아키텍처&lt;/h2&gt;
+
+&lt;p&gt;처음 클로즈드 베타 테스트때에는 사용자 수가 정해져 있었기 때문에 하나의 인스턴스로 운영되었습니다.
+하지만 처음부터 인스턴스 숫자를 늘리는 것만으로도 서비스 규모를 쉽게 확장할 수 있는 아키텍쳐를 만들기 위한 고민을 하였습니다.
+오픈 베타 이후에는 발생하는 트래픽에 필요한 만큼 여러 대의 유연하게 서버를 운영하였고,
+현재 채팅은 TCP 위에서 구현한 프로토콜을 이용하여 서비스하고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;   &lt;img src="http://engineering.vcnc.co.kr/images/2013/04/between-system-architecture-01.png" alt="현재 비트윈의 아키텍처" /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt; HTTP 요청은 하나의 ELB를 통해 여러 서버로 분산됩니다. 일반적인 ELB+HTTP 아키텍처와 동일합니다.&lt;/li&gt;
+&lt;li&gt; 채팅은 TCP 연결을 맺게 되는데, 각 커플은 특정 API 서버로 샤딩되어 특정 커플에 대한 요청을 하나의 서버가 담당합니다.
+*비트윈에서는 커플이 샤딩의 단위*가 됩니다.&lt;/li&gt;
+&lt;li&gt; 이를 통해, 채팅 대화 내용 입력 중인지 여부와 같이 굉장히 빈번하게 값이 바뀌는 정보를 인메모리 캐싱할 수 있게 됩니다.
+이런 정보는 휘발성이고 매우 자주 바뀌는 정보이므로, HBase에 저장하는 것은 매우 비효율적입니다.&lt;/li&gt;
+&lt;li&gt; &lt;a href="http://en.wikipedia.org/wiki/Consistent_hashing"&gt;Consistent Hashing&lt;/a&gt;을 이용하여 커플을 각 서버에 샤딩합니다.
+이는 서버가 추가되거나 줄어들 때, 리밸런싱되면서 *서버간 이동되는 커플들의 수를 최소화* 하기 위함입니다.&lt;/li&gt;
+&lt;li&gt; 클라이언트는 샤딩 정보를 바탕으로 특정 서버로 TCP연결을 맺게 되는데, 이를 위해 각 서버에 ELB가 하나씩 붙습니다.
+어떤 서버로 연결을 맺어야 할지는 HTTP 혹은 TCP 프로토콜을 통해 알게 됩니다.&lt;/li&gt;
+&lt;li&gt; Consistent Hashing을 위한 정보는 ZooKeeper를 통해 여러 서버간 공유됩니다.
+이를 통해 서버의 수가 늘어나거나 줄어들게 되는 경우, 각 서버는 자신이 담당해야 하는 샤딩에 대한 변경 정보에 대해 즉각 알게 됩니다.&lt;/li&gt;
+&lt;li&gt; 이런 아키텍처의 단점은 다음과 같습니다.
+
+&lt;ul&gt;
+&lt;li&gt;클라이언트가 자신이 어떤 서버로 붙어야 하는지 알아야 하기 때문에 프로토콜 및 아키텍처 복잡성이 높습니다.&lt;/li&gt;
+&lt;li&gt;서버가 늘어나는 경우, 순식간에 많은 사용자 연결이 맺어지게 됩니다.
+따라서 새로 추가되는 ELB는 Warm-up이 필요로 하며 이 때문에 Auto-Scale이 쉽지 않습니다.&lt;/li&gt;
+&lt;li&gt;HBase에 Write연산시, 여러 서버로 복제가 일어나기 때문에, HA을 위한 &lt;a href="http://blog.rightscale.com/2008/03/26/setting-up-a-fault-tolerant-site-using-amazons-availability-zones/"&gt;Multi-AZ&lt;/a&gt; 구성을 하기가 어렵습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt; 한정된 자원으로 동작 가능한 서버를 빨리 만들어내기 위해 이처럼 디자인하였습니다.&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;h2&gt;미래의 아키텍처&lt;/h2&gt;
+
+&lt;p&gt;현재 아키텍처에 단점을 보완하기 위한 해결 방법을 생각해보았습니다.&lt;/p&gt;
+
+&lt;p&gt;   &lt;img src="http://engineering.vcnc.co.kr/images/2013/04/between-system-architecture-02.png" alt="미래의 비트윈의 아키텍처" /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt; &lt;strong&gt;Haeinsa&lt;/strong&gt;는 HBase상에서 트렌젝션을 제공하기 위해 개발 중인 프로젝트입니다.
+구현 완료 후, 기능 테스트를 통과하였고, 퍼포먼스 테스트를 진행하고 있습니다.
+HBase상에서 트렌젝션이 가능하게 되면, 좀 더 복잡한 기능들을 빠르게 개발할 수 있습니다.
+서비스에 곧 적용될 예정입니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;&lt;a href="http://en.wikipedia.org/wiki/Multitier_architecture"&gt;Multitier Architecture&lt;/a&gt;&lt;/strong&gt;를 통해 클라이언트와 서버 간에 프로토콜을 단순화시킬 수 있습니다.
+이 부분은 개발 초기부터 생각하던 부분인데, 그동안 개발을 하지 못하고 있다가, 지금은 구현을 시작하고 있습니다.
+커플은 특정 Application 서버에서 담당하게 되므로, 인메모리 캐싱이 가능하게 됩니다.
+클라이언트는 무조건 하나의 ELB만 바라보고 요청을 보내게 되고, Presentation 서버가 사용자 요청을 올바른 Application 서버로 릴레이 하게 됩니다.&lt;/li&gt;
+&lt;li&gt; Multitier Architecture를 도입하면, 더 이상 ELB Warm-up이 필요하지 않게 되므로,
+Auto-Scale이 가능하게 되며, 좀 더 쉬운 배포가 가능하게 됩니다.&lt;/li&gt;
+&lt;li&gt; &lt;strong&gt;Rocky&lt;/strong&gt;는 API 서버의 Auto-Failover와 커플에 대한 샤딩을 직접 처리하는 기능을 가진 프로젝트입니다.
+현재 설계가 어느 정도 진행되어 개발 중에 있습니다. 알람이 왔을 때 서버 팀이 마음을 놓고 편히 잠을 잘 수 있는 역할을 합니다.&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;p&gt;기본적인 것은 위에서 언급한 구조와 동일하지만 몇 가지 기능이 설정을 추가하면 &lt;a href="http://blog.rightscale.com/2008/03/26/setting-up-a-fault-tolerant-site-using-amazons-availability-zones/"&gt;Multi-AZ&lt;/a&gt; 구성이 가능합니다.&lt;/p&gt;
+
+&lt;p&gt;   &lt;img src="http://engineering.vcnc.co.kr/images/2013/04/between-system-architecture-03.png" alt="먼 미래의 비트윈의 아키텍처" /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt; 특정 커플에 대한 모든 정보는 하나의 HBase Row에 담기게 됩니다.&lt;/li&gt;
+&lt;li&gt; HBase의 특정 리전에 문제가 생긴 경우, 일정 시간이 지나면 자동으로 복구되긴 하지만 잠시 동안 시스템 전체에 문제가 생기가 됩니다.
+이에 대해 &lt;a href="http://highscalability.com/blog/2013/4/15/scaling-pinterest-from-0-to-10s-of-billions-of-page-views-a.html"&gt;Pinterest에서 Clustering보다는 Sharding이 더 낫다는 글&lt;/a&gt;을 쓰기도 했습니다.
+이에 대한 해결책은 다음과 같습니다.
+
+&lt;ul&gt;
+&lt;li&gt;원래는 Consistent Hashing을 사용하여 커플들을 Application 서버에 샤딩하였습니다.
+하지만 이제는 HBase에서 Row를 각 리전에 수동으로 할당하고,
+같은 리전에 할당된 Row에 저장된 커플들은 같은 Application 서버에 할당하도록 합니다.&lt;/li&gt;
+&lt;li&gt;이 경우에, 같은 커플들을 담당하는 Application 서버와 HBase 리전 서버는 물리적으로 같은 머신에 둡니다.&lt;/li&gt;
+&lt;li&gt;이렇게 구성 하는 경우, 특정 HBase 리전이나 Application 서버에 대한 장애는 특정 샤드에 국한되게 됩니다.
+이와 같이 하나의 머신에 APP과 DB를 같이 두는 구성은 &lt;a href="http://static.googleusercontent.com/external_content/untrusted_dlcp/research.google.com/ko//people/jeff/MIT_BigData_Sep2012.pdf"&gt;구글에서도 사용하는 방법&lt;/a&gt;입니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt; 이와 같이 구성하는 경우, &lt;a href="http://blog.rightscale.com/2008/03/26/setting-up-a-fault-tolerant-site-using-amazons-availability-zones/"&gt;Multi-AZ&lt;/a&gt; 구성이 가능하게 됩니다.
+
+&lt;ul&gt;
+&lt;li&gt;AWS에서 같은 리전에서 서로 다른 Zone간 통신은 대략 2~3ms 정도 걸린다고 합니다.&lt;/li&gt;
+&lt;li&gt;Presentation의 경우, 비동기식으로 동작하기 때문에 다른 리전으로 요청을 보내도 부담이 되지 않습니다.&lt;/li&gt;
+&lt;li&gt;HBase에서 Write가 일어나면 여러 복제본을 만들게 됩니다.
+하나의 사용자 요청에 대해 Write가 여러번 일어나기 때문에 HBase연산의 경우에는 서로 다른 Zone간 Latency가 부담으로 작용됩니다.
+Haeinsa가 적용되면, 한 트렌젝션에 대해서 연산을 Batch로 전송하기 때문에 AZ간 Latency 부담이 적습니다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;h2&gt;프리젠테이션&lt;/h2&gt;
+
+&lt;p&gt;다음은 2월에 있었던 &lt;a href="http://www.slideshare.net/awskr/presentations/"&gt;AWS 유저 그룹 세미나&lt;/a&gt;에서 발표했던 자료 입니다.
+비트윈 서버 아키텍처에 대해서 배포 방법을 중심으로 설명이 되어 있습니다.
+비슷한 내용이 많이 있으니 살펴보시기 바랍니다.&lt;/p&gt;
+
+&lt;script async class="speakerdeck-embed" data-id="e4af60d05bb6013025f71231381b23b3" data-ratio="1.33333333333333" src="http://engineering.vcnc.co.kr//speakerdeck.com/assets/embed.js"&gt;&lt;/script&gt;
+
+
+
+</content>
+  </entry>
+  <entry>
+    <id>http://http://engineering.vcnc.co.kr/2013/04/hello-world</id>
+    <title type="text">VCNC 엔지니어링 블로그를 시작합니다.</title>
+    <link rel="alternate" href="http://engineering.vcnc.co.kr/2013/04/hello-world/"/>
+    <updated>2013-04-15T10:00:00+09:00</updated>
+    <content type="html">&lt;p&gt;&lt;a href="http://between.us/team/"&gt;VCNC&lt;/a&gt;는 &lt;a href="http://between.us/"&gt;커플 필수 앱 비트윈&lt;/a&gt;을 만드는 스타트업입니다.
+비트윈은 2011년 11월 말에 오픈 베타를 시작하여, 지난 17개월 간 한국과 일본, 그리고 다른 여러 나라에서 총 &lt;strong&gt;300만 건의 다운로드&lt;/strong&gt;가 되었습니다.
+연인들은 &lt;strong&gt;하루에 2천만 건의 메시지&lt;/strong&gt;를 비트윈을 통해 주고받으며, 데이트를 마친 후에는, &lt;strong&gt;총 30만 건의 사진&lt;/strong&gt;들을 비트윈을 통해 공유합니다.
+비트윈팀은 더 많은 연인들의 오프라인 관계성을 증진하기 위해 계속해서 서비스를 개선 하고 있습니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;VCNC 엔지니어링 블로그&lt;/strong&gt;는 그 동안 비트윈 개발팀이 맞닥뜨린 기술적인 이슈에 대해서 다룰 예정이며, 블로그를 통해 아래와 같은 것들을 이루고자 합니다.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;저희의 개발 문화를 공유하고자 합니다&lt;/strong&gt;&lt;br/&gt;
+VCNC에는 여러 개발자들이 함께 즐겁게 일하고 있습니다.
+저희는 개발팀의 업무가 즐겁다고 생각하며 저희가 매일매일 마주치고 있는 문제들과 해결법들을 다른 사람들에게 알리고 싶습니다.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;도움을 받은 것에 대해 보답하고자 합니다&lt;/strong&gt;&lt;br/&gt;
+다른 분들이 블로그 등을 통해 공유한 많은 정보들이 없었다면, 비트윈을 만들면서 맞닥뜨린 여러 기술적인 문제들을 해결할 수 없었을 것입니다.
+도움을 받은 것에 대한 보답으로 저희도 노하우를 공유하고자 합니다.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;다른 분들께 도움이 되고자 합니다&lt;/strong&gt;&lt;br/&gt;
+비트윈은 여러 가지 기술들을 사용하면서 다양한 결정들을 내렸습니다. 올바른 결정도 있었고, 잘못 내린 결정들도 있었습니다.
+이런 경험들이 다른 분들의 결정에 도움이 될 수 있다면 좋겠습니다.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;서비스의 투명성을 위함 입니다&lt;/strong&gt;&lt;br/&gt;
+저희는 비트윈 사용자나 파트너들이 저희의 서비스가 어떻게 만들어졌는지 알 수 있어야 한다고 생각합니다.
+투명성이 높아지면, 저희 스스로도 더욱 높은 기준을 지향하게 되고 사용자들도 비트윈을 더욱 믿고 사용할 수 있을 것입니다.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;피드백을 받고자 합니다&lt;/strong&gt;&lt;br/&gt;
+저희는 뛰어난 개발자 분들의 비판적인 피드백을 받고 싶습니다.
+저희의 생각들을 살펴보시고 의견을 주시면 큰 도움이 될 것 같습니다.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;p&gt;앞으로 블로그에 글을 꾸준히 올리고자 합니다. 앞으로 올라올 글들과 비트윈에  많은 관심을 가져주시기 바랍니다.&lt;/p&gt;
+</content>
+  </entry>
+</feed>

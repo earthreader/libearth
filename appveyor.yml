@@ -1,0 +1,31 @@
+version: "{build}"
+environment:
+  matrix:
+  - PYTHON: "C:\\Python26_32"
+    PYTHON_VERSION: "2.6.6"
+    PYTHON_ARCH: "32"
+  - PYTHON: "C:\\Python27_32"
+    PYTHON_VERSION: "2.7.8"
+    PYTHON_ARCH: "32"
+  - PYTHON: "C:\\Python32_32"
+    PYTHON_VERSION: "3.2.5"
+    PYTHON_ARCH: "32"
+  - PYTHON: "C:\\Python33_32"
+    PYTHON_VERSION: "3.3.5"
+    PYTHON_ARCH: "32"
+  - PYTHON: "C:\\Python34_32"
+    PYTHON_VERSION: "3.4.1"
+    PYTHON_ARCH: "32"
+matrix:
+  fast_finish: true
+init:
+- "ECHO %PYTHON%"
+- ps: "ls C:/Python*"
+install:
+- "git -C %APPVEYOR_BUILD_FOLDER% submodule update --init"
+- ps: (new-object net.webclient).DownloadFile('https://raw.githubusercontent.com/ogrisel/python-appveyor-demo/master/appveyor/install.ps1', 'C:/python-install.ps1')
+- "powershell C:/python-install.ps1"
+- "%PYTHON%\\Scripts\\pip.exe install -e . pytest mock pytest-capturelog"
+build: false
+test_script:
+- "%PYTHON%\\Scripts\\py.test.exe --durations=5 tests"

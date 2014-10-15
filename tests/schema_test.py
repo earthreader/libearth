@@ -3,10 +3,13 @@ import collections
 
 from pytest import fixture, mark, raises
 
+from libearth.codecs import Integer
 from libearth.compat import (IRON_PYTHON, binary_type, text, text_type,
                              string_type)
 from libearth.compat.etree import fromstringlist, tostring
-from libearth.schema import (Attribute, Child, Codec, Content,
+from libearth.parser.rss2 import parse_rss2
+from libearth.schema import (SCHEMA_XMLNS,
+                             Attribute, Child, Codec, Content,
                              DescriptorConflictError, DocumentElement,
                              Element, ElementList, EncodeError, IntegrityError,
                              Text,
@@ -14,6 +17,7 @@ from libearth.schema import (Attribute, Child, Codec, Content,
                              inspect_attributes, inspect_child_tags,
                              inspect_content_tag, inspect_xmlns_set,
                              is_partially_loaded, read, validate, write)
+from libearth.subscribe import SubscriptionList
 
 
 def u(text):
@@ -48,8 +52,12 @@ class TestDoc(DocumentElement):
     title_attr = Child('title', TextElement, required=True)
     content_attr = Child('content', TextElement, required=True)
     multi_attr = Child('multi', TextElement, multiple=True)
+    sorted_children = Child('s-multi', TextElement,
+                            multiple=True, sort_key=lambda e: e.value)
     text_content_attr = Text('text-content')
     text_multi_attr = Text('text-multi', multiple=True)
+    sorted_texts = Text('s-text-multi',
+                        multiple=True, sort_key=lambda t: t, sort_reverse=True)
     text_decoder = Text('text-decoder', decoder=float, encoder=str)
     text_decoder_decorator = Text('text-decoder-decorator')
     text_combined_decoder = Text('text-combined-decoder',
@@ -134,6 +142,10 @@ def fx_test_doc():
         '\t', '<text-multi>', 'a', '</text-multi>',
         ['TEXT_MULTI_1_CLOSE'], '\n',
         '\t', '<multi>', 'c', '</multi>', ['MULTI_3_CLOSE'], '\n',
+        '\t', '<s-multi>c</s-multi><s-multi>a</s-multi><s-multi>b</s-multi>\n',
+        '\t', '<s-text-multi>c</s-text-multi>', '\n',
+        '\t', '<s-text-multi>a</s-text-multi>', '\n',
+        '\t', '<s-text-multi>b</s-text-multi>', '\n',
         '\t', '<text-multi>', 'b', '</text-multi>',
         ['TEXT_MULTI_2_CLOSE'], '\n',
         '\t', '<text-decoder>', '123.456', '</text-decoder>', '\n',
@@ -336,7 +348,18 @@ class AnotherElementList(collections.Sequence):
     pass
 
 
-def test_element_list_register_specialized_type(fx_test_doc):
+@fixture
+def fx_sandboxed_specialized_types(request):
+    initial_state = ElementList.specialized_types
+    ElementList.specialized_types = {}
+
+    @request.addfinalizer
+    def rollback_to_initial_state():
+        ElementList.specialized_types = initial_state
+
+
+def test_element_list_register_specialized_type(fx_sandboxed_specialized_types,
+                                                fx_test_doc):
     ElementList.register_specialized_type(TextElement, SpecializedElementList)
     doc, _ = fx_test_doc
     assert isinstance(doc.multi_attr, SpecializedElementList)
@@ -348,17 +371,15 @@ def test_element_list_register_specialized_type(fx_test_doc):
     # Does nothing if the given specialized element list type is the same to
     # the previously registered element list type
     ElementList.register_specialized_type(TextElement, SpecializedElementList)
-    ElementList.specialized_types.clear()  # FIXME: implementation details leak
 
 
-def test_element_list_for(fx_test_doc):
+def test_element_list_for(fx_sandboxed_specialized_types, fx_test_doc):
     @element_list_for(TextElement)
     class Decorated(SpecializedElementList):
         pass
     doc, _ = fx_test_doc
     assert isinstance(doc.multi_attr, Decorated)
     assert doc.multi_attr.test_extended_method() == len(doc.multi_attr)
-    ElementList.specialized_types.clear()  # FIXME: implementation details leak
 
 
 def test_document_element_tag():
@@ -564,8 +585,9 @@ def test_attribute_descriptor_conflict():
 
 def test_write_test_doc(fx_test_doc):
     doc, _ = fx_test_doc
-    g = write(doc, indent='    ', canonical_order=True)
-    assert ''.join(g) == '''\
+    gf = lambda: write(doc, indent='    ', canonical_order=True, hints=False)
+    print(''.join(gf()))
+    assert ''.join(gf()) == '''\
 <?xml version="1.0" encoding="utf-8"?>
 <test xmlns:ns0="http://earthreader.github.io/"\
  attr="속성 값" attr-decoder="decoder test">
@@ -574,9 +596,15 @@ def test_write_test_doc(fx_test_doc):
     <multi>a</multi>
     <multi>b</multi>
     <multi>c</multi>
+    <s-multi>a</s-multi>
+    <s-multi>b</s-multi>
+    <s-multi>c</s-multi>
     <text-content>텍스트 내용</text-content>
     <text-multi>a</text-multi>
     <text-multi>b</text-multi>
+    <s-text-multi>c</s-text-multi>
+    <s-text-multi>b</s-text-multi>
+    <s-text-multi>a</s-text-multi>
     <text-decoder>123.456</text-decoder>
     <text-decoder-decorator>123</text-decoder-decorator>
     <text-combined-decoder>1234</text-combined-decoder>
@@ -607,34 +635,44 @@ def test_write_test_doc_tree(fx_test_doc):
     assert tree[2].text == 'a'
     assert tree[3].text == 'b'
     assert tree[4].text == 'c'
-    assert tree[5].tag == 'text-content'
-    assert not tree[5].attrib
-    assert tree[5].text == u('텍스트 내용')
-    assert tree[6].tag == tree[7].tag == 'text-multi'
-    assert tree[6].attrib == tree[7].attrib == {}
-    assert tree[6].text == 'a'
-    assert tree[7].text == 'b'
-    assert tree[8].tag == 'text-decoder'
+    assert tree[5].tag == tree[6].tag == tree[7].tag == 's-multi'
+    assert tree[5].attrib == tree[6].attrib == tree[7].attrib == {}
+    assert tree[5].text == 'a'
+    assert tree[6].text == 'b'
+    assert tree[7].text == 'c'
+    assert tree[8].tag == 'text-content'
     assert not tree[8].attrib
-    assert tree[8].text == '123.456'
-    assert tree[9].tag == 'text-decoder-decorator'
-    assert not tree[9].attrib
-    assert tree[9].text == '123'
-    assert tree[10].tag == 'text-combined-decoder'
-    assert not tree[10].attrib
-    assert tree[10].text == '1234'
-    assert tree[11].tag == '{http://earthreader.github.io/}ns-element'
-    assert tree[11].attrib == {
+    assert tree[8].text == u('텍스트 내용')
+    assert tree[9].tag == tree[10].tag == 'text-multi'
+    assert tree[9].attrib == tree[10].attrib == {}
+    assert tree[9].text == 'a'
+    assert tree[10].text == 'b'
+    assert tree[11].tag == tree[12].tag == tree[13].tag == 's-text-multi'
+    assert tree[11].attrib == tree[12].attrib == tree[13].attrib == {}
+    assert tree[11].text == 'c'
+    assert tree[12].text == 'b'
+    assert tree[13].text == 'a'
+    assert tree[14].tag == 'text-decoder'
+    assert not tree[14].attrib
+    assert tree[14].text == '123.456'
+    assert tree[15].tag == 'text-decoder-decorator'
+    assert not tree[15].attrib
+    assert tree[15].text == '123'
+    assert tree[16].tag == 'text-combined-decoder'
+    assert not tree[16].attrib
+    assert tree[16].text == '1234'
+    assert tree[17].tag == '{http://earthreader.github.io/}ns-element'
+    assert tree[17].attrib == {
         '{http://earthreader.github.io/}ns-attr': 'namespace attribute value'
     }
-    assert tree[11].text == 'Namespace test'
-    assert tree[12].tag == '{http://earthreader.github.io/}ns-text'
-    assert not tree[12].attrib
-    assert tree[12].text == 'Namespace test'
-    assert tree[13].tag == 'content-decoder'
-    assert tree[13].text == 'CONTENT DECODER'
-    assert not tree[13].attrib
-    assert len(tree) == 14
+    assert tree[17].text == 'Namespace test'
+    assert tree[18].tag == '{http://earthreader.github.io/}ns-text'
+    assert not tree[18].attrib
+    assert tree[18].text == 'Namespace test'
+    assert tree[19].tag == 'content-decoder'
+    assert tree[19].text == 'CONTENT DECODER'
+    assert not tree[19].attrib
+    assert len(tree) == 20
 
 
 def test_write_xmlns_doc(fx_xmlns_doc):
@@ -643,6 +681,7 @@ def test_write_xmlns_doc(fx_xmlns_doc):
     assert ''.join(g) == text_type('''\
 <?xml version="1.0" encoding="utf-8"?>
 <ns0:nstest xmlns:ns0="http://earthreader.github.io/"\
+ xmlns:libearth="http://earthreader.org/schema/"\
  xmlns:ns1="https://github.com/earthreader/libearth">
     <ns0:samens>Same namespace</ns0:samens>
     <ns1:otherns>Other namespace</ns1:otherns>
@@ -780,11 +819,12 @@ class VTElement(Element):
     attr = Attribute('b')
     req_child = Child('c', TextElement, required=True)
     child = Child('d', TextElement)
+    req_text = Text('e', required=True)
+    text = Text('f')
 
     def __repr__(self):
-        return 'VTElement(req_attr={0!r}, req_child={1!r})'.format(
-            self.req_attr, self.req_child
-        )
+        fmt = 'VTElement(req_attr={0!r}, req_child={1!r}, req_text={2!r})'
+        return fmt.format(self.req_attr, self.req_child, self.req_text)
 
 
 class VTDoc(DocumentElement):
@@ -794,30 +834,64 @@ class VTDoc(DocumentElement):
     attr = Attribute('b')
     req_child = Child('c', VTElement, required=True)
     child = Child('d', VTElement)
+    multi = Child('e', VTElement, multiple=True)
+    req_text = Text('f', required=True)
+    text = Text('g')
 
     def __repr__(self):
-        return 'VTDoc(req_attr={0!r}, req_child={1!r})'.format(
-            self.req_attr, self.req_child
-        )
+        fmt = 'VTDoc(req_attr={0!r}, req_child={1!r}, req_text={2!r})'
+        return fmt.format(self.req_attr, self.req_child, self.req_text)
 
 
 @mark.parametrize(('element', 'recur_valid', 'valid'), [
     (VTDoc(), False, False),
     (VTDoc(req_attr='a'), False, False),
     (VTDoc(req_child=VTElement()), False, False),
+    (VTDoc(req_text='f'), False, False),
     (VTDoc(req_child=VTElement(req_attr='a')), False, False),
     (VTDoc(req_child=VTElement(req_child=TextElement(value='a'))),
      False, False),
     (VTDoc(req_child=VTElement(req_attr='a',
                                req_child=TextElement(value='a'))),
      False, False),
-    (VTDoc(req_attr='a', req_child=VTElement()), False, True),
-    (VTDoc(req_attr='a', req_child=VTElement(req_attr='a')), False, True),
+    (VTDoc(req_child=VTElement(req_attr='a',
+                               req_child=TextElement(value='a'),
+                               req_text='e')),
+     False, False),
+    (VTDoc(req_attr='a', req_child=VTElement(), req_text='f'), False, True),
+    (VTDoc(req_attr='a', req_child=VTElement(), multi=[], req_text='f'),
+     False, True),
+    (VTDoc(req_attr='a', req_child=VTElement(), multi=[
+        VTElement()
+    ], req_text='f'), False, True),
+    (VTDoc(req_attr='a', req_child=VTElement(), multi=[
+        VTElement(req_attr='a', req_child=TextElement(value='a'))
+    ], req_text='f'), False, True),
+    (VTDoc(req_attr='a', req_child=VTElement(req_attr='a'), req_text='f'),
+     False, True),
+    (VTDoc(req_attr='a', req_child=VTElement(req_attr='a'),
+           multi=[], req_text='f'), False, True),
     (VTDoc(req_attr='a',
-           req_child=VTElement(req_child=TextElement(value='a'))), False, True),
+           req_child=VTElement(req_child=TextElement(value='a')),
+           multi=[], req_text='f'), False, True),
     (VTDoc(req_attr='a',
            req_child=VTElement(req_attr='a',
-                               req_child=TextElement(value='a'))), True, True)
+                               req_child=TextElement(value='a'),
+                               req_text='e'),
+           multi=[], req_text='f'), True, True),
+    (VTDoc(req_attr='a',
+           req_child=VTElement(req_attr='a',
+                               req_child=TextElement(value='a'),
+                               req_text='e'),
+           multi=[VTElement()], req_text='f'), False, True),
+    (VTDoc(req_attr='a',
+           req_child=VTElement(req_attr='a',
+                               req_child=TextElement(value='a'),
+                               req_text='e'),
+           multi=[VTElement(req_attr='a',
+                            req_child=TextElement(value='a'),
+                            req_text='e')],
+           req_text='f'), True, True)
 ])
 def test_validate_recurse(element, recur_valid, valid):
     assert validate(element, recurse=True, raise_error=False) is recur_valid
@@ -971,7 +1045,11 @@ def test_write_none_text():
 class DefaultAttrTestDoc(DocumentElement):
 
     __tag__ = 'default-attr-test'
-    default_attr = Attribute('default-attr', IntPair, default=(0, 0))
+    attr = Attribute('attr', Integer)
+    default_attr = Attribute(
+        'default-attr', IntPair,
+        default=lambda e: (e.attr, e.attr * 2) if e.attr else (0, 0)
+    )
 
 
 def test_attribute_default():
@@ -986,6 +1064,20 @@ def test_attribute_default():
     assert present.default_attr == (1, 2)
     lack = read(DefaultAttrTestDoc, [b'<default-attr-test />'])
     assert lack.default_attr == (0, 0)
+
+
+def test_attribute_default_depending_element():
+    present = DefaultAttrTestDoc(attr=5, default_attr=(1, 2))
+    assert present.default_attr == (1, 2)
+    lack = DefaultAttrTestDoc(attr=5)
+    assert lack.default_attr == (5, 10)
+    present = read(
+        DefaultAttrTestDoc,
+        [b'<default-attr-test attr="5" default-attr="1,2" />']
+    )
+    assert present.default_attr == (1, 2)
+    lack = read(DefaultAttrTestDoc, [b'<default-attr-test attr="5" />'])
+    assert lack.default_attr == (5, 10)
 
 
 class PartialLoadTestEntry(DocumentElement):
@@ -1097,3 +1189,116 @@ def test_element_coerce_from(fx_test_doc):
     assert doc.multi_attr[2].value == 'test'
     with raises(TypeError):
         doc.multi_attr[1:] = ['slice test', 123]
+
+
+rss_template_with_title = '''
+<rss version="2.0" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/"
+     xmlns:activity="http://activitystrea.ms/spec/1.0/" >
+    <channel>
+        <title>{0}</title>
+    </channel>
+</rss>
+'''
+
+
+def test_write_subscription_with_ascii_title():
+    rss = rss_template_with_title.format('english')
+    feed, _ = parse_rss2(rss)
+    feed.id = 'id'
+
+    sublist = SubscriptionList()
+    sublist.subscribe(feed)
+
+    g = write(sublist)
+    assert ''.join(g)
+
+
+def test_write_subscription_with_nonascii_title():
+    '''SubscriptionList convert the feed title to :class:`str`, and
+    :class:`write` try to encode the title in utf8.
+    When non-ascii characters are in the title, UnicodeDecodeError is raised.
+    '''
+    rss = rss_template_with_title.format('한글')
+    feed, _ = parse_rss2(rss)
+    feed.id = 'id'
+
+    sublist = SubscriptionList()
+    sublist.subscribe(feed)
+
+    g = write(sublist)
+    assert ''.join(g)
+
+
+def test_write_hints(fx_test_doc):
+    doc, _ = fx_test_doc
+    doc._hints.update({
+        TestDoc.ns_element_attr: {'abc': '123', 'def': '456'},
+        TestDoc.title_attr: {'ghi': '789', 'jkl': '012'}
+    })
+    g = write(doc, canonical_order=True)
+    tree = fromstringlist(g)
+    hint_tag = '{' + SCHEMA_XMLNS + '}hint'
+    assert tree[0].tag == hint_tag
+    assert tree[0].attrib['tag'] == 'ns-element'
+    assert tree[0].attrib['tag-xmlns'] == 'http://earthreader.github.io/'
+    assert tree[0].attrib['id'] == 'abc'
+    assert tree[0].attrib['value'] == '123'
+    assert tree[1].tag == hint_tag
+    assert tree[1].attrib['tag'] == 'ns-element'
+    assert tree[1].attrib['tag-xmlns'] == 'http://earthreader.github.io/'
+    assert tree[1].attrib['id'] == 'def'
+    assert tree[1].attrib['value'] == '456'
+    assert tree[2].tag == hint_tag
+    assert tree[2].attrib['tag'] == 'title'
+    assert 'tag-xmlns' not in tree[2].attrib
+    assert tree[2].attrib['id'] == 'ghi'
+    assert tree[2].attrib['value'] == '789'
+    assert tree[3].tag == hint_tag
+    assert tree[3].attrib['tag'] == 'title'
+    assert 'tag-xmlns' not in tree[3].attrib
+    assert tree[3].attrib['id'] == 'jkl'
+    assert tree[3].attrib['value'] == '012'
+
+
+@fixture
+def fx_hinted_doc():
+    consume_log = []
+    xml = string_chunks(
+        consume_log,
+        '<test xmlns:l="http://earthreader.org/schema/">', '\n',
+        '\t', '<l:hint tag="multi" id="length" value="3" />', '\n',
+        '\t', '<l:hint tag="s-multi" id="length" value="0" />', ['HINT'], '\n',
+        '\t', '<title>Title</title>', '\n',
+        '\t', '<multi>a</multi>', ['MULTI_STARTED'], '\n',
+        '\t', '<content>Content</content>', '\n',
+        '\t', '<multi>b</multi>', '\n',
+        '\t', '<multi>c</multi>', '\n',
+        '</test>'
+    )
+    doc = read(TestDoc, xml)
+    return doc, consume_log
+
+
+def test_read_hints(fx_hinted_doc):
+    doc, consume_log = fx_hinted_doc
+    assert not doc._hints
+    assert is_partially_loaded(doc)
+    assert doc._partial == 1
+    assert not consume_log or IRON_PYTHON
+    doc.title_attr
+    assert is_partially_loaded(doc)
+    assert doc._partial == 2
+    assert consume_log[-1] == 'HINT' or IRON_PYTHON
+    assert doc._hints == {
+        TestDoc.multi_attr: {'length': '3'},
+        TestDoc.sorted_children: {'length': '0'}
+    }
+
+
+def test_element_list_length_hint(fx_hinted_doc):
+    doc, consume_log = fx_hinted_doc
+    assert len(doc.multi_attr) == 3
+    assert len(doc.sorted_children) == 0
+    assert consume_log == ['HINT'] or IRON_PYTHON

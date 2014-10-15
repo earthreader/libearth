@@ -6,5 +6,8 @@
 
       parser/atom
       parser/autodiscovery
-      parser/heuristic
+      parser/base
+      parser/rss1
       parser/rss2
+      parser/rss_base
+      parser/util

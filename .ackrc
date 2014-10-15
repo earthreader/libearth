@@ -1,0 +1,4 @@
+--ignore-dir=.ipy-env
+--ignore-dir=build
+--ignore-dir=dist
+--ignore-dir=libearth.egg-info

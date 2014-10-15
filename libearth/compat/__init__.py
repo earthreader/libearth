@@ -55,7 +55,9 @@ def binary(string, var=None):
 
     """
     if isinstance(string, text_type):
-        return bytes(string, sys.getdefaultencoding())
+        if IRON_PYTHON:
+            return bytes(string, sys.getdefaultencoding())
+        return string.encode()
     elif isinstance(string, binary_type):
         return string
     if var:

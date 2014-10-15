@@ -13,12 +13,15 @@ except ImportError:
     import urllib.request as urllib2
 
 from pytest import raises, mark
-import mock
 
-from libearth.compat import UNICODE_BY_DEFAULT
+from libearth.compat import UNICODE_BY_DEFAULT, text_type
 from libearth.feed import Feed
-from libearth.parser import atom, rss2
-from libearth.parser.autodiscovery import FeedUrlNotFoundError, autodiscovery
+from libearth.parser.atom import parse_atom
+from libearth.parser.autodiscovery import (AutoDiscovery, FeedLink,
+                                           FeedUrlNotFoundError,
+                                           autodiscovery, get_format)
+from libearth.parser.rss2 import parse_rss2
+from libearth.parser.util import normalize_xml_encoding
 from libearth.schema import read, write
 from libearth.tz import utc
 
@@ -37,9 +40,15 @@ atom_blog = '''
 
 
 def test_autodiscovery_atom():
-    feedlink = autodiscovery(atom_blog, None)[0]
-    assert feedlink.type == 'application/atom+xml'
-    assert feedlink.url == 'http://vio.atomtest.com/feed/atom/'
+    expected = [
+        FeedLink(type='application/atom+xml',
+                 url='http://vio.atomtest.com/feed/atom/')
+    ]
+    feedlinks = autodiscovery(atom_blog, None)
+    assert feedlinks == expected
+    feed_links, icon_links = AutoDiscovery().find(atom_blog)
+    assert feed_links == expected
+    assert icon_links == []
 
 
 rss_blog = '''
@@ -56,9 +65,15 @@ rss_blog = '''
 
 
 def test_autodiscovery_rss2():
-    feedlink = autodiscovery(rss_blog, None)[0]
-    assert feedlink.type == 'application/rss+xml'
-    assert feedlink.url == 'http://vio.rsstest.com/feed/rss/'
+    expected = [
+        FeedLink(type='application/rss+xml',
+                 url='http://vio.rsstest.com/feed/rss/')
+    ]
+    feedlinks = autodiscovery(rss_blog, None)
+    assert feedlinks == expected
+    feed_links, icon_links = AutoDiscovery().find(rss_blog)
+    assert feed_links == expected
+    assert icon_links == []
 
 
 html_with_no_feed_url = b'''
@@ -74,6 +89,8 @@ html_with_no_feed_url = b'''
 def test_autodiscovery_with_no_feed_url():
     with raises(FeedUrlNotFoundError):
         autodiscovery(html_with_no_feed_url, None)
+    feed_links, icon_links = AutoDiscovery().find(html_with_no_feed_url)
+    assert feed_links == icon_links == []
 
 
 binary_rss_blog = b'''
@@ -90,9 +107,15 @@ binary_rss_blog = b'''
 
 
 def test_autodiscovery_with_binary():
-    feedlink = autodiscovery(binary_rss_blog, None)[0]
-    assert feedlink.type == 'application/rss+xml'
-    assert feedlink.url == 'http://vio.rsstest.com/feed/rss/'
+    expected = [
+        FeedLink(type='application/rss+xml',
+                 url='http://vio.rsstest.com/feed/rss/')
+    ]
+    feedlinks = autodiscovery(binary_rss_blog, None)
+    assert feedlinks == expected
+    feed_links, icon_links = AutoDiscovery().find(binary_rss_blog)
+    assert feed_links == expected
+    assert icon_links == []
 
 
 blog_with_two_feeds = '''
@@ -102,6 +125,8 @@ blog_with_two_feeds = '''
             href="http://vio.rsstest.com/feed/rss/" />
         <link rel="alternate" type="application/atom+xml"
             href="http://vio.atomtest.com/feed/atom/" />
+        <link rel="shortcut icon" href="http://vio.atomtest.com/favicon.ico"/>
+        <link rel="icon" href="http://vio.atomtest.com/icon.png"/>
     </head>
     <body>
         Test
@@ -111,11 +136,20 @@ blog_with_two_feeds = '''
 
 
 def test_autodiscovery_with_two_feeds():
-    feedlinks = autodiscovery(blog_with_two_feeds, None)
-    assert feedlinks[0].type == 'application/atom+xml'
-    assert feedlinks[0].url == 'http://vio.atomtest.com/feed/atom/'
-    assert feedlinks[1].type == 'application/rss+xml'
-    assert feedlinks[1].url == 'http://vio.rsstest.com/feed/rss/'
+    expected = [
+        FeedLink(type='application/atom+xml',
+                 url='http://vio.atomtest.com/feed/atom/'),
+        FeedLink(type='application/rss+xml',
+                 url='http://vio.rsstest.com/feed/rss/')
+    ]
+    feed_links = autodiscovery(blog_with_two_feeds, None)
+    assert feed_links == expected
+    feed_links, icon_links = AutoDiscovery().find(blog_with_two_feeds)
+    assert feed_links == expected
+    assert icon_links == [
+        'http://vio.atomtest.com/favicon.ico',
+        'http://vio.atomtest.com/icon.png'
+    ]
 
 
 relative_feed_url = '''
@@ -220,8 +254,8 @@ atom_xml = """
             <name>kjwon</name>
         </author>
         <title>xml base test</title>
-        <published>2013-08-17T03:28:11Z</published>
-        <updated>2013-08-17T03:28:11Z</updated>
+        <published>2013-04-17T03:28:11Z</published>
+        <updated>2013-04-17T03:28:11Z</updated>
     </entry>
     <entry>
         <id>three</id>
@@ -229,7 +263,7 @@ atom_xml = """
             <name>dahlia</name>
         </author>
         <title>source tag test</title>
-        <updated>2013-10-19T00:33:30Z</updated>
+        <updated>2013-01-19T00:33:30Z</updated>
         <source>
             <author>
                 <name>dahlia</name>
@@ -259,9 +293,21 @@ def test_autodiscovery_when_atom():
     assert feed_link.url == 'http://vio.atomtest.com/feed/atom'
 
 
+@mark.parametrize('string', [
+    (lambda x: bytes(x, 'ascii')) if UNICODE_BY_DEFAULT else (lambda x: x),
+    (lambda x: x) if UNICODE_BY_DEFAULT else (lambda x: x.decode())
+])
+def test_get_format(string):
+    assert get_format(string(atom_xml)) is parse_atom
+    assert get_format(string(rss_xml)) is parse_rss2
+    assert get_format(string(atom_blog)) is None
+    assert get_format(string(rss_blog)) is None
+    assert get_format(string(blog_with_two_feeds)) is None
+
+
 def test_atom_parser():
     url = 'http://vio.atomtest.com/feed/atom'
-    crawled_feed, _ = atom.parse_atom(atom_xml, url)
+    crawled_feed, _ = parse_atom(atom_xml, url)
     feed = read(Feed, write(crawled_feed, as_bytes=True))
     title = crawled_feed.title
     assert title.type == feed.title.type
@@ -339,6 +385,35 @@ def test_atom_parser():
     assert source.subtitle == feed_source.subtitle
 
 
+atom_without_id = '''
+    <feed xmlns="http://www.w3.org/2005/Atom">
+        <title type="text">Atom Test</title>
+        <updated>2013-08-19T07:49:20+07:00</updated>
+        <link rel="alternate" type="text/html" href="http://example.com/" />
+        <link rel="self" type="application/atom+xml"
+            href="http://example.com/atom.xml" />
+        <updated>2013-08-10T15:27:04Z</updated>
+    </feed>
+'''
+
+atom_without_id2 = '''
+    <feed xmlns="http://www.w3.org/2005/Atom">
+        <title type="text">Atom Test</title>
+        <updated>2013-08-19T07:49:20+07:00</updated>
+        <link rel="alternate" type="text/html" href="http://example.com/" />
+        <updated>2013-08-10T15:27:04Z</updated>
+    </feed>
+'''
+
+
+def test_atom_without_id():
+    url = 'http://example.com/atom.xml'
+    feed, _ = parse_atom(atom_without_id, url)
+    assert feed.id == url
+    feed, _ = parse_atom(atom_without_id2, url)
+    assert feed.id == url
+
+
 rss_xml = """
 <rss version="2.0">
 <channel>
@@ -407,7 +482,7 @@ class TestHTTPHandler(urllib2.HTTPHandler):
 def test_rss_parser():
     my_opener = urllib2.build_opener(TestHTTPHandler)
     urllib2.install_opener(my_opener)
-    crawled_feed, data_for_crawl = rss2.parse_rss(
+    crawled_feed, data_for_crawl = parse_rss2(
         rss_xml,
         'http://sourcetest.com/rss.xml'
     )
@@ -448,10 +523,6 @@ def test_rss_parser():
             entries[0].updated_at ==
             feed.entries[0].published_at ==
             feed.entries[0].updated_at)
-    assert data_for_crawl == {
-        'lastBuildDate': datetime.datetime(2002, 9, 7, 0, 0, 1, tzinfo=utc),
-        'ttl': '10',
-    }
     source = entries[0].source
     assert source.title.type == feed.entries[0].source.title.type
     assert source.title.value == feed.entries[0].source.title.value
@@ -461,23 +532,6 @@ def test_rss_parser():
     assert source.subtitle.type == feed.entries[0].source.subtitle.type
     assert source.subtitle.value == feed.entries[0].source.subtitle.value
     assert not source.entries
-
-
-def test_log_warnings_during_rss_parsing():
-    my_opener = urllib2.build_opener(TestHTTPHandler)
-    urllib2.install_opener(my_opener)
-    with mock.patch('logging.getLogger') as mock_func:
-        crawled_feed, data_for_crawl = rss2.parse_rss(
-            rss_xml,
-            'http://sourcetest.com/rss.xml'
-        )
-    mock_func.assert_any_call('libearth.parser.rss2.rss_get_channel_data')
-    mock_func.assert_any_call('libearth.parser.rss2.rss_get_item_data')
-    mock_logger = mock_func.return_value
-    for call in mock_logger.method_calls:
-        name, args, _ = call
-        assert name == 'warn'
-        assert args[0] == 'Unknown tag: %s'
 
 
 category_with_no_term = '''
@@ -491,7 +545,7 @@ category_with_no_term = '''
 
 
 def test_category_with_no_term():
-    crawled_feed, crawler_hints = atom.parse_atom(category_with_no_term, None)
+    crawled_feed, crawler_hints = parse_atom(category_with_no_term, None)
     assert not crawled_feed.categories
 
 
@@ -510,8 +564,9 @@ rss_with_no_pubDate = '''
 
 
 def test_rss_with_no_pubDate():
-    feed_data, crawler_hints = rss2.parse_rss(rss_with_no_pubDate)
+    feed_data, crawler_hints = parse_rss2(rss_with_no_pubDate)
     assert feed_data.updated_at
+    assert feed_data.entries[0].updated_at
 
 
 rss_with_empty_title = '''
@@ -528,7 +583,7 @@ rss_with_empty_title = '''
 
 def test_rss_with_empty_title():
     """Empty title should be empty string, not :const:`None`."""
-    feed, crawler_hints = rss2.parse_rss(rss_with_empty_title)
+    feed, crawler_hints = parse_rss2(rss_with_empty_title)
     assert feed.title.value == ''
 
 
@@ -553,8 +608,41 @@ rss_with_guid = '''
 
 
 def test_rss_item_guid():
-    feed_data, crawler_hints = rss2.parse_rss(rss_with_guid, None)
+    feed_data, crawler_hints = parse_rss2(rss_with_guid, None)
     assert feed_data.entries[0].id == \
         'urn:uuid:3F2504E0-4F89-11D3-9A0C-0305E82C3301'
     assert feed_data.entries[1].id == 'http://guidtest.com/1'
     assert feed_data.entries[2].id == ''
+
+
+rss_without_title = '''
+<rss version="2.0">
+  <channel>
+    <description>only description</description>
+  </channel>
+</rss>
+'''
+
+
+def test_rss_without_title():
+    feed, _ = parse_rss2(rss_without_title, None)
+    assert not feed.entries
+    assert (text_type(feed.title) == text_type(feed.subtitle) ==
+            'only description')
+
+
+def test_normalize_xml_encoding():
+    assert normalize_xml_encoding(b'''
+        <?xml version="1.0" encoding="euc-kr" ?>
+        <doc title="\xc0\xce\xc4\xda\xb5\xf9 \xc5\xd7\xbd\xba\xc6\xae" />
+    ''').strip() == (
+        b'<doc title="\xec\x9d\xb8\xec\xbd\x94\xeb\x94\xa9 '
+        b'\xed\x85\x8c\xec\x8a\xa4\xed\x8a\xb8" />'
+    )
+    assert normalize_xml_encoding(b'''
+        <?xml encoding='euc-kr' ?>
+        <doc title="\xc0\xce\xc4\xda\xb5\xf9 \xc5\xd7\xbd\xba\xc6\xae" />
+    ''').strip() == (
+        b'<doc title="\xec\x9d\xb8\xec\xbd\x94\xeb\x94\xa9 '
+        b'\xed\x85\x8c\xec\x8a\xa4\xed\x8a\xb8" />'
+    )

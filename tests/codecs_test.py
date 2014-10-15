@@ -1,4 +1,8 @@
 import datetime
+import locale
+import os
+import random
+import sys
 
 from pytest import mark, raises
 
@@ -62,20 +66,59 @@ def test_rfc3339_with_white_spaces():
     assert codec.decode(rfc_string) == rfc_datetime
 
 
-def test_rfc822():
-    codec = Rfc822()
+def available_alternative_locales():
+    if sys.platform == 'win32':
+        return frozenset()
+    allowed_encs = '.UTF-8', '.US-ASCII', '.CP949', '.eucKR', '.eucJP'
+    try:
+        with os.popen('locale -a') as p:
+            return frozenset(
+                l
+                for l in (locale.normalize(line.strip()) for line in p)
+                if not l.startswith('en_')
+                if l.endswith(allowed_encs)
+            )
+    except (OSError, IOError):
+        return frozenset()
 
-    kst_string = 'Sat, 07 Sep 2013 01:20:43 +0900'
-    invalid_kst_string = 'Sat, 07 Sep 2013 01:20:43 +0900w'
 
-    kst_datetime = datetime.datetime(2013, 9, 7, 1, 20, 43,
-                                     tzinfo=FixedOffset(9 * 60))
-
-    assert codec.decode(kst_string) == kst_datetime
-    assert codec.encode(kst_datetime) == kst_string
-    with raises(DecodeError):
-        decoded = codec.decode(invalid_kst_string)
-        print(decoded)
+@mark.parametrize(('ms', 'string', 'expected'), [
+    (False, 'Sat, 07 Sep 2013 01:20:43 +0900', datetime.datetime(
+        2013, 9, 7, 1, 20, 43,
+        tzinfo=FixedOffset(9 * 60)
+    )),
+    (False, 'Fri, 13 Dec 2013 11:12:50 +0000', datetime.datetime(
+        2013, 12, 13, 11, 12, 50,
+        tzinfo=utc
+    )),
+    (True, 'Sat, 07 Sep 2013 01:20:43.021483 +0900', datetime.datetime(
+        2013, 9, 7, 1, 20, 43, 21483,
+        tzinfo=FixedOffset(9 * 60)
+    )),
+    (True, 'Fri, 13 Dec 2013 11:12:50.912667 +0000', datetime.datetime(
+        2013, 12, 13, 11, 12, 50, 912667,
+        tzinfo=utc
+    ))
+])
+def test_rfc822(ms, string, expected):
+    codec = Rfc822(microseconds=ms)
+    assert codec.decode(string) == expected
+    assert codec.encode(expected) == string
+    # Locale might affect to the way it parses datetime
+    default_locale = locale.getlocale(locale.LC_TIME)
+    alt_locales = available_alternative_locales()
+    if len(alt_locales) > 5:
+        alt_locales = random.sample(alt_locales, 5)
+    try:
+        for alt_locale in alt_locales:
+            try:
+                locale.setlocale(locale.LC_TIME, alt_locale)
+            except locale.Error:
+                pass
+            assert codec.decode(string) == expected
+            assert codec.encode(expected) == string
+    finally:
+        locale.setlocale(locale.LC_TIME, default_locale)
 
 
 def test_rfc822_minus_tz():
@@ -107,16 +150,16 @@ def test_rfc822_namedtz():
 
 def test_rfc822_raise():
     codec = Rfc822()
-
+    invalid_kst_string = 'Sat, 07 Sep 2013 01:20:43 +0900w'
+    with raises(DecodeError):
+        decoded = codec.decode(invalid_kst_string)
+        print(decoded)
     datetime_not_contains_tzinfo = datetime.datetime.now()
     not_valid_rfc822_string = 'Sat, 07 Sep 2013 01:20:43'
-
     with raises(EncodeError):
         codec.encode("it is not datetime.datetime object")
-
     with raises(EncodeError):
         codec.encode(datetime_not_contains_tzinfo)
-
     with raises(DecodeError):
         codec.decode(not_valid_rfc822_string)
 

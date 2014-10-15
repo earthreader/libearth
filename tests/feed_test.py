@@ -90,6 +90,15 @@ def test_person_html():
     ).__html__()
 
 
+def test_link_html_property():
+    link = Link(uri='http://dahlia.kr/', mimetype='text/html')
+    assert link.html
+    link = Link(uri='http://dahlia.kr/', mimetype='application/xhtml+xml')
+    assert link.html
+    link = Link(uri='http://dahlia.kr/', mimetype='application/xml')
+    assert not link.html
+
+
 def test_link_str():
     link = Link(
         uri='http://dahlia.kr/',
@@ -100,7 +109,7 @@ def test_link_str():
     assert text_type(link) == 'http://dahlia.kr/'
 
 
-def test_link_html():
+def test_link_html_method():
     link = Link(
         uri='http://dahlia.kr/',
         relation='alternate',
@@ -135,8 +144,10 @@ def fx_feed_links(fx_feed):
              uri='http://example.com/index.js'),
         Link(relation='alternate', mimetype='application/xml+atom',
              uri='http://example.com/index.atom'),
-        Link(relation='alternate', mimetype='application/xml+rss',
-             uri='http://example.com/index.atom')
+        Link(mimetype='application/xml+rss',
+             uri='http://example.com/index.atom'),
+        Link(relation='icon', mimetype='image/png',
+             uri='http://example.com/favicon.png')
     ])
     return fx_feed
 
@@ -155,6 +166,29 @@ def test_link_list_filter_by_mimetype(fx_feed_links):
         'application/xml+atom',
         'application/xml+rss'
     ]
+
+
+def test_link_list_permalink(fx_feed_links):
+    links = fx_feed_links.links
+    other_link = Link(relation='other', uri='http://example.com/')
+    html_link = Link(relation='other',
+                     mimetype='text/html', uri='http://example.com/')
+    links.extend([other_link, html_link])
+    assert links.permalink is links[1]
+    del links[1:3]
+    assert links.permalink is html_link
+    del links[-1]
+    assert links.permalink is links[0]
+    del links[:-1]
+    assert links.permalink is None
+
+
+def test_link_list_favicon(fx_feed_links):
+    links = fx_feed_links.links
+    assert links.favicon is links[-1]
+    links[-1] = Link(relation='shortcut icon',
+                     uri='http://example.com/favicon.ico')
+    assert links.favicon is links[-1]
 
 
 def test_category_str():
@@ -500,6 +534,21 @@ def test_merge_mark_crawled(fx_stages, fx_feed):
         assert stage.feeds['test'].entries[1].read
 
 
+def test_duplicated_categories(fx_stages, fx_feed):
+    stage, _ = fx_stages
+    feed = fx_feed
+    cate = Category(term='cake')
+
+    feed.categories.append(cate)
+
+    with stage:
+        stage.feeds['test'] = feed
+        stage.feeds['test'] = feed
+        merged_feed = stage.feeds['test']
+
+    assert len(merged_feed.categories) == len(feed.categories)
+
+
 @fixture
 def fx_test_feeds():
     authors = [Person(name='vio')]
@@ -629,20 +678,17 @@ def fx_entries():
 
 def test_merge_sorted(fx_stages, fx_feed, fx_entries):
     stage, _ = fx_stages
-
+    feed_id = get_hash(fx_feed.id)
     with stage:
-        stage.feeds[fx_feed.id] = fx_feed
-
+        stage.feeds[feed_id] = fx_feed
     with stage:
         for entry in fx_entries:
-            feed = stage.feeds[fx_feed.id]
+            feed = stage.feeds[feed_id]
             feed.entries = [entry]
-            stage.feeds[fx_feed.id] = feed
-
+            stage.feeds[feed_id] = feed
     with stage:
-        entries = stage.feeds[fx_feed.id].entries
-        sorted_entries = sorted(entries, key=lambda entry: entry.updated_at,
-                                reverse=True)
-        assert len(entries) == len(sorted_entries)
-        for i in range(len(entries)):
-            assert entries[i] == sorted_entries[i]
+        entries = stage.feeds[feed_id].entries
+        expected = sorted(entries, key=lambda x: x.updated_at, reverse=True)
+        print([entry.title.value for entry in entries])
+        print([entry.title.value for entry in expected])
+        assert list(entries) == expected

@@ -5,6 +5,7 @@ python:
 - 2.7
 - 3.2
 - 3.3
+- 3.4
 env:
 - PYTHON_VM=cpython
 matrix:
@@ -17,8 +18,14 @@ matrix:
   - python: pypy
     env: PYTHON_VM=cpython
 install:
+- echo ko_KR.UTF-8 UTF-8 | sudo tee -a /etc/locale.gen
+- echo ja_JP.UTF-8 UTF-8 | sudo tee -a /etc/locale.gen
+- sudo dpkg-reconfigure -f noninteractive locales
 - if [[ "$PYTHON_VM" == "cpython" ]]; then
-    pip install pytest mock pytest-cov pep8 coveralls;
+    pip install pytest mock pytest-capturelog pep8;
+    if [[ `python -c 'from sys import *;print((3,3)<=version_info<(3,4))'` == False ]]; then
+      pip install pytest-cov coveralls;
+    fi;
   fi
 - if [[ "$PYTHON_VM" == "pypy" ]]; then
     pip install pytest mock;
@@ -39,20 +46,30 @@ install:
   fi
 script:
 - if [[ "$PYTHON_VM" == "cpython" ]]; then
+    pip install -e .;
     python -mlibearth.version;
-    py.test --cov libearth --durations=20 tests || exit $?;
+    if [[ `python -c 'from sys import *;print((3,3)<=version_info<(3,4))'` == True ]]; then
+      py.test -v --durations=20 tests || exit $?;
+    else
+      py.test -v --cov libearth --durations=20 tests || exit $?;
+    fi;
     pep8 || exit $?;
     python docs/coverage.py || exit $?;
   fi
 - if [[ "$PYTHON_VM" == "pypy" ]]; then
+    pip install -e .;
     python -mlibearth.version;
-    py.test --durations=20 tests || exit $?;
+    py.test -v --durations=20 tests || exit $?;
   fi
+# IronPython interpreter frequently get broken, so try once more to make sure our tests actually fail
 - if [[ "$PYTHON_VM" == "ironpython" ]]; then
-    mono IronPython-2.7.4/ipy.exe -X:ExceptionDetail -X:ShowClrExceptions -X:FullFrames pytest.py -v -s --assert=plain tests || exit $?;
+    mono IronPython-2.7.4/ipy.exe -X:ExceptionDetail -X:ShowClrExceptions -X:Frames pytest.py -v -s --assert=plain tests ||
+    mono IronPython-2.7.4/ipy.exe -X:ExceptionDetail -X:ShowClrExceptions -X:Frames pytest.py -v -s --assert=plain tests || exit $?;
   fi
 after_success:
-- if [[ "$PYTHON_VM" == "cpython" ]]; then coveralls; fi
+- if [[ "$PYTHON_VM" == "cpython" && `python -c 'from sys import *;print((3,3)<=version_info<(3,4))'` == False ]]; then
+    coveralls;
+  fi
 notifications:
   irc:
     channels:

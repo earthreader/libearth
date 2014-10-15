@@ -83,7 +83,7 @@ directly access file system e.g. iOS, and in that case the concept of
 repository makes you to store data directly to Dropbox_ or `Google Drive`_
 instead of filesystem.  However in the most cases we will simply use
 :class:`~libearth.repository.FileSystemRepository` even if data are
-synchronized using Dropbox or rsync.
+synchronized using Dropbox or :program:`rsync`.
 
 .. seealso::
 

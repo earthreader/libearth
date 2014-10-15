@@ -8,9 +8,10 @@ formats.
 import collections
 import datetime
 import numbers
+import platform
 import re
 
-from .compat import string_type
+from .compat import IRON_PYTHON, string_type
 from .schema import Codec, DecodeError, EncodeError
 from .tz import FixedOffset, utc
 
@@ -125,7 +126,7 @@ class Rfc3339(Codec):
         match = self.PATTERN.match(text)
         if not match:
             raise DecodeError(repr(text) +
-                              ' is not valid RFC3339 date time string')
+                              ' is not valid RFC 3339 date time string')
         if match.group('tz_offset'):
             tz_hour = int(match.group('tz_offset_hour'))
             tz_minute = int(match.group('tz_offset_minute'))
@@ -157,8 +158,19 @@ class Rfc822(Codec):
     """Codec to encode/decode :class:`datetime.datetime` values to/from
     :rfc:`822` format.
 
+    :param microseconds: whether to preserve and parse microseconds as well.
+                         :const:`False` by default since it's not standard
+                         compliant
+    :type microseconds: :class:`bool`
+
+    .. versionadded:: 0.3.0
+       Added ``microseconds`` option.
+
     """
 
+    WEEKDAYS = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
+    MONTHS = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
+              'Sep', 'Oct', 'Nov', 'Dec')
     TIMEZONES = {
         'UT': FixedOffset(0 * 60),
         'UTC': FixedOffset(0 * 60),
@@ -197,6 +209,36 @@ class Rfc822(Codec):
         "1Y": FixedOffset(12 * 60),
         "1Z": FixedOffset(0 * 60),
     }
+    PATTERN = re.compile(r'''
+        ^ \s*
+        (?:Sun|Mon|Tue|Wed|Thu|Fri|Sat ) , \s+
+        (?P<day> \d\d? ) \s+
+        (?P<month> ''' + '|'.join(MONTHS) + r''' ) \s+
+        (?P<year> \d{4} ) \s+
+        (?P<hour> \d\d ) : (?P<minute> \d\d ) : (?P<second> \d\d )
+        (?: \. (?P<ms> \d{6} ) )? \s+
+        (?P<tz> (?P<tz_offset> (?P<tz_offset_sign> [\+\-] )
+                               (?P<tz_offset_hour> [0-9]{2} ) :?
+                               (?P<tz_offset_minute> [0-9]{2} ) )
+        |       (?P<tz_named>''' + '|'.join(map(re.escape, TIMEZONES)) + r''' )
+        )
+        \s* $
+    ''', re.IGNORECASE | re.VERBOSE)
+
+    def __init__(self, microseconds=False):
+        super(Rfc822, self).__init__()
+        self.microseconds = bool(microseconds)
+        if microseconds:
+            if IRON_PYTHON:
+                # IronPython strftime() seems to ignore %f
+                fmt = ('{w}, {t:%d} {m} {t:%Y %H:%M:%S}.{t.microsecond:06} '
+                       '{tz_h:+03d}{tz_m:02d}')
+            else:
+                fmt = ('{w}, {t:%d} {m} {t:%Y %H:%M:%S}.{t:%f} '
+                       '{tz_h:+03d}{tz_m:02d}')
+        else:
+            fmt = '{w}, {t:%d} {m} {t:%Y %H:%M:%S} {tz_h:+03d}{tz_m:02d}'
+        self._format = fmt.format
 
     def encode(self, value):
         if not isinstance(value, datetime.datetime):
@@ -211,39 +253,51 @@ class Rfc822(Codec):
                     type(self), value
                 )
             )
-
-        res = value.strftime("%a, %d %b %Y %H:%M:%S ")
-        # IronPython strftime() seems to ignore %z
         offset = value.tzinfo.utcoffset(value)
         minutes = offset.seconds // 60
-        res += '{h:+03d}{m:02d}'.format(h=minutes // 60, m=minutes % 60)
+        res = self._format(
+            t=value,
+            w=self.WEEKDAYS[value.weekday()],
+            m=self.MONTHS[value.month - 1],
+            tz_h=minutes // 60,
+            tz_m=minutes % 60
+        )
         return res
 
     def decode(self, text):
-        text = text.strip()
-        day = text[:5]
-        if not re.match(r'^(Sun|Mon|Tue|Wed|Thu|Fri|Sat), $', day, re.I):
-            raise DecodeError(repr(text) + ' is an invalid rfc822 string')
-        timestamp = text[5:25]
-        timezone = text[26:]
+        exc = DecodeError(repr(text) + ' is an invalid rfc822 string')
+        m = self.PATTERN.match(text)
+        if not m:
+            raise exc
+        day = int(m.group('day'))
+        month_string = m.group('month')
         try:
-            res = datetime.datetime.strptime(timestamp, '%d %b %Y %H:%M:%S')
-            matched = re.match(r'^([\+\-])([0-9]{2})([0-9]{2})$', timezone)
-            if matched:
-                offset = FixedOffset(
-                    int(matched.group(2)) * 60 +
-                    int(matched.group(3)) *
-                    (1 if matched.group(1) == '+' else -1)
-                )
-                res = res.replace(tzinfo=offset)
-            elif timezone in self.TIMEZONES:
-                res = res.replace(tzinfo=self.TIMEZONES[timezone])
-            else:
-                raise DecodeError(repr(text) + ' is an invalid rfc822 string')
-        except ValueError as e:
-            raise DecodeError(e)
-
-        return res
+            month = self.MONTHS.index(month_string)
+        except ValueError:
+            raise exc
+        else:
+            month += 1
+        year = int(m.group('year'))
+        hour = int(m.group('hour'))
+        minute = int(m.group('minute'))
+        second = int(m.group('second'))
+        if self.microseconds:
+            ms = int((m.group('ms') or '').lstrip('0') or '0')
+        else:
+            ms = 0
+        if m.group('tz_offset'):
+            tz = FixedOffset(
+                int(m.group('tz_offset_hour')) * 60 +
+                int(m.group('tz_offset_minute')) *
+                (1 if m.group('tz_offset_sign') == '+' else -1)
+            )
+        elif m.group('tz_named'):
+            tz = self.TIMEZONES[m.group('tz_named')]
+        return datetime.datetime(
+            year, month, day,
+            hour, minute, second, ms,
+            tzinfo=tz
+        )
 
 
 class Integer(Codec):
@@ -313,3 +367,8 @@ class Boolean(Codec):
         else:
             raise DecodeError('invalid string')
         return value
+
+
+# Workaround for http://bugs.python.org/issue7980
+if platform.python_implementation() == 'CPython':
+    __import__('_strptime')
