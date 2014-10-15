@@ -321,7 +321,7 @@ class Outline(Element):
     feed_uri = Attribute('xmlUrl')
     alternate_uri = Attribute('htmlUrl')
     children = Child('outline', 'Outline', multiple=True)
-    feed_id = Attribute('id', xmlns=METADATA_XMLNS)
+    _feed_id = Attribute('id', xmlns=METADATA_XMLNS)
 
     _title = Attribute('title')
     _category = Attribute('category', CommaSeparatedList)
@@ -335,6 +335,18 @@ class Outline(Element):
 
         """
         return bool(self.deleted_at and self.deleted_at > self.created_at)
+
+    @property
+    def feed_id(self):
+        if self.feed_uri and not self._feed_id:
+            self._feed_id = hashlib.sha1(
+                self.feed_uri.encode('utf-8')).hexdigest()
+
+        return self._feed_id
+
+    @feed_id.setter
+    def feed_id(self, value):
+        self._feed_id = value
 
     def __eq__(self, other):
         if isinstance(other, Outline):
