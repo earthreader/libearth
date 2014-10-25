@@ -6,6 +6,11 @@ Version 0.3.2
 
 To be released.
 
+- Fixed a bug that :class:`~libearth.subscribe.SubscriptionList`\ s having
+  :class:`~libearth.subscribe.Outline`\ s without their :attr:`created_at
+  <libearth.subscribe.Outline.created_at>` attribute failed to be merged
+  on Python 3.  [:issue:`65`]
+
 
 Version 0.3.1
 -------------
