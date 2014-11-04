@@ -11,6 +11,7 @@
       libearth/compat/parallel
       libearth/compat/xmlpullreader
       libearth/crawler
+      libearth/defaults
       libearth/feed
       libearth/parser
       libearth/repository
