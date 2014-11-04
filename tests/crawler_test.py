@@ -1,24 +1,12 @@
-import datetime
-import functools
-try:
-    import httplib
-except ImportError:
-    from http import client as httplib
-import io
 import os.path
 import time
-try:
-    import urllib2
-except ImportError:
-    from urllib import request as urllib2
 
-from pytest import fixture, mark, raises
+from pytest import mark, raises
 
-from libearth.compat import IRON_PYTHON, text_type
 from libearth.crawler import CrawlError, CrawlResult, crawl, get_feed
 from libearth.feed import Feed, Link, Text
 from libearth.subscribe import Category, SubscriptionList
-from libearth.tz import utc
+from .conftest import MOCK_URLS
 
 
 atom_xml = b"""
@@ -196,7 +184,7 @@ broken_rss = b"""
 """
 
 
-mock_urls = {
+MOCK_URLS.update({
     'http://vio.atomtest.com/feed/atom': (200, 'application/atom+xml',
                                           atom_xml),
     'http://reversedentries.com/feed/atom': (200, 'application/atom+xml',
@@ -217,38 +205,7 @@ mock_urls = {
                                   no_favicon_test_website_xml),
     'http://nofavicontest.com/favicon.ico': (404, 'text/plain', ''),
     'http://brokenrss.com/rss': (200, 'application/rss+xml', broken_rss)
-}
-
-
-class TestHTTPHandler(urllib2.HTTPHandler):
-
-    def http_open(self, req):
-        url = req.get_full_url()
-        try:
-            status_code, mimetype, content = mock_urls[url]
-        except KeyError:
-            return urllib2.HTTPHandler.http_open(self, req)
-        if IRON_PYTHON:
-            from StringIO import StringIO
-            buffer_ = StringIO(content)
-        elif isinstance(content, text_type):
-            buffer_ = io.StringIO(content)
-        else:
-            buffer_ = io.BytesIO(content)
-        resp = urllib2.addinfourl(buffer_, {'content-type': mimetype}, url)
-        resp.code = status_code
-        resp.msg = httplib.responses[status_code]
-        return resp
-
-
-@fixture
-def fx_opener(request):
-    request.addfinalizer(
-        functools.partial(setattr, urllib2, '_opener', urllib2._opener)
-    )
-    opener = urllib2.build_opener(TestHTTPHandler)
-    urllib2.install_opener(opener)
-    return opener
+})
 
 
 def test_crawler(fx_opener):
