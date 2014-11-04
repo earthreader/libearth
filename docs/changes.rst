@@ -4,7 +4,7 @@ Libearth Changelog
 Version 0.3.2
 -------------
 
-To be released.
+Released on November 5, 2014.
 
 - Fixed a bug that :class:`~libearth.subscribe.SubscriptionList`\ s having
   :class:`~libearth.subscribe.Outline`\ s without their :attr:`created_at
