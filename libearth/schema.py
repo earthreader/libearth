@@ -1047,6 +1047,9 @@ class DocumentElement(Element):
             parser.close()
         except xml.sax.SAXException:
             pass
+        del self._parser
+        if hasattr(self, '_iterator'):
+            del self._iterator
         return False
 
 
@@ -1502,9 +1505,11 @@ def complete(element):
     if not isinstance(element, Element):
         raise TypeError('element must be an instance of {0.__module__}.'
                         '{0.__name__}, not {1!r}'.format(Element, element))
-    if element._partial:
+    if element._partial or getattr(element, '_parser', None):
         parse_next = element._root()._parse_next
         while element._partial:
+            parse_next()
+        while getattr(element, '_parser', None):
             parse_next()
 
 

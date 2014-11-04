@@ -276,8 +276,11 @@ class SubscriptionSet(collections.MutableSet):
                                            if child.type == 'rss'
                                            else Category)
                         outline._title = outline.label
-                    child.created_at = max(child.created_at,
-                                           outline.created_at)
+                    if not child.created_at:
+                        child.created_at = outline.created_at
+                    elif outline.created_at:
+                        child.created_at = max(child.created_at,
+                                               outline.created_at)
                     if not child.deleted_at:
                         child.deleted_at = outline.deleted_at
                     elif outline.deleted_at:

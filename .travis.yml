@@ -23,7 +23,7 @@ install:
 - sudo dpkg-reconfigure -f noninteractive locales
 - if [[ "$PYTHON_VM" == "cpython" ]]; then
     pip install pytest mock pytest-capturelog pep8;
-    if [[ `python -c 'from sys import *;print((3,3)<=version_info<(3,4))'` == False ]]; then
+    if [[ `python -c 'from sys import *;print((3,4)<=version_info<(3,5))'` == False ]]; then
       pip install pytest-cov coveralls;
     fi;
   fi
@@ -48,10 +48,14 @@ script:
 - if [[ "$PYTHON_VM" == "cpython" ]]; then
     pip install -e .;
     python -mlibearth.version;
-    if [[ `python -c 'from sys import *;print((3,3)<=version_info<(3,4))'` == True ]]; then
+    if [[ `python -c 'from sys import *;print((3,4)<=version_info<(3,5))'` == True ]]; then
       py.test -v --durations=20 tests || exit $?;
     else
       py.test -v --cov libearth --durations=20 tests || exit $?;
+    fi;
+    if [[ `python -c 'from sys import *;print(version_info in ((2, 7), (3, 4)))'` == True ]]; then
+      pip install lxml || exit $?;
+      py.test -v --durations=20 tests || exit $?;
     fi;
     pep8 || exit $?;
     python docs/coverage.py || exit $?;

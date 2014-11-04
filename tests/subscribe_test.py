@@ -517,3 +517,21 @@ def test_detect_subcategory_changes(fx_stages):
         stage.subscriptions = subs
         assert (stage.subscriptions.categories['first-order']
                                    .categories['second-order'])
+
+
+def test_merge_outlines_without_created_at(fx_stages):
+    """https://github.com/earthreader/libearth/issues/65"""
+    subscriptions = read(SubscriptionList, [b'''
+        <opml version="2.0">
+            <body>
+                <outline text="CNET News.com" type="rss" version="RSS2"
+                    xmlUrl="http://news.com/2547-1_3-0-5.xml"/>
+            </body>
+        </opml>
+    '''])
+    stage, _ = fx_stages
+    with stage:
+        stage.subscriptions = subscriptions
+        read_subscriptions = stage.subscriptions
+        stage.subscriptions = read_subscriptions
+        assert len(stage.subscriptions) == 1
