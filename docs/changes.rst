@@ -10,6 +10,9 @@ To be released.
   :class:`~libearth.subscribe.Outline`\ s without their :attr:`created_at
   <libearth.subscribe.Outline.created_at>` attribute failed to be merged
   on Python 3.  [:issue:`65`]
+- Fixed a bug that a :class:`~libearth.schema.DocumentElement` in streamed
+  read mode is not properly marked as complete even when it's completed by
+  :func:`~libearth.schema.complete()` function in some cases.
 
 
 Version 0.3.1
