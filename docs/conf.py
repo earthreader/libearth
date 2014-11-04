@@ -122,7 +122,7 @@ exclude_patterns = ['_build']
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'borland'
+#pygments_style = 'borland'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -132,9 +132,9 @@ pygments_style = 'borland'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'basic'
+#html_theme = 'default'
 
-html_style = 'libearth.css'
+#html_style = 'libearth.css'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
