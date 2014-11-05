@@ -37,7 +37,7 @@ import collections
 import numbers
 import sys
 
-from . import IRON_PYTHON, PY3
+from . import IRON_PYTHON, PY3, xrange
 
 __all__ = 'cpu_count', 'parallel_map'
 

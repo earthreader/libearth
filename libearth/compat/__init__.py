@@ -77,7 +77,7 @@ def text(string):
 
 
 if PY3 or IRON_PYTHON:
-    def text(string):
+    def text(string):  # noqa
         if isinstance(string, bytes):
             return string.decode('utf-8')
         return string

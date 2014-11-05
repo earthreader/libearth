@@ -7,7 +7,7 @@ from libearth.stage import Stage
 from libearth.subscribe import Body, Category, Subscription, SubscriptionList
 from libearth.schema import read
 from libearth.tz import utc
-from .stage_test import MemoryRepository, fx_repo, fx_session
+from .stage_test import MemoryRepository, fx_repo, fx_session  # noqa
 
 
 @fixture
@@ -389,7 +389,7 @@ def test_subscription_set_subscribe(subs):
     assert rv == sub
 
 
-def test_stage_subscription_list(fx_repo, fx_session):
+def test_stage_subscription_list(fx_repo, fx_session):  # noqa
     stage = Stage(fx_session, fx_repo)
     with stage:
         stage.subscriptions = SubscriptionList()

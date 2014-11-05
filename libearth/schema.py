@@ -1425,8 +1425,8 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                 attr, child = child_tags[tag]
             except KeyError:
                 available_children = [
-                    '{0} (namespace: {1})'.format(name, ns) if xmlns else name
-                    for ns, name in child_tags
+                    '{0} (namespace: {1})'.format(name_, ns) if xmlns else name
+                    for ns, name_ in child_tags
                 ]
                 available_children.sort()
                 available_children = ', '.join(available_children)

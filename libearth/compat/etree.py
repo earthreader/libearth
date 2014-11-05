@@ -56,14 +56,14 @@ except ImportError:
 
 from . import IRON_PYTHON
 
-__all__ = 'fromstring', 'fromstringlist'
+__all__ = 'fromstring', 'fromstringlist', 'tostring'
 
 
 if IRON_PYTHON:
     from xml.etree import ElementTree
     from .clrxmlreader import TreeBuilder
 
-    def fromstring(string, parser=None):
+    def fromstring(string, parser=None):  # noqa
         if parser is None:
             parser = TreeBuilder()
         return ElementTree.fromstring(string, parser)

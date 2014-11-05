@@ -2,7 +2,7 @@ from pytest import mark
 
 from libearth.compat import IRON_PYTHON
 if IRON_PYTHON:
-    import System  # to import bytes.ToByteArray()
+    import System  # noqa: to import bytes.ToByteArray()
     from libearth.compat.clrxmlreader import IteratorStream, TreeBuilder
 
 

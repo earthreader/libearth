@@ -6,7 +6,6 @@ try:
     import StringIO
 except ImportError:
     import io as StringIO
-import datetime
 try:
     import urllib2
 except ImportError:
@@ -23,7 +22,6 @@ from libearth.parser.autodiscovery import (AutoDiscovery, FeedLink,
 from libearth.parser.rss2 import parse_rss2
 from libearth.parser.util import normalize_xml_encoding
 from libearth.schema import read, write
-from libearth.tz import utc
 
 
 atom_blog = '''
