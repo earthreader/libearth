@@ -22,7 +22,7 @@ try:
 except ImportError:
     import urlparse
 
-from .compat import UNICODE_BY_DEFAULT
+from .compat import PY3
 from .subscribe import SubscriptionList
 from .schema import complete, read
 
@@ -59,7 +59,7 @@ def get_default_subscriptions(blogroll_url=DEFAULT_BLOGROLL_URL):
     mimetype = match and match.group(0)
     if mimetype not in BlogrollLinkParser.SUPPORTED_TYPES:
         parser = BlogrollLinkParser()
-        copy = io.StringIO() if UNICODE_BY_DEFAULT else io.BytesIO()
+        copy = io.StringIO() if PY3 else io.BytesIO()
         while 1:
             chunk = response.read(1024)
             if chunk:
@@ -76,9 +76,16 @@ def get_default_subscriptions(blogroll_url=DEFAULT_BLOGROLL_URL):
             copy.close()
             url = urlparse.urljoin(response.url, pair[0])
             response = urllib2.urlopen(url)
-    subscriptions = read(SubscriptionList, response)
-    complete(subscriptions)
-    response.close()
+    if not isinstance(response.read(0), bytes):
+        subscriptions = read(
+            SubscriptionList,
+            [bytes(response.read(), 'utf-8')]  # FIXME
+        )
+        complete(subscriptions)
+    else:
+        subscriptions = read(SubscriptionList, response)
+        complete(subscriptions)
+        response.close()
     return subscriptions
 
 
