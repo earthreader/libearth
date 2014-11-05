@@ -4,7 +4,7 @@ Libearth Changelog
 Version 0.3.3
 -------------
 
-To be released.
+Released on November 6, 2014.
 
 - Fixed a bug that :func:`~libearth.schema.complete()` never terminates
   for documents :func:`~libearth.schema.read()` from a single chunk.
