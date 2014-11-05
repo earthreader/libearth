@@ -25,6 +25,15 @@ To be released.
   of Earth Reader apps.
 
 
+Version 0.3.3
+-------------
+
+Released on November 6, 2014.
+
+- Fixed a bug that :func:`~libearth.schema.complete()` never terminates
+  for documents :func:`~libearth.schema.read()` from a single chunk.
+
+
 Version 0.3.2
 -------------
 

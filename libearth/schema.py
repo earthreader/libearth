@@ -1507,8 +1507,6 @@ def complete(element):
                         '{0.__name__}, not {1!r}'.format(Element, element))
     if element._partial or getattr(element, '_parser', None):
         parse_next = element._root()._parse_next
-        while element._partial:
-            parse_next()
         while getattr(element, '_parser', None):
             parse_next()
 
