@@ -468,6 +468,18 @@ def test_complete(fx_test_doc):
     assert not is_partially_loaded(doc)
 
 
+def test_complete_single_chunk():
+    chunk = b'''
+        <nstest xmlns="http://earthreader.github.io/"
+                xmlns:nst="https://github.com/earthreader/libearth">
+        </nstest>
+    '''
+    doc = read(XmlnsDoc, [chunk])
+    complete(doc)
+    assert doc.samens_attr is None
+    assert doc.otherns_attr is None
+
+
 def test_complete_terminates_streaming():
     f = io.BytesIO(b'''
         <nstest xmlns="http://earthreader.github.io/"

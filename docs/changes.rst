@@ -6,6 +6,9 @@ Version 0.3.3
 
 To be released.
 
+- Fixed a bug that :func:`~libearth.schema.complete()` never terminates
+  for documents :func:`~libearth.schema.read()` from a single chunk.
+
 
 Version 0.3.2
 -------------
