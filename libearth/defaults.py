@@ -1,6 +1,8 @@
 """:mod:`libearth.defaults` --- Default data for initial state of apps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. versionadded:: 0.4.0
+
 This module provides small utilities and default data to fill initial state
 of Earth Reader apps.
 

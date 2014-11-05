@@ -20,6 +20,10 @@ To be released.
     It returns the string consists of an XML namespace and an element tag that
     :mod:`xml.etree.ElementTree` can recognize when finding children elements.
 
+- Introduced new :mod:`libearth.defaults` module.
+  This module provides small utilities and default data to fill initial state
+  of Earth Reader apps.
+
 
 Version 0.3.2
 -------------
