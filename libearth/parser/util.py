@@ -9,7 +9,7 @@ import re
 
 from ..compat import IRON_PYTHON, binary_type, text_type
 
-__all__ = 'XML_ENCODING_PATTERN ', 'normalize_xml_encoding'
+__all__ = 'XML_ENCODING_PATTERN', 'normalize_xml_encoding'
 
 
 XML_ENCODING_PATTERN = re.compile(br'''
