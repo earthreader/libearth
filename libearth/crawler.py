@@ -76,6 +76,10 @@ def crawl(feed_urls, pool_size, timeout=DEFAULT_TIMEOUT):
         func = get_feed
     else:
         func = functools.partial(get_feed, timeout=int(timeout))
+    if pool_size < 1:
+        raise ValueError('pool_size must be greater than zero')
+    elif pool_size == 1:
+        return [func(url) for url in feed_urls]
     return parallel_map(pool_size, func, feed_urls)
 
 
