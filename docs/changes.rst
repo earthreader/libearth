@@ -23,6 +23,12 @@ To be released.
 - Introduced new :mod:`libearth.defaults` module.
   This module provides small utilities and default data to fill initial state
   of Earth Reader apps.
+- HTML sanitizer now does rebase all links in the given document on the base
+  uri.
+  The :meth:`~libearth.feed.Text.get_sanitized_html()` method was added to
+  :class:`~libearth.feed.Text` type.
+  The :func:`~libearth.sanitizer.sanitize_html()` function became to
+  additionally require ``base_uri`` parameter.
 
 
 Version 0.3.3

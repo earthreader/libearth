@@ -1,3 +1,5 @@
+import functools
+
 from libearth.sanitizer import clean_html, sanitize_html
 
 
@@ -42,3 +44,18 @@ def test_sanitize_html():
             '<a href="">Hello</a>')
     assert (sanitize_html('<a href="jscript:alert(1)">Hello</a>') ==
             '<a href="">Hello</a>')
+    # Rebase relative urls
+    base = 'http://localhost/test/'
+    sanitize = functools.partial(sanitize_html, base_uri=base)
+    assert (sanitize('<a href="http://hongminhee.org/">abslink</a>') ==
+            '<a href="http://hongminhee.org/">abslink</a>')
+    assert (sanitize('<link href="http://hongminhee.org/">') ==
+            '<link href="http://hongminhee.org/">')
+    assert (sanitize('<a href="/abspath">abspath</a>') ==
+            '<a href="http://localhost/abspath">abspath</a>')
+    assert (sanitize('<link href="/abspath">') ==
+            '<link href="http://localhost/abspath">')
+    assert (sanitize('<a href="relpath">relpath</a>') ==
+            '<a href="http://localhost/test/relpath">relpath</a>')
+    assert (sanitize('<link href="relpath">') ==
+            '<link href="http://localhost/test/relpath">')

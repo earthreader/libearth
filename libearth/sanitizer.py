@@ -9,8 +9,12 @@ try:
 except ImportError:
     from html import entities as htmlentitydefs, parser as HTMLParser
 import re
+try:
+    import urlparse
+except ImportError:
+    from urllib import parse as urlparse
 
-from .compat import unichr
+from .compat import unichr, xrange
 
 __all__ = 'HtmlSanitizer', 'MarkupTagCleaner', 'clean_html', 'sanitize_html'
 
@@ -30,7 +34,7 @@ def clean_html(html):
     return ''.join(parser.fed)
 
 
-def sanitize_html(html):
+def sanitize_html(html, base_uri=None):
     """Sanitize the given ``html`` string.  It removes the following
     tags and attributes that are not secure nor useful for RSS reader layout:
 
@@ -40,13 +44,21 @@ def sanitize_html(html):
     - ``href`` attributes that start with ``javascript:``, ``jscript:``,
       ``livescript:``, ``vbscript:``, ``data:``, ``about:``, or ``mocha:``.
 
+    Also, it rebases all links on the ``base_uri`` if it's given.
+
     :param html: html string to sanitize
     :type html: :class:`str`
+    :param base_uri: an optional base url to be used throughout the document
+                     for relative url addresses
+    :type base_uri: :class:`str`
     :returns: cleaned plain text
     :rtype: :class:`str`
 
+    .. versionadded:: 0.4.0
+       The ``base_uri`` parameter.
+
     """
-    parser = HtmlSanitizer()
+    parser = HtmlSanitizer(base_uri)
     parser.feed(html)
     return ''.join(parser.fed)
 
@@ -99,8 +111,9 @@ class HtmlSanitizer(HTMLParser.HTMLParser):
         'about', 'mocha'
     ])
 
-    def __init__(self):
+    def __init__(self, base_uri):
         HTMLParser.HTMLParser.__init__(self)
+        self.base_uri = base_uri
         self.fed = []
         self.ignore = False
 
@@ -114,6 +127,11 @@ class HtmlSanitizer(HTMLParser.HTMLParser):
         self.fed.extend(('<', tag))
         disallowed_schemes = tuple(scheme + ':'
                                    for scheme in self.DISALLOWED_SCHEMES)
+        if self.base_uri is not None and tag in ('a', 'link') and attrs:
+            for i in xrange(len(attrs)):
+                a, v = attrs[i]
+                if a == 'href':
+                    attrs[i] = a, urlparse.urljoin(self.base_uri, v)
         self.fed.extend(
             chunk
             for name, value in attrs

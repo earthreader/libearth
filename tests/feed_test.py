@@ -33,30 +33,29 @@ def test_text_str():
             == 'Hello world')
 
 
-def test_sanitized_html():
-    assert (Text(type='text', value='Hello world').sanitized_html ==
-            'Hello world')
-    assert (Text(type='text', value='Hello\nworld').sanitized_html ==
+def test_get_sanitized_html():
+    text = Text(type='text', value='Hello world')
+    assert text.get_sanitized_html() == text.sanitized_html == 'Hello world'
+    text = Text(type='text', value='Hello\nworld')
+    assert (text.get_sanitized_html() == text.sanitized_html ==
             'Hello<br>\nworld')
-    assert (
-        Text(type='text', value='<p>Hello <em>world</em></p>').sanitized_html
-        == '&lt;p&gt;Hello &lt;em&gt;world&lt;/em&gt;&lt;/p&gt;'
-    )
-    assert (Text(type='html', value='Hello world').sanitized_html ==
+    text = Text(type='text', value='<p>Hello <em>world</em></p>')
+    assert (text.get_sanitized_html() == text.sanitized_html ==
+            '&lt;p&gt;Hello &lt;em&gt;world&lt;/em&gt;&lt;/p&gt;')
+    text = Text(type='html', value='Hello world')
+    assert (text.get_sanitized_html() == text.sanitized_html ==
             'Hello world')
-    assert (
-        Text(type='html', value='<p>Hello <em>world</em></p>').sanitized_html
-        == '<p>Hello <em>world</em></p>'
-    )
-    assert (
-        Text(type='html',
-             value='<p>Hello</p><script>alert(1);</script>').sanitized_html
-        == '<p>Hello</p>'
-    )
-    assert (
-        Text(type='html', value='<p>Hello</p><hr noshade>').sanitized_html
-        == '<p>Hello</p><hr noshade>'
-    )
+    text = Text(type='html', value='<p>Hello <em>world</em></p>')
+    assert (text.get_sanitized_html() == text.sanitized_html ==
+            '<p>Hello <em>world</em></p>')
+    text = Text(type='html', value='<p>Hello</p><script>alert(1);</script>')
+    assert text.get_sanitized_html() == text.sanitized_html == '<p>Hello</p>'
+    text = Text(type='html', value='<p>Hello</p><hr noshade>')
+    assert (text.get_sanitized_html() == text.sanitized_html ==
+            '<p>Hello</p><hr noshade>')
+    text = Text(type='html', value='<a href="/abspath">abspath</a>')
+    assert (text.get_sanitized_html(base_uri='http://localhost/path/') ==
+            '<a href="http://localhost/abspath">abspath</a>')
 
 
 def test_person_str():

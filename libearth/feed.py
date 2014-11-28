@@ -53,19 +53,22 @@ class Text(Element):
     #: :attr:`type` is ``'html'``.
     value = ContentValue()
 
-    @property
-    def sanitized_html(self):
-        """(:class:`str`) The secure HTML string of the text.  If it's
-        a plain text, this becomes entity-escaped HTML string (for example,
+    def get_sanitized_html(self, base_uri=None):
+        """Get the secure HTML string of the text.  If it's
+        a plain text, this returns entity-escaped HTML string (for example,
         ``'<Hello>'`` becomes ``'&lt;Hello&gt;'``), and if it's a HTML text,
         the ``value`` is sanitized (for example,
         ``'<script>alert(1);</script><p>Hello</p>'`` comes ``'<p>Hello</p>'``).
 
+        .. versionadded:: 0.4.0
+
         """
         if self.type == 'html':
-            return sanitize_html(self.value)
+            return sanitize_html(self.value, base_uri=base_uri)
         elif self.type == 'text':
             return cgi.escape(self.value, quote=True).replace('\n', '<br>\n')
+
+    sanitized_html = property(get_sanitized_html)
 
     @classmethod
     def __coerce_from__(cls, value):
