@@ -515,7 +515,7 @@ class Metadata(Element):
     #: (section 4.2.14).
     title = Child('title', Text, xmlns=ATOM_XMLNS, required=True)
 
-    #: (:class:`collections.LinkList`) The list of :class:`Link` objects
+    #: (:class:`LinkList`) The list of :class:`Link` objects
     #: that define a reference from an entry or feed to a web resource.
     #: It corresponds to ``atom:link`` element of :rfc:`4287#section-4.2.7`
     #: (section 4.2.7).
