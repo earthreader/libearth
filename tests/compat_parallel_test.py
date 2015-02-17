@@ -9,16 +9,20 @@ def test_cpu_count():
 
 
 def test_parallel_map():
+    def fn(n):
+        return n * 2
+
     input = [1, 2, 3, 4]
-    fn = lambda n: n * 2
     result = parallel_map(4, fn, input)
     assert frozenset(result) == frozenset(map(fn, input))
 
 
 def test_parallel_map_multiargs():
+    def fn(n, m):
+        return n * m
+
     input1 = [1, 2, 3, 4]
     input2 = [5, 6, 7, 8]
-    fn = lambda n, m: n * m
     result = parallel_map(4, fn, input1, input2)
     assert frozenset(result) == frozenset(map(fn, input1, input2))
 

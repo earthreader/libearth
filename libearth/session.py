@@ -431,9 +431,9 @@ class MergeableDocumentElement(DocumentElement):
                                    default=lambda _: RevisionSet())
 
     def __merge_entities__(self, other):
-        entity_id = lambda e: (e.__entity_id__()
-                               if isinstance(e, Element)
-                               else e)
+        def entity_id(e):
+            return e.__entity_id__() if isinstance(e, Element) else e
+
         element_type = type(self)
         merged = element_type()
         for attr_name, desc in inspect_child_tags(element_type).values():
