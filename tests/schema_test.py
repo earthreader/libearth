@@ -611,9 +611,9 @@ def test_attribute_descriptor_conflict():
 
 def test_write_test_doc(fx_test_doc):
     doc, _ = fx_test_doc
-    gf = lambda: write(doc, indent='    ', canonical_order=True, hints=False)
-    print(''.join(gf()))
-    assert ''.join(gf()) == '''\
+    result = write(doc, indent='    ', canonical_order=True, hints=False)
+    print(''.join(result))
+    assert ''.join(result) == '''\
 <?xml version="1.0" encoding="utf-8"?>
 <test xmlns:ns0="http://earthreader.github.io/"\
  attr="속성 값" attr-decoder="decoder test">

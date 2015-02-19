@@ -95,7 +95,8 @@ class Text(Element):
     if UNICODE_BY_DEFAULT:
         __str__ = __unicode__
     else:
-        __str__ = lambda self: text_type(self).encode('utf-8')
+        def __str__(self):
+            return text_type(self).encode('utf-8')
 
     def __html__(self):
         return self.sanitized_html
@@ -144,7 +145,8 @@ class Person(Element):
     if UNICODE_BY_DEFAULT:
         __str__ = __unicode__
     else:
-        __str__ = lambda self: text_type(self).encode('utf-8')
+        def __str__(self):
+            return text_type(self).encode('utf-8')
 
     def __html__(self):
         name = cgi.escape(self.name, quote=True)
@@ -240,7 +242,8 @@ class Link(Element):
     if UNICODE_BY_DEFAULT:
         __str__ = __unicode__
     else:
-        __str__ = lambda self: text_type(self).encode('utf-8')
+        def __str__(self):
+            return text_type(self).encode('utf-8')
 
     def __html__(self):
         mapping = [
@@ -374,7 +377,8 @@ class Category(Element):
     if UNICODE_BY_DEFAULT:
         __str__ = __unicode__
     else:
-        __str__ = lambda self: text_type(self).encode('utf-8')
+        def __str__(self):
+            return text_type(self).encode('utf-8')
 
     def __repr__(self):
         return ('{0.__module__}.{0.__name__}(term={1!r}, scheme_uri={2!r}'
@@ -484,7 +488,8 @@ class Generator(Element):
     if UNICODE_BY_DEFAULT:
         __str__ = __unicode__
     else:
-        __str__ = lambda self: text_type(self).encode('utf-8')
+        def __str__(self):
+            return text_type(self).encode('utf-8')
 
     def __html__(self):
         label = cgi.escape(self.value)
