@@ -33,7 +33,7 @@ ATOM_TYPE = 'application/atom+xml'
 #: (:class:`collections.Mapping`) The mapping table of feed types
 TYPE_TABLE = {atom.parse_atom: ATOM_TYPE, rss2.parse_rss: RSS_TYPE}
 
-#: Namedtuple which is a pair of ``type` and ``url``
+#: Namedtuple which is a pair of ``type`` and ``url``
 FeedLink = collections.namedtuple('FeedLink', 'type url')
 
 
