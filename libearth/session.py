@@ -22,6 +22,7 @@ is a dictionary-like data structure to represent them.
 """
 import collections
 import datetime
+import platform
 import re
 import uuid
 import xml.sax
@@ -72,7 +73,7 @@ class Session(object):
         if not (identifier is None or isinstance(identifier, string_type)):
             raise TypeError('identifier must be a string, not ' +
                             repr(identifier))
-        identifier = str(identifier) if identifier else str(uuid.getnode())
+        identifier = str(identifier) if identifier else cls.get_default_name()
         if not cls.IDENTIFIER_PATTERN.match(identifier):
             raise ValueError('invalid identifier format: ' + repr(identifier))
         try:
@@ -91,6 +92,15 @@ class Session(object):
 
     def __hash__(self):
         return hash(self.identifier)
+
+    @staticmethod
+    def get_default_name():
+        """Create default session name.
+
+        :return: Default session name formatted as "Hostname-UUID".
+        :rtype: :class:`str`
+        """
+        return '{0}-{1}'.format(platform.node(), uuid.getnode())
 
     def revise(self, document):
         """Mark the given ``document`` as the latest revision of the current

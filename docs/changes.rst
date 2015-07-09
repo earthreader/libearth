@@ -29,6 +29,8 @@ To be released.
   :class:`~libearth.feed.Text` type.
   The :func:`~libearth.sanitizer.sanitize_html()` function became to
   additionally require ``base_uri`` parameter.
+- Added :meth:`~libearth.session.Session.get_default_name()` for default
+  session name.
 
 
 Version 0.3.3
