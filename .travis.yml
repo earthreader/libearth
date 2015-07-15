@@ -31,14 +31,16 @@ install:
     pip install pytest mock;
   fi
 - if [[ "$PYTHON_VM" == "ironpython" ]]; then
-    sudo apt-get install -qq mono-devel mercurial;
+    sudo apt-get install -qq mono-devel;
     curl -L -o /tmp/ironpython.zip https://github.com/IronLanguages/main/releases/download/ipy-2.7.4/IronPython-2.7.4.zip;
     unzip /tmp/ironpython.zip;
-    hg clone https://bitbucket.org/dahlia/py-ironpython /tmp/py-lib;
-    hg clone https://bitbucket.org/dahlia/pytest-ironpython /tmp/pytest;
-    ln -s /tmp/py-lib/py;
-    ln -s /tmp/pytest/_pytest;
-    ln -s /tmp/pytest/pytest.py;
+    curl -Lo /tmp/py-lib.zip https://bitbucket.org/dahlia/py-ironpython/get/default.zip;
+    curl -Lo /tmp/pytest.zip https://bitbucket.org/dahlia/pytest-ironpython/get/default.zip;
+    unzip /tmp/py-lib.zip -d /tmp/py-lib;
+    unzip /tmp/pytest.zip -d /tmp/pytest;
+    ln -s /tmp/py-lib/*/py;
+    ln -s /tmp/pytest/*/_pytest;
+    ln -s /tmp/pytest/*/pytest.py;
     pushd /tmp;
     curl https://pypi.python.org/packages/source/m/mock/mock-1.0.1.tar.gz | tar xvfz -;
     popd;
