@@ -31,6 +31,7 @@ install:
     pip install pytest mock;
   fi
 - if [[ "$PYTHON_VM" == "ironpython" ]]; then
+    sudo apt-get update;
     sudo apt-get install -qq mono-devel;
     curl -L -o /tmp/ironpython.zip https://github.com/IronLanguages/main/releases/download/ipy-2.7.4/IronPython-2.7.4.zip;
     unzip /tmp/ironpython.zip;
