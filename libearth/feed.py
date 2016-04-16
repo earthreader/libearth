@@ -39,11 +39,7 @@ class Text(Element):
     #: (:class:`str`) The type of the text.  It could be one of ``'text'``
     #: or ``'html'``.  It corresponds to :rfc:`4287#section-3.1.1` (section
     #: 3.1.1).
-    #:
-    #: .. note::
-    #:
-    #:    It currently does not support ``'xhtml'``.
-    type = Attribute('type', Enum(['text', 'html']),
+    type = Attribute('type', Enum(['text', 'html', 'xhtml']),
                      required=True, default=lambda _: 'text')
 
     #: (:class:`str`) The content of the text.  Interpretation for this
@@ -87,7 +83,7 @@ class Text(Element):
     def __unicode__(self):
         if not self.value:
             return ''
-        elif self.type == 'html':
+        elif self.type in ('html', 'xhtml'):
             return clean_html(self.value)
         elif self.type == 'text':
             return self.value

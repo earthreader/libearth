@@ -14,7 +14,7 @@ except ImportError:
     import urllib.parse as urlparse
 
 from ..codecs import Rfc3339, Rfc822
-from ..compat.etree import fromstring
+from ..compat.etree import fromstring, tostring
 from ..feed import (Category, Content, Entry, Feed, Generator, Link,
                     Person, Source, Text)
 from ..schema import DecodeError
@@ -109,8 +109,9 @@ def parse_text_construct(element, session):
         text.type = text_type
     if text.type in ('text', 'html'):
         text.value = element.text
-    elif text.value == 'xhtml':
-        text.value = ''  # TODO
+    elif text.type == 'xhtml':
+        text.value = tostring(element)
+
     return text, session
 
 
