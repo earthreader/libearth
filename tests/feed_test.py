@@ -18,12 +18,6 @@ from libearth.tz import utc
 from .stage_test import MemoryRepository
 
 
-def u(text):
-    if isinstance(text, text_type):
-        return text
-    return text.decode('utf-8')
-
-
 def test_text_str():
     assert text_type(Text(type='text', value='Hello world')) == 'Hello world'
     assert (text_type(Text(type='text', value='<p>Hello <em>world</em></p>')) ==
@@ -65,9 +59,9 @@ def test_person_str():
     email = '\x6d\x69\x6e\x68\x65\x65\x40\x64\x61\x68\x6c\x69\x61\x2e\x6b\x72'
     assert (text_type(Person(name='Hong Minhee', email=email)) ==
             'Hong Minhee <' + email + '>')
-    assert u('홍민희 <http://dahlia.kr/>') == text_type(
+    assert u'홍민희 <http://dahlia.kr/>' == text_type(
         Person(
-            name=u('홍민희'),
+            name=u'홍민희',
             uri='http://dahlia.kr/',
             email=email
         )
@@ -82,8 +76,8 @@ def test_person_html():
     email = '\x6d\x69\x6e\x68\x65\x65\x40\x64\x61\x68\x6c\x69\x61\x2e\x6b\x72'
     assert (Person(name='Hong Minhee', email=email).__html__() ==
             '<a href="mailto:' + email + '">Hong Minhee</a>')
-    assert u('<a href="http://dahlia.kr/">홍민희</a>') == Person(
-        name=u('홍민희'),
+    assert u'<a href="http://dahlia.kr/">홍민희</a>' == Person(
+        name=u'홍민희',
         uri='http://dahlia.kr/',
         email=email
     ).__html__()

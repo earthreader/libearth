@@ -21,12 +21,6 @@ from libearth.schema import (SCHEMA_XMLNS,
 from libearth.subscribe import SubscriptionList
 
 
-def u(text):
-    if isinstance(text, text_type):
-        return text
-    return text.decode('utf-8')
-
-
 class TextElement(Element):
 
     ns_attr_attr = Attribute('ns-attr', xmlns='http://earthreader.github.io/')
@@ -169,7 +163,7 @@ def test_document_parse(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert is_partially_loaded(doc) or IRON_PYTHON
-    assert doc.title_attr.value == u('제목 test')
+    assert doc.title_attr.value == u'제목 test'
     assert consume_log[-1] == 'TITLE_CLOSE' or IRON_PYTHON
     assert is_partially_loaded(doc) or IRON_PYTHON
     assert doc.content_attr.value == 'Content test'
@@ -180,7 +174,7 @@ def test_document_parse(fx_test_doc):
 
 def test_attribute(fx_test_doc):
     doc, consume_log = fx_test_doc
-    assert doc.attr_attr == u('속성 값')
+    assert doc.attr_attr == u'속성 값'
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert is_partially_loaded(doc) or IRON_PYTHON
 
@@ -274,7 +268,7 @@ def test_text_attribute(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert is_partially_loaded(doc) or IRON_PYTHON
-    assert doc.text_content_attr == u('텍스트 내용')
+    assert doc.text_content_attr == u'텍스트 내용'
     assert consume_log[-1] == 'TEXT_CONTENT_CLOSE' or IRON_PYTHON
     assert is_partially_loaded(doc) or IRON_PYTHON
 
@@ -647,12 +641,12 @@ def test_write_test_doc_tree(fx_test_doc):
     tree = fromstringlist(g)
     assert tree.tag == 'test'
     assert tree.attrib == {
-        'attr': u('속성 값'),
+        'attr': u'속성 값',
         'attr-decoder': 'decoder test'
     }
     assert tree[0].tag == 'title'
     assert not tree[0].attrib
-    assert tree[0].text == u('제목 test')
+    assert tree[0].text == u'제목 test'
     assert tree[1].tag == 'content'
     assert tree[1].text == 'Content test'
     assert not tree[1].attrib
@@ -668,7 +662,7 @@ def test_write_test_doc_tree(fx_test_doc):
     assert tree[7].text == 'c'
     assert tree[8].tag == 'text-content'
     assert not tree[8].attrib
-    assert tree[8].text == u('텍스트 내용')
+    assert tree[8].text == u'텍스트 내용'
     assert tree[9].tag == tree[10].tag == 'text-multi'
     assert tree[9].attrib == tree[10].attrib == {}
     assert tree[9].text == 'a'
@@ -717,24 +711,24 @@ def test_write_xmlns_doc(fx_xmlns_doc):
 def test_mutate_element_before_read(fx_test_doc):
     doc, consume_log = fx_test_doc
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
-    doc.text_content_attr = u('바뀐 텍스트 내용')
+    doc.text_content_attr = u'바뀐 텍스트 내용'
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
-    assert doc.text_content_attr == u('바뀐 텍스트 내용')
+    assert doc.text_content_attr == u'바뀐 텍스트 내용'
     assert consume_log[-1] == 'TEST_START' or IRON_PYTHON
     assert doc.text_multi_attr[0] == 'a'
     assert consume_log[-1] == 'TEXT_MULTI_1_CLOSE' or IRON_PYTHON
-    assert doc.text_content_attr == u('바뀐 텍스트 내용')
+    assert doc.text_content_attr == u'바뀐 텍스트 내용'
     assert consume_log[-1] == 'TEXT_MULTI_1_CLOSE' or IRON_PYTHON
 
 
 def test_element_initialize():
     doc = TestDoc(title_attr=TextElement(value='Title test'),
-                  content_attr=TextElement(value=u('내용 테스트')),
+                  content_attr=TextElement(value=u'내용 테스트'),
                   attr_attr='Attribute value',
                   text_content_attr='Text content',
                   multi_attr=(TextElement(value='a'), TextElement(value='b')))
     assert doc.title_attr.value == 'Title test'
-    assert doc.content_attr.value == u('내용 테스트')
+    assert doc.content_attr.value == u'내용 테스트'
     assert doc.attr_attr == 'Attribute value'
     assert doc.text_content_attr == 'Text content'
     assert len(doc.multi_attr) == 2
@@ -745,7 +739,7 @@ def test_element_initialize():
     assert len(doc.multi_attr) == 3
     tree = fromstringlist(write(doc))
     assert tree.find('title').text == 'Title test'
-    assert tree.find('content').text == u('내용 테스트')
+    assert tree.find('content').text == u'내용 테스트'
     assert tree.attrib['attr'] == 'Attribute value'
     elements = tree.findall('multi')
     assert len(elements) == 3
