@@ -21,6 +21,8 @@ To be released.
   - Added :func:`~libearth.parser.base.get_element_id`.
     It returns the string consists of an XML namespace and an element tag that
     :mod:`xml.etree.ElementTree` can recognize when finding children elements.
+  - Support atom feed that :class:`~libearth.feed.Text` with `xhtml` type.
+
 
 - Introduced new :mod:`libearth.defaults` module.
   This module provides small utilities and default data to fill initial state
