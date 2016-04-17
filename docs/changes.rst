@@ -6,6 +6,8 @@ Version 0.4.0
 
 To be released.
 
+- Python 3.2 is no more supported since even pip 8.0.0 also dropped their
+  support for Python 3.2.
 - Parsing RSS 1.0 feed is available.  [:issue:`57`]
 - Refactoring :mod:`~libearth.parser` package.  [:issue:`54`]
 

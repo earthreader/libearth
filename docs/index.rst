@@ -17,7 +17,7 @@ Compatibility & portability
 
 Libearth officially supports the following Python implementations:
 
-- Python 2.6, 2.7, 3.2, 3.3, 3.4
+- Python 2.6, 2.7, 3.3---3.5
 - CPython, PyPy, IronPython
 
 For environments :mod:`setuptools` not available, it has no required

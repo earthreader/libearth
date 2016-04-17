@@ -51,7 +51,7 @@ def test_parse(input_, expected):
     )
     if IRON_PYTHON:
         open_ = functools.partial(io.open, encoding='utf-8')
-    elif PY3 and sys.platform == 'win32':
+    elif PY3:
         open_ = functools.partial(open, encoding='utf-8')
     else:
         open_ = open
