@@ -25,6 +25,10 @@ def test_text_str():
     assert text_type(Text(type='html', value='Hello world')) == 'Hello world'
     assert (text_type(Text(type='html', value='<p>Hello <em>world</em></p>')) ==
             'Hello world')
+    assert text_type(Text(type='xhtml', value='Hello world')) == 'Hello world'
+    assert (
+        text_type(Text(type='xhtml', value='<p>Hello <em>world</em></p>')) ==
+        'Hello world')
 
 
 def test_get_sanitized_html():
