@@ -43,7 +43,7 @@ FEED_TYPES = frozenset([RSS_TYPE, ATOM_TYPE])
 #: (:class:`collections.Mapping`) The mapping table of feed types
 TYPE_TABLE = {parse_atom: ATOM_TYPE, parse_rss: RSS_TYPE}
 
-#: Namedtuple which is a pair of ``type` and ``url``
+#: Namedtuple which is a pair of ``type`` and ``url``
 FeedLink = collections.namedtuple('FeedLink', 'type url')
 
 
